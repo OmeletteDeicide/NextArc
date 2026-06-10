@@ -22,6 +22,20 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Generate app_constants.dart
+        run: |
+          cat > lib/core/constants/app_constants.dart <<EOF
+          class AppConstants {
+            AppConstants._();
+            static const String anilistEndpoint = 'https://graphql.anilist.co';
+            static const String anilistClientId = '${{ secrets.ANILIST_CLIENT_ID }}';
+            static const String anilistRedirectUri = 'nextarc://auth/callback';
+            static const String anilistTokenProxyUrl = 'https://anilisttoken-qgwvvtarwa-ew.a.run.app';
+            static const int defaultPageSize = 20;
+            static const int searchDebounceMs = 400;
+          }
+          EOF
+
       - name: Analyze
         run: flutter analyze
 
@@ -44,6 +58,20 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Generate app_constants.dart
+        run: |
+          cat > lib/core/constants/app_constants.dart <<EOF
+          class AppConstants {
+            AppConstants._();
+            static const String anilistEndpoint = 'https://graphql.anilist.co';
+            static const String anilistClientId = '${{ secrets.ANILIST_CLIENT_ID }}';
+            static const String anilistRedirectUri = 'nextarc://auth/callback';
+            static const String anilistTokenProxyUrl = 'https://anilisttoken-qgwvvtarwa-ew.a.run.app';
+            static const int defaultPageSize = 20;
+            static const int searchDebounceMs = 400;
+          }
+          EOF
 
       - name: Decode keystore
         run: |
