@@ -1,0 +1,92 @@
+name: nextarc
+description: "Application mobile de suivi et recommandation d'animes, connectée à AniList."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.8
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # GraphQL — API AniList
+  graphql_flutter: ^5.2.0-beta.7
+
+  # Stockage local
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # Stockage sécurisé (tokens OAuth)
+  flutter_secure_storage: ^9.2.4
+
+  # Images avec cache
+  cached_network_image: ^3.4.1
+
+  # Navigation
+  go_router: ^14.8.1
+
+  # OAuth — ouvre le navigateur et récupère le token de redirection
+  flutter_web_auth_2: ^4.0.1
+
+  # HTTP — échange du code OAuth contre un token
+  http: ^1.6.0
+
+  # Notifications locales
+  flutter_local_notifications: ^18.0.1
+
+  # Fuseaux horaires (requis par flutter_local_notifications pour les notifs programmées)
+  timezone: ^0.10.1
+
+  # Tâches de fond (vérification périodique des dates de sortie)
+  workmanager: ^0.5.2
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Code generation Riverpod
+  build_runner: ^2.4.15
+  riverpod_generator: ^2.6.5
+  # hive_generator retiré (conflit source_gen avec riverpod_generator)
+
+  # Icône d'app
+  flutter_launcher_icons: ^0.14.3
+
+  # Splash screen natif
+  flutter_native_splash: ^2.4.6
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/icon/
+    - assets/images/
+
+# ── Configuration icône d'app ──────────────────────────────────────────────────
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#0F1C3F"
+  adaptive_icon_foreground: "assets/icon/icon_fg.png"
+
+# ── Configuration splash screen ────────────────────────────────────────────────
+flutter_native_splash:
+  color: "#0F1C3F"
+  image: "assets/icon/icon.png"
+  android: true
+  ios: false
+  android_12:
+    color: "#0F1C3F"
+    image: "assets/icon/icon.png"
+    icon_background_color: "#0F1C3F"

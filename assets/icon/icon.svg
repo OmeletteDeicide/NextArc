@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Fond bleu marine foncé -->
+  <rect width="1024" height="1024" rx="200" fill="#0F1C3F"/>
+
+  <!-- Arc principal (symbole "NextArc") — arc épais centré -->
+  <path
+    d="M 200 680
+       A 370 370 0 1 1 824 680"
+    stroke="#FFFFFF"
+    stroke-width="72"
+    stroke-linecap="round"
+    fill="none"
+  />
+
+  <!-- Petite flèche / pointe à droite de l'arc -->
+  <path
+    d="M 800 648 L 824 680 L 786 698"
+    stroke="#FFFFFF"
+    stroke-width="56"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+
+  <!-- Étoile centrale (icône anime) -->
+  <circle cx="512" cy="450" r="52" fill="#3B6FD4"/>
+  <polygon
+    points="512,370 530,430 594,430 542,468 562,530 512,494 462,530 482,468 430,430 494,430"
+    fill="#FFFFFF"
+  />
+</svg>

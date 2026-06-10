@@ -1,0 +1,32 @@
+/// EXEMPLE — copier en app_constants.dart et renseigner les vraies valeurs.
+/// Ne jamais commiter app_constants.dart (exclu dans .gitignore).
+///
+/// Les valeurs sont injectées via --dart-define au lancement :
+///
+///   flutter run \
+///     --dart-define=ANILIST_CLIENT_ID=VOTRE_CLIENT_ID \
+///     --dart-define=ANILIST_CLIENT_SECRET=VOTRE_CLIENT_SECRET
+///
+/// Pour VS Code, ajouter dans .vscode/launch.json :
+///   "args": [
+///     "--dart-define=ANILIST_CLIENT_ID=VOTRE_CLIENT_ID",
+///     "--dart-define=ANILIST_CLIENT_SECRET=VOTRE_CLIENT_SECRET"
+///   ]
+class AppConstants {
+  AppConstants._();
+
+  static const String anilistEndpoint = 'https://graphql.anilist.co';
+
+  static const String anilistClientId = String.fromEnvironment(
+    'ANILIST_CLIENT_ID',
+    defaultValue: '',
+  );
+  static const String anilistClientSecret = String.fromEnvironment(
+    'ANILIST_CLIENT_SECRET',
+    defaultValue: '',
+  );
+  static const String anilistRedirectUri = 'nextarc://auth/callback';
+
+  static const int defaultPageSize = 20;
+  static const int searchDebounceMs = 400;
+}
