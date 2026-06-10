@@ -44,7 +44,7 @@ dependencies:
   timezone: ^0.10.1
 
   # Tâches de fond (vérification périodique des dates de sortie)
-  workmanager: ^0.5.2
+  workmanager: ^0.9.0
 
   cupertino_icons: ^1.0.8
 
