@@ -67,7 +67,7 @@ class DiscoverScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NextArc 🎬'),
+        title: Image.asset('assets/images/logo.png', height: 40),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -90,7 +90,7 @@ class DiscoverScreen extends ConsumerWidget {
           children: [
             // ── Section Tendances ────────────────────────────────────────
             HorizontalAnimeList(
-              title: '🔥 Tendances',
+              title: 'Tendances',
               asyncValue: trending,
               sectionKey: 'trending',
               onAnimeTap: (id, tag) => context.push('/detail/$id',
@@ -101,7 +101,7 @@ class DiscoverScreen extends ConsumerWidget {
 
             // ── Section Saison en cours ──────────────────────────────────
             HorizontalAnimeList(
-              title: '📅 Cette saison',
+              title: 'En ce moment',
               asyncValue: seasonal,
               sectionKey: 'seasonal',
               onAnimeTap: (id, tag) => context.push('/detail/$id',

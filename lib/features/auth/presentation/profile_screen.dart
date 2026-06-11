@@ -31,7 +31,7 @@ class ProfileScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profil'),
+        title: Image.asset('assets/images/logo.png', height: 40),
         actions: [
           TextButton.icon(
             icon: const Icon(Icons.logout, size: 18),
@@ -137,65 +137,80 @@ class ProfileScreen extends ConsumerWidget {
   // ── Écran non connecté ────────────────────────────────────────────────────
 
   Widget _buildLogin(BuildContext context, WidgetRef ref, AuthState auth) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Profil')),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.account_circle_outlined,
-                  size: 80, color: Colors.white24),
-              const SizedBox(height: 24),
-              const Text(
-                'Connecte-toi avec AniList',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Retrouve ta liste perso, tes notes et tes favoris.\nDébloque les recommandations personnalisées.',
-                style: TextStyle(color: Colors.white54, height: 1.5),
-                textAlign: TextAlign.center,
-              ),
-
-              // Message d'erreur éventuel
-              if (auth.error != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade900.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    auth.error!,
-                    style: const TextStyle(color: Colors.redAccent, fontSize: 13),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.login),
-                  label: const Text('Se connecter avec AniList'),
-                  onPressed: () => ref.read(authProvider.notifier).login(),
-                ),
-              ),
-            ],
+      appBar: AppBar(title: Image.asset('assets/images/logo.png', height: 40)),
+      body: ListView(
+        padding: const EdgeInsets.all(32),
+        children: [
+          const SizedBox(height: 48),
+          Icon(Icons.account_circle_outlined,
+              size: 80, color: cs.onSurface.withValues(alpha: 0.24)),
+          const SizedBox(height: 24),
+          Text(
+            'Connecte-toi avec AniList',
+            style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: cs.onSurface),
+            textAlign: TextAlign.center,
           ),
-        ),
+          const SizedBox(height: 12),
+          Text(
+            'Retrouve ta liste perso, tes notes et tes favoris.\nDébloque les recommandations personnalisées.',
+            style: TextStyle(
+                color: cs.onSurface.withValues(alpha: 0.54), height: 1.5),
+            textAlign: TextAlign.center,
+          ),
+
+          if (auth.error != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade900.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                auth.error!,
+                style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              icon: const Icon(Icons.login),
+              label: const Text('Se connecter avec AniList'),
+              onPressed: () => ref.read(authProvider.notifier).login(),
+            ),
+          ),
+
+          const SizedBox(height: 48),
+          _ProfileCard(
+            icon: Icons.settings_outlined,
+            title: 'Paramètres',
+            subtitle: 'Apparence, thème sombre / clair',
+            onTap: () => context.push(AppRoutes.settings),
+          ),
+          const SizedBox(height: 8),
+          _ProfileCard(
+            icon: Icons.info_outline_rounded,
+            title: 'À propos',
+            subtitle: 'Crédits, données AniList, technologies',
+            onTap: () => context.push(AppRoutes.about),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildError(BuildContext context, String error) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Profil')),
+      appBar: AppBar(title: Image.asset('assets/images/logo.png', height: 40)),
       body: Center(child: Text(error)),
     );
   }

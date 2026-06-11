@@ -21,7 +21,7 @@ class RecommendationsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pour toi 🎯'),
+        title: Image.asset('assets/images/logo.png', height: 40),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),

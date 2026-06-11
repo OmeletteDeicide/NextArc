@@ -48,13 +48,13 @@ class HorizontalAnimeList extends StatelessWidget {
 
         // ── Contenu ────────────────────────────────────────────────────────
         SizedBox(
-          height: 260,
+          height: 560,
           child: asyncValue.when(
             loading: () => _buildLoading(),
             error: (error, _) => _buildError(error),
             data: (result) => result.items.isEmpty
                 ? _buildEmpty()
-                : _buildList(result),
+                : _buildGrid(result),
           ),
         ),
       ],
@@ -111,12 +111,21 @@ class HorizontalAnimeList extends StatelessWidget {
     });
   }
 
-  Widget _buildList(PaginatedResult result) {
-    return ListView.separated(
+  Widget _buildGrid(PaginatedResult result) {
+    const rows = 2;
+    const cardWidth = 120.0;
+    const cardSpacing = 12.0;
+
+    return GridView.builder(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: rows,
+        mainAxisSpacing: cardSpacing,
+        crossAxisSpacing: cardSpacing,
+        mainAxisExtent: cardWidth,
+      ),
       itemCount: result.items.length,
-      separatorBuilder: (_, idx) => const SizedBox(width: 12),
       itemBuilder: (context, index) {
         final anime = result.items[index];
         final tag = '${sectionKey}_$index';
