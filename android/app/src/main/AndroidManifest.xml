@@ -1,4 +1,7 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Supprime la permission AD_ID injectée par Firebase Analytics -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove"/>
     <!-- Notifications locales -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Notifications programmées exactes (Android 12+) -->
