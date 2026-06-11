@@ -83,7 +83,7 @@ jobs:
 
       - name: Create key.properties
         run: |
-          cat > android/key.properties <<EOF
+          cat > android/app/key.properties <<EOF
           storePassword=${{ secrets.STORE_PASSWORD }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
           keyAlias=${{ secrets.KEY_ALIAS }}
