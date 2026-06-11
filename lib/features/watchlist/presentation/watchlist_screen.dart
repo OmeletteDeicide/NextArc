@@ -31,7 +31,7 @@ class WatchlistScreen extends ConsumerWidget {
   Widget _buildNotLoggedIn(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Ma liste')),
+      appBar: AppBar(title: Image.asset('assets/images/logo.png', height: 40)),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -63,7 +63,7 @@ class WatchlistScreen extends ConsumerWidget {
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(title: const Text('Ma liste')),
+        appBar: AppBar(title: Image.asset('assets/images/logo.png', height: 40)),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -145,7 +145,7 @@ class WatchlistScreen extends ConsumerWidget {
           length: tabs.length,
           child: Scaffold(
             appBar: AppBar(
-              title: const Text('Ma liste'),
+              title: Image.asset('assets/images/logo.png', height: 40),
               bottom: TabBar(
                 isScrollable: true,
                 tabAlignment: TabAlignment.start,
