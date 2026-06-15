@@ -3,6 +3,8 @@ import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:nextarc/core/config/anilist_client.dart';
 import 'package:nextarc/features/detail/data/detail_queries.dart';
 import 'package:nextarc/features/discover/domain/media_model.dart';
+import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
+import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 import 'package:nextarc/features/watchlist/domain/watchlist_providers.dart';
 
@@ -28,7 +30,7 @@ final animeDetailProvider =
   return MediaModel.fromJson(data);
 });
 
-/// Retourne l'entrée de liste de l'utilisateur pour un anime donné (ou null).
+/// Retourne l'entrée AniList de l'utilisateur pour un anime donné (ou null).
 final userListEntryProvider =
     Provider.family<MediaListEntry?, int>((ref, animeId) {
   final listAsync = ref.watch(userListProvider);
@@ -42,5 +44,16 @@ final userListEntryProvider =
       }
       return null;
     },
+  );
+});
+
+/// Retourne l'entrée locale invité pour un anime donné (ou null).
+final guestListEntryProvider =
+    Provider.family<GuestWatchlistEntry?, int>((ref, animeId) {
+  final listAsync = ref.watch(guestWatchlistProvider);
+
+  return listAsync.whenOrNull(
+    data: (entries) =>
+        entries.where((e) => e.animeId == animeId).firstOrNull,
   );
 });

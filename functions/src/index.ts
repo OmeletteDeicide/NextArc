@@ -53,7 +53,7 @@ export const anilistToken = onRequest(
         },
         body: JSON.stringify({
           grant_type: "authorization_code",
-          client_id: anilistClientId.value(),
+          client_id: parseInt(anilistClientId.value(), 10),
           client_secret: anilistClientSecret.value(),
           redirect_uri,
           code,
@@ -63,8 +63,8 @@ export const anilistToken = onRequest(
       const data = await response.json() as Record<string, unknown>;
 
       if (!response.ok) {
-        logger.error("AniList token exchange failed", { status: response.status });
-        res.status(response.status).json({ error: "Token exchange failed" });
+        logger.error("AniList token exchange failed", { status: response.status, body: data });
+        res.status(response.status).json({ error: "Token exchange failed", details: data });
         return;
       }
 

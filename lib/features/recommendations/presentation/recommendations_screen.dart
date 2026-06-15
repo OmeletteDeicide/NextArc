@@ -7,7 +7,7 @@ import 'package:nextarc/features/detail/domain/detail_providers.dart';
 import 'package:nextarc/features/discover/domain/media_model.dart';
 import 'package:nextarc/features/recommendations/domain/reco_providers.dart';
 import 'package:nextarc/features/recommendations/domain/recommendation_model.dart';
-import 'package:nextarc/features/watchlist/presentation/watchlist_edit_sheet.dart';
+import 'package:nextarc/features/watchlist/presentation/watchlist_sheet_helper.dart';
 
 class RecommendationsScreen extends ConsumerWidget {
   const RecommendationsScreen({super.key});
@@ -49,36 +49,8 @@ class RecommendationsScreen extends ConsumerWidget {
     bool isPersonalised,
     bool isLoggedIn,
   ) {
-    void openWatchlist(MediaModel anime) {
-      if (!isLoggedIn) {
-        final cs = Theme.of(context).colorScheme;
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(
-                'Connecte-toi pour gérer ta watchlist',
-                style: TextStyle(color: cs.onSurfaceVariant),
-              ),
-              backgroundColor: cs.surfaceContainerHighest,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 3),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-          );
-        return;
-      }
-      showWatchlistEditSheet(
-        context,
-        ref,
-        animeId: anime.id,
-        animeTitle: anime.displayTitle,
-        totalEpisodes: anime.episodes,
-        startDate: anime.startDate,
-        existing: ref.read(userListEntryProvider(anime.id)),
-      );
-    }
+    void openWatchlist(MediaModel anime) =>
+        openWatchlistSheet(context, ref, anime: anime, isLoggedIn: isLoggedIn);
 
     return RefreshIndicator(
       onRefresh: () async => ref.invalidate(recommendationsProvider),
@@ -174,11 +146,16 @@ class _RecoCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final anime = item.recommended;
     final cs = Theme.of(context).colorScheme;
-    final isInWatchlist =
-        ref.watch(userListEntryProvider(anime.id)) != null;
+    final isLoggedIn =
+        ref.watch(authProvider).whenOrNull(data: (a) => a.isAuthenticated) ??
+            false;
+    final isInWatchlist = isLoggedIn
+        ? ref.watch(userListEntryProvider(anime.id)) != null
+        : ref.watch(guestListEntryProvider(anime.id)) != null;
     final heroTag = 'reco_$index';
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: () => context.push('/detail/${anime.id}',
           extra: {'heroTag': heroTag, 'coverUrl': anime.coverImage}),
       child: Padding(
