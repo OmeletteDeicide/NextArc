@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nextarc/core/theme/app_theme.dart';
+import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/detail/domain/detail_providers.dart';
 import 'package:nextarc/features/discover/domain/media_model.dart';
 
@@ -30,7 +31,13 @@ class AnimeCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
-    final isInWatchlist = ref.watch(userListEntryProvider(anime.id)) != null;
+    final isLoggedIn = ref.watch(authProvider).whenOrNull(
+              data: (a) => a.isAuthenticated,
+            ) ??
+        false;
+    final isInWatchlist = isLoggedIn
+        ? ref.watch(userListEntryProvider(anime.id)) != null
+        : ref.watch(guestListEntryProvider(anime.id)) != null;
 
     final jacket = ClipRRect(
       borderRadius: BorderRadius.circular(8),
@@ -85,6 +92,7 @@ class AnimeCard extends ConsumerWidget {
     );
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: ClipRect(
         child: SizedBox(

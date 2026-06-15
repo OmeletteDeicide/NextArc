@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/watchlist/data/mutation_repository.dart';
+import 'package:nextarc/features/watchlist/data/watchlist_repository.dart';
+import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Écran Profil — affiche le compte AniList connecté ou propose de se connecter.
 class ProfileScreen extends ConsumerWidget {
@@ -12,6 +16,15 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authAsync = ref.watch(authProvider);
+
+    // Détecte la transition non-connecté → connecté pour proposer la migration
+    ref.listen<AsyncValue<AuthState>>(authProvider, (prev, next) {
+      final wasGuest = prev?.value?.isAuthenticated == false;
+      final isNowAuth = next.value?.isAuthenticated == true;
+      if (wasGuest && isNowAuth) {
+        _checkGuestMigration(context, ref);
+      }
+    });
 
     return authAsync.when(
       loading: () => const Scaffold(
@@ -119,6 +132,11 @@ class ProfileScreen extends ConsumerWidget {
 
                 const SizedBox(height: 8),
 
+                // Bouton Ko-fi
+                const _KofiCard(),
+
+                const SizedBox(height: 8),
+
                 // Carte "À propos"
                 _ProfileCard(
                   icon: Icons.info_outline_rounded,
@@ -197,6 +215,8 @@ class ProfileScreen extends ConsumerWidget {
             onTap: () => context.push(AppRoutes.settings),
           ),
           const SizedBox(height: 8),
+          const _KofiCard(),
+          const SizedBox(height: 8),
           _ProfileCard(
             icon: Icons.info_outline_rounded,
             title: 'À propos',
@@ -213,6 +233,107 @@ class ProfileScreen extends ConsumerWidget {
       appBar: AppBar(title: Image.asset('assets/images/logo.png', height: 40)),
       body: Center(child: Text(error)),
     );
+  }
+
+  // ── Migration invité → AniList ────────────────────────────────────────────
+
+  Future<void> _checkGuestMigration(BuildContext context, WidgetRef ref) async {
+    final guestEntries =
+        await ref.read(guestWatchlistRepositoryProvider).getEntries();
+    if (guestEntries.isEmpty || !context.mounted) return;
+
+    // Récupère la liste AniList existante pour éviter d'écraser ses données
+    final authState = ref.read(authProvider).value;
+    if (authState == null || !authState.isAuthenticated) return;
+
+    Set<int> existingIds = {};
+    try {
+      final anilistGroups =
+          await WatchlistRepository().getUserList(authState.user!.id);
+      existingIds = anilistGroups
+          .expand((g) => g.entries)
+          .map((e) => e.media.id)
+          .toSet();
+    } catch (_) {
+      // Si le fetch échoue, on continue sans filtrer
+    }
+
+    final newEntries =
+        guestEntries.where((e) => !existingIds.contains(e.animeId)).toList();
+    final alreadyCount = guestEntries.length - newEntries.length;
+
+    if (!context.mounted) return;
+
+    if (newEntries.isEmpty) {
+      // Tous les animes sont déjà sur AniList → nettoyage silencieux
+      await ref.read(guestWatchlistRepositoryProvider).clearAll();
+      ref.invalidate(guestWatchlistProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Ta liste locale est déjà synchronisée avec AniList ✓')),
+        );
+      }
+      return;
+    }
+
+    final skippedNote = alreadyCount > 0
+        ? '\n($alreadyCount déjà présent(s) sur AniList → ignoré(s))'
+        : '';
+
+    final merge = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Fusionner ta liste locale ?'),
+        content: Text(
+          '${newEntries.length} anime(s) à ajouter sur ton compte AniList.$skippedNote',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Ignorer'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Fusionner avec AniList'),
+          ),
+        ],
+      ),
+    );
+
+    if (merge != true || !context.mounted) return;
+
+    final mutationRepo = MutationRepository();
+    int success = 0;
+    for (final entry in newEntries) {
+      try {
+        await mutationRepo.saveEntry(
+          mediaId: entry.animeId,
+          status: entry.status,
+          score: entry.score,
+          progress: entry.progress,
+        );
+        success++;
+      } catch (_) {
+        // Continue même si une entrée échoue
+      }
+    }
+
+    await ref.read(guestWatchlistRepositoryProvider).clearAll();
+    ref.invalidate(guestWatchlistProvider);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success == newEntries.length
+                ? '$success anime(s) ajoutés à AniList ✓'
+                : '$success / ${newEntries.length} anime(s) migrés (${newEntries.length - success} erreurs)',
+          ),
+        ),
+      );
+    }
   }
 
   // ── Confirmation logout ───────────────────────────────────────────────────
@@ -239,6 +360,56 @@ class ProfileScreen extends ConsumerWidget {
     if (confirmed == true) {
       await ref.read(authProvider.notifier).logout();
     }
+  }
+}
+
+// ── Widget Ko-fi ──────────────────────────────────────────────────────────────
+
+class _KofiCard extends StatelessWidget {
+  const _KofiCard();
+
+  static const _url = 'https://ko-fi.com/espiegle';
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => launchUrl(
+          Uri.parse(_url),
+          mode: LaunchMode.externalApplication,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Image.asset(
+                'assets/images/kofi.png',
+                height: 26,
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Soutenir NextArc',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Offre-moi un café sur Ko-fi ☕',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.open_in_new_rounded, size: 16),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -151,7 +151,7 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Développé par Espiègle · 2025',
+            'Développé par Espiègle · 2026',
             style: TextStyle(color: cs.onSurface.withValues(alpha: 0.7)),
           ),
           const SizedBox(height: 4),

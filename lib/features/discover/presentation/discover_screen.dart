@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/widgets/horizontal_anime_list.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
-import 'package:nextarc/features/detail/domain/detail_providers.dart';
 import 'package:nextarc/features/discover/domain/discover_providers.dart';
 import 'package:nextarc/features/discover/domain/media_model.dart';
-import 'package:nextarc/features/watchlist/presentation/watchlist_edit_sheet.dart';
+import 'package:nextarc/features/watchlist/presentation/watchlist_sheet_helper.dart';
 
 /// Extrait l'URL de couverture depuis un AsyncValue par tag (ex: 'trending_2').
 String? _coverUrl(AsyncValue asyncValue, String tag) {
@@ -33,37 +32,8 @@ class DiscoverScreen extends ConsumerWidget {
             ) ??
         false;
 
-    // Callback watchlist réutilisable pour les deux sections
-    void openWatchlist(MediaModel anime) {
-      if (!isLoggedIn) {
-        final cs = Theme.of(context).colorScheme;
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(
-                'Connecte-toi pour gérer ta watchlist',
-                style: TextStyle(color: cs.onSurfaceVariant),
-              ),
-              backgroundColor: cs.surfaceContainerHighest,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 3),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ),
-          );
-        return;
-      }
-      showWatchlistEditSheet(
-        context,
-        ref,
-        animeId: anime.id,
-        animeTitle: anime.displayTitle,
-        totalEpisodes: anime.episodes,
-        startDate: anime.startDate,
-        existing: ref.read(userListEntryProvider(anime.id)),
-      );
-    }
+    void openWatchlist(MediaModel anime) =>
+        openWatchlistSheet(context, ref, anime: anime, isLoggedIn: isLoggedIn);
 
     return Scaffold(
       appBar: AppBar(

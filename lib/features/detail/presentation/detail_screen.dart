@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/detail/domain/detail_providers.dart';
 import 'package:nextarc/features/discover/domain/media_model.dart';
+import 'package:nextarc/features/watchlist/presentation/guest_watchlist_edit_sheet.dart';
 import 'package:nextarc/features/watchlist/presentation/watchlist_edit_sheet.dart';
 
 /// Écran fiche détaillée d'un anime.
@@ -174,44 +175,43 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
   }
 
   void _openSheet({required bool isLoggedIn}) {
-    if (!isLoggedIn) {
-      final cs = Theme.of(context).colorScheme;
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(
-              'Connecte-toi pour gérer ta watchlist',
-              style: TextStyle(color: cs.onSurfaceVariant),
-            ),
-            backgroundColor: cs.surfaceContainerHighest,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 3),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-          ),
-        );
-      return;
+    if (isLoggedIn) {
+      final entry = ref.read(userListEntryProvider(widget.anime.id));
+      showWatchlistEditSheet(
+        context,
+        ref,
+        animeId: widget.anime.id,
+        animeTitle: widget.anime.displayTitle,
+        totalEpisodes: widget.anime.episodes,
+        startDate: widget.anime.startDate,
+        existing: entry,
+      );
+    } else {
+      final guestEntry = ref.read(guestListEntryProvider(widget.anime.id));
+      showGuestWatchlistEditSheet(
+        context,
+        ref,
+        animeId: widget.anime.id,
+        animeTitle: widget.anime.displayTitle,
+        coverImage: widget.anime.coverImage,
+        totalEpisodes: widget.anime.episodes,
+        existing: guestEntry,
+      );
     }
-    final entry = ref.read(userListEntryProvider(widget.anime.id));
-    showWatchlistEditSheet(
-      context, ref,
-      animeId: widget.anime.id,
-      animeTitle: widget.anime.displayTitle,
-      totalEpisodes: widget.anime.episodes,
-      startDate: widget.anime.startDate,
-      existing: entry,
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     final anime = widget.anime;
-    final userEntry = ref.watch(userListEntryProvider(anime.id));
     final isLoggedIn = ref.watch(authProvider).whenOrNull(
               data: (a) => a.isAuthenticated,
             ) ??
         false;
+    final userEntry =
+        isLoggedIn ? ref.watch(userListEntryProvider(anime.id)) : null;
+    final guestEntry =
+        isLoggedIn ? null : ref.watch(guestListEntryProvider(anime.id));
+    final hasEntry = userEntry != null || guestEntry != null;
 
     final cs = Theme.of(context).colorScheme;
     final fabInactiveBg = Theme.of(context).brightness == Brightness.dark
@@ -230,13 +230,11 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
           duration: const Duration(milliseconds: 200),
           child: FloatingActionButton.small(
             heroTag: 'watchlist_fab_${anime.id}',
-            backgroundColor: userEntry != null ? cs.primary : fabInactiveBg,
+            backgroundColor: hasEntry ? cs.primary : fabInactiveBg,
             onPressed: () => _openSheet(isLoggedIn: isLoggedIn),
             child: Icon(
-              userEntry != null
-                  ? Icons.bookmark
-                  : Icons.bookmark_add_outlined,
-              color: userEntry != null ? Colors.white : cs.primary,
+              hasEntry ? Icons.bookmark : Icons.bookmark_add_outlined,
+              color: hasEntry ? Colors.white : cs.primary,
               size: 20,
             ),
           ),
@@ -386,8 +384,7 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
                   ],
 
                   // ── Bouton watchlist (en bas du scroll) ───────────────
-                  if (userEntry != null) ...[
-                    // Déjà dans la liste → badge cliquable
+                  if (hasEntry) ...[
                     GestureDetector(
                       onTap: () => _openSheet(isLoggedIn: isLoggedIn),
                       child: Container(
@@ -409,16 +406,25 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    userEntry.status?.label ?? 'Dans ta liste',
+                                    (userEntry?.status ?? guestEntry?.status)
+                                            ?.label ??
+                                        'Dans ta liste',
                                     style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: cs.onPrimaryContainer),
                                   ),
                                   Text(
-                                    userEntry.progressLabel +
-                                        (userEntry.formattedScore != null
-                                            ? '  •  ⭐ ${userEntry.formattedScore}'
-                                            : ''),
+                                    (userEntry?.progressLabel ??
+                                            guestEntry?.progressLabel ??
+                                            '') +
+                                        (() {
+                                          final score = userEntry
+                                                  ?.formattedScore ??
+                                              guestEntry?.formattedScore;
+                                          return score != null
+                                              ? '  •  ⭐ $score'
+                                              : '';
+                                        })(),
                                     style: TextStyle(
                                         color: cs.onSurface
                                             .withValues(alpha: 0.54),
