@@ -4,7 +4,7 @@ class RecoQueries {
 
   static const String animeRecommendations = '''
     query AnimeRecommendations(\$id: Int) {
-      Media(id: \$id, type: ANIME) {
+      Media(id: \$id) {
         id
         title { romaji english }
         recommendations(sort: RATING_DESC, perPage: 8) {
@@ -12,11 +12,13 @@ class RecoQueries {
             rating
             mediaRecommendation {
               id
+              type
               title { romaji english }
               coverImage { large medium }
               averageScore
               genres
               episodes
+              chapters
               status
               seasonYear
               season

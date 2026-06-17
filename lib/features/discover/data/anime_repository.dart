@@ -88,7 +88,63 @@ class AnimeRepository {
     return PaginatedResult.fromJson(data);
   }
 
-  // ── 3. Recherche par titre ─────────────────────────────────────────────────
+  // ── 3. Manga tendance ─────────────────────────────────────────────────────
+
+  Future<PaginatedResult> getTrendingManga({
+    int page = 1,
+    int perPage = AppConstants.defaultPageSize,
+  }) async {
+    const cacheKey = 'trending_manga_p1';
+
+    final cached = HiveCache.read<String>(cacheKey);
+    if (cached != null) {
+      return PaginatedResult.fromJson(
+          jsonDecode(cached) as Map<String, dynamic>);
+    }
+
+    final result = await _client.query(
+      QueryOptions(
+        document: gql(AnilistQueries.trendingManga),
+        variables: {'page': page, 'perPage': perPage},
+        fetchPolicy: FetchPolicy.networkOnly,
+      ),
+    );
+
+    _checkErrors(result);
+    final data = result.data!['Page'] as Map<String, dynamic>;
+    await HiveCache.write(cacheKey, jsonEncode(data), ttlMinutes: 30);
+    return PaginatedResult.fromJson(data);
+  }
+
+  // ── 4. Manga en cours de publication ──────────────────────────────────────
+
+  Future<PaginatedResult> getReleasingManga({
+    int page = 1,
+    int perPage = AppConstants.defaultPageSize,
+  }) async {
+    const cacheKey = 'releasing_manga_p1';
+
+    final cached = HiveCache.read<String>(cacheKey);
+    if (cached != null) {
+      return PaginatedResult.fromJson(
+          jsonDecode(cached) as Map<String, dynamic>);
+    }
+
+    final result = await _client.query(
+      QueryOptions(
+        document: gql(AnilistQueries.releasingManga),
+        variables: {'page': page, 'perPage': perPage},
+        fetchPolicy: FetchPolicy.networkOnly,
+      ),
+    );
+
+    _checkErrors(result);
+    final data = result.data!['Page'] as Map<String, dynamic>;
+    await HiveCache.write(cacheKey, jsonEncode(data), ttlMinutes: 30);
+    return PaginatedResult.fromJson(data);
+  }
+
+  // ── 5. Recherche par titre ─────────────────────────────────────────────────
 
   Future<PaginatedResult> searchAnime({
     required String query,

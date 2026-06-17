@@ -12,15 +12,18 @@ void openWatchlistSheet(
   required MediaModel anime,
   required bool isLoggedIn,
 }) {
+  final totalCount = anime.isManga ? anime.chapters : anime.episodes;
+
   if (isLoggedIn) {
     showWatchlistEditSheet(
       context,
       ref,
       animeId: anime.id,
       animeTitle: anime.displayTitle,
-      totalEpisodes: anime.episodes,
+      totalEpisodes: totalCount,
       startDate: anime.startDate,
       existing: ref.read(userListEntryProvider(anime.id)),
+      isManga: anime.isManga,
     );
   } else {
     showGuestWatchlistEditSheet(
@@ -29,8 +32,9 @@ void openWatchlistSheet(
       animeId: anime.id,
       animeTitle: anime.displayTitle,
       coverImage: anime.coverImage,
-      totalEpisodes: anime.episodes,
+      totalEpisodes: totalCount,
       existing: ref.read(guestListEntryProvider(anime.id)),
+      isManga: anime.isManga,
     );
   }
 }

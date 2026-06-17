@@ -46,11 +46,15 @@ class MediaListEntry {
     return score!.toStringAsFixed(score! % 1 == 0 ? 0 : 1);
   }
 
-  /// Progression formatée (ex: "12 / 24" ou "12 / ?").
+  bool get isManga => media.isManga;
+
+  /// Progression formatée (ex: "12 / 24" ou "12 ch. / 80").
   String get progressLabel {
-    final total = media.episodes;
     final seen = progress ?? 0;
-    return '$seen / ${total ?? '?'}';
+    if (isManga) {
+      return '$seen ch. / ${media.chapters ?? '?'}';
+    }
+    return '$seen / ${media.episodes ?? '?'}';
   }
 
   factory MediaListEntry.fromJson(Map<String, dynamic> json) {

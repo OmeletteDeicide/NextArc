@@ -1,11 +1,12 @@
-/// Requête GraphQL pour la fiche détaillée d'un anime.
+/// Requête GraphQL pour la fiche détaillée d'un média (anime ou manga).
 class DetailQueries {
   DetailQueries._();
 
   static const String animeDetail = '''
-    query AnimeDetail(\$id: Int) {
-      Media(id: \$id, type: ANIME) {
+    query MediaDetail(\$id: Int) {
+      Media(id: \$id) {
         id
+        type
         title {
           romaji
           english
@@ -21,11 +22,15 @@ class DetailQueries {
         meanScore
         genres
         episodes
+        chapters
+        volumes
+        countryOfOrigin
         duration
         status
         seasonYear
         season
         source
+        startDate { year month day }
         studios(isMain: true) {
           nodes {
             name
@@ -35,6 +40,7 @@ class DetailQueries {
           nodes {
             mediaRecommendation {
               id
+              type
               title { romaji english }
               coverImage { large medium }
               averageScore

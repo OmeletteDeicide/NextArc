@@ -175,6 +175,10 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
   }
 
   void _openSheet({required bool isLoggedIn}) {
+    final totalCount = widget.anime.isManga
+        ? widget.anime.chapters
+        : widget.anime.episodes;
+
     if (isLoggedIn) {
       final entry = ref.read(userListEntryProvider(widget.anime.id));
       showWatchlistEditSheet(
@@ -182,9 +186,10 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
         ref,
         animeId: widget.anime.id,
         animeTitle: widget.anime.displayTitle,
-        totalEpisodes: widget.anime.episodes,
+        totalEpisodes: totalCount,
         startDate: widget.anime.startDate,
         existing: entry,
+        isManga: widget.anime.isManga,
       );
     } else {
       final guestEntry = ref.read(guestListEntryProvider(widget.anime.id));
@@ -194,7 +199,7 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
         animeId: widget.anime.id,
         animeTitle: widget.anime.displayTitle,
         coverImage: widget.anime.coverImage,
-        totalEpisodes: widget.anime.episodes,
+        totalEpisodes: totalCount,
         existing: guestEntry,
       );
     }
@@ -319,10 +324,25 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
                                     label: anime.formattedScore!,
                                     color: const Color(0xFFFFC107),
                                   ),
-                                if (anime.episodes != null)
+                                if (!anime.isManga && anime.episodes != null)
                                   _InfoChip(
                                     icon: Icons.play_circle_outline,
                                     label: '${anime.episodes} ép.',
+                                  ),
+                                if (anime.isManga && anime.chapters != null)
+                                  _InfoChip(
+                                    icon: Icons.menu_book_outlined,
+                                    label: '${anime.chapters} ch.',
+                                  ),
+                                if (anime.isManga &&
+                                    anime.countryOfOrigin != null &&
+                                    anime.countryOfOrigin != 'JP')
+                                  _InfoChip(
+                                    icon: Icons.public,
+                                    label: anime.countryOfOrigin == 'KR'
+                                        ? 'Manhwa'
+                                        : 'Manhua',
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                                 if (anime.status != null)
                                   _InfoChip(

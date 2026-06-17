@@ -4,21 +4,43 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/detail/domain/detail_providers.dart';
+import 'package:nextarc/features/discover/domain/discover_providers.dart';
 import 'package:nextarc/features/discover/domain/media_model.dart';
 import 'package:nextarc/features/recommendations/domain/reco_providers.dart';
 import 'package:nextarc/features/recommendations/domain/recommendation_model.dart';
 import 'package:nextarc/features/watchlist/presentation/watchlist_sheet_helper.dart';
 
-class RecommendationsScreen extends ConsumerWidget {
+class RecommendationsScreen extends ConsumerStatefulWidget {
   const RecommendationsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final recoAsync = ref.watch(recommendationsProvider);
-    final isPersonalised = ref.watch(recoIsPersonalisedProvider);
-    final auth = ref.watch(authProvider);
-    final isLoggedIn = auth.whenOrNull(data: (a) => a.isAuthenticated) ?? false;
+  ConsumerState<RecommendationsScreen> createState() =>
+      _RecommendationsScreenState();
+}
 
+class _RecommendationsScreenState extends ConsumerState<RecommendationsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    final preference = ref.read(contentPreferenceProvider);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: preference == 'MANGA' ? 1 : 0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Image.asset('assets/images/logo.png', height: 40),
@@ -27,52 +49,135 @@ class RecommendationsScreen extends ConsumerWidget {
             icon: const Icon(Icons.search),
             onPressed: () => context.push('/search'),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh_outlined),
-            onPressed: () => ref.invalidate(recommendationsProvider),
-          ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: '🎬 Anime'),
+            Tab(text: '📖 Manga'),
+          ],
+        ),
       ),
-      body: recoAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => _buildError(context, ref, e),
-        data: (recos) =>
-            _buildContent(context, ref, recos, isPersonalised, isLoggedIn),
+      body: TabBarView(
+        controller: _tabController,
+        children: const [
+          _AnimeRecoTab(),
+          _MangaRecoTab(),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildContent(
-    BuildContext context,
-    WidgetRef ref,
-    List<RecommendationItem> recos,
-    bool isPersonalised,
-    bool isLoggedIn,
-  ) {
-    void openWatchlist(MediaModel anime) =>
-        openWatchlistSheet(context, ref, anime: anime, isLoggedIn: isLoggedIn);
+// ── Onglet recommandations Anime ──────────────────────────────────────────────
+
+class _AnimeRecoTab extends ConsumerWidget {
+  const _AnimeRecoTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recoAsync = ref.watch(recommendationsProvider);
+    final isPersonalised = ref.watch(recoIsPersonalisedProvider);
+    final isLoggedIn =
+        ref.watch(authProvider).whenOrNull(data: (a) => a.isAuthenticated) ??
+            false;
+
+    return recoAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => _buildError(context, ref, e,
+          onRetry: () => ref.invalidate(recommendationsProvider)),
+      data: (recos) => _RecoList(
+        recos: recos,
+        isPersonalised: isPersonalised,
+        isLoggedIn: isLoggedIn,
+        onRetry: () => ref.invalidate(recommendationsProvider),
+        bannerLoggedInText:
+            'Basé sur tes favoris et tes notes AniList',
+        bannerGuestText:
+            'Connecte-toi pour des recommandations personnalisées',
+        bannerInfoText:
+            'Note des animes sur AniList pour des recos personnalisées',
+      ),
+    );
+  }
+}
+
+// ── Onglet recommandations Manga ──────────────────────────────────────────────
+
+class _MangaRecoTab extends ConsumerWidget {
+  const _MangaRecoTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recoAsync = ref.watch(mangaRecommendationsProvider);
+    final isLoggedIn =
+        ref.watch(authProvider).whenOrNull(data: (a) => a.isAuthenticated) ??
+            false;
+
+    return recoAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => _buildError(context, ref, e,
+          onRetry: () => ref.invalidate(mangaRecommendationsProvider)),
+      data: (recos) => _RecoList(
+        recos: recos,
+        isPersonalised: isLoggedIn,
+        isLoggedIn: isLoggedIn,
+        onRetry: () => ref.invalidate(mangaRecommendationsProvider),
+        bannerLoggedInText:
+            'Basé sur tes manga notés sur AniList',
+        bannerGuestText:
+            'Connecte-toi pour des recommandations manga personnalisées',
+        bannerInfoText:
+            'Note des manga sur AniList pour des recos personnalisées',
+      ),
+    );
+  }
+}
+
+// ── Liste de recommandations (partagée) ──────────────────────────────────────
+
+class _RecoList extends ConsumerWidget {
+  const _RecoList({
+    required this.recos,
+    required this.isPersonalised,
+    required this.isLoggedIn,
+    required this.onRetry,
+    required this.bannerLoggedInText,
+    required this.bannerGuestText,
+    required this.bannerInfoText,
+  });
+
+  final List<RecommendationItem> recos;
+  final bool isPersonalised;
+  final bool isLoggedIn;
+  final VoidCallback onRetry;
+  final String bannerLoggedInText;
+  final String bannerGuestText;
+  final String bannerInfoText;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    void openWatchlist(MediaModel media) =>
+        openWatchlistSheet(context, ref, anime: media, isLoggedIn: isLoggedIn);
 
     return RefreshIndicator(
-      onRefresh: () async => ref.invalidate(recommendationsProvider),
+      onRefresh: () async => onRetry(),
       child: CustomScrollView(
         slivers: [
-          // ── Bannière contextuelle ──────────────────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: isPersonalised
                   ? _InfoBanner(
                       icon: Icons.person,
-                      text: 'Basé sur tes favoris et tes notes AniList',
+                      text: bannerLoggedInText,
                       color: Theme.of(context).colorScheme.primary,
                     )
                   : _InfoBanner(
                       icon: isLoggedIn
                           ? Icons.info_outline
                           : Icons.lock_outline,
-                      text: isLoggedIn
-                          ? 'Note des animes sur AniList pour des recos personnalisées'
-                          : 'Connecte-toi pour des recommandations personnalisées',
+                      text: isLoggedIn ? bannerInfoText : bannerGuestText,
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
@@ -81,8 +186,6 @@ class RecommendationsScreen extends ConsumerWidget {
                     ),
             ),
           ),
-
-          // ── Liste des recommandations ──────────────────────────────────
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) => _RecoCard(
@@ -94,37 +197,37 @@ class RecommendationsScreen extends ConsumerWidget {
               childCount: recos.length,
             ),
           ),
-
           const SliverToBoxAdapter(child: SizedBox(height: 24)),
         ],
       ),
     );
   }
+}
 
-  Widget _buildError(BuildContext context, WidgetRef ref, Object error) {
-    final cs = Theme.of(context).colorScheme;
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.wifi_off_rounded,
-              size: 48, color: cs.onSurface.withValues(alpha: 0.38)),
-          const SizedBox(height: 12),
-          Text(
-            error.toString(),
-            style: TextStyle(color: cs.onSurface.withValues(alpha: 0.54)),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            icon: const Icon(Icons.refresh),
-            label: const Text('Réessayer'),
-            onPressed: () => ref.invalidate(recommendationsProvider),
-          ),
-        ],
-      ),
-    );
-  }
+Widget _buildError(BuildContext context, WidgetRef ref, Object error,
+    {required VoidCallback onRetry}) {
+  final cs = Theme.of(context).colorScheme;
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.wifi_off_rounded,
+            size: 48, color: cs.onSurface.withValues(alpha: 0.38)),
+        const SizedBox(height: 12),
+        Text(
+          error.toString(),
+          style: TextStyle(color: cs.onSurface.withValues(alpha: 0.54)),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          icon: const Icon(Icons.refresh),
+          label: const Text('Réessayer'),
+          onPressed: onRetry,
+        ),
+      ],
+    ),
+  );
 }
 
 // ── Carte recommandation ──────────────────────────────────────────────────────
@@ -163,7 +266,6 @@ class _RecoCard extends ConsumerWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Jaquette + bouton watchlist
             SizedBox(
               width: 80,
               height: 115,
@@ -216,13 +318,10 @@ class _RecoCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 12),
-
-            // Infos
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // "Parce que tu as aimé X"
                   if (!isFallback && item.sourceTitle.isNotEmpty) ...[
                     Text(
                       'Parce que tu as aimé',
@@ -242,8 +341,6 @@ class _RecoCard extends ConsumerWidget {
                     ),
                     const SizedBox(height: 6),
                   ],
-
-                  // Titre
                   Text(
                     anime.displayTitle,
                     style: const TextStyle(
@@ -254,10 +351,7 @@ class _RecoCard extends ConsumerWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-
                   const SizedBox(height: 6),
-
-                  // Score + épisodes
                   Row(
                     children: [
                       if (anime.formattedScore != null) ...[
@@ -272,7 +366,14 @@ class _RecoCard extends ConsumerWidget {
                         ),
                         const SizedBox(width: 12),
                       ],
-                      if (anime.episodes != null)
+                      if (anime.isManga && anime.chapters != null)
+                        Text(
+                          '${anime.chapters} ch.',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: cs.onSurface.withValues(alpha: 0.5)),
+                        )
+                      else if (!anime.isManga && anime.episodes != null)
                         Text(
                           '${anime.episodes} ép.',
                           style: TextStyle(
@@ -281,10 +382,7 @@ class _RecoCard extends ConsumerWidget {
                         ),
                     ],
                   ),
-
                   const SizedBox(height: 6),
-
-                  // Genres
                   if (anime.genres != null && anime.genres!.isNotEmpty)
                     Wrap(
                       spacing: 6,
@@ -294,8 +392,7 @@ class _RecoCard extends ConsumerWidget {
                                 g,
                                 style: TextStyle(
                                     fontSize: 11,
-                                    color:
-                                        cs.onSurface.withValues(alpha: 0.45)),
+                                    color: cs.onSurface.withValues(alpha: 0.45)),
                               ))
                           .toList(),
                     ),
