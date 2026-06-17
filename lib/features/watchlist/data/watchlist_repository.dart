@@ -64,6 +64,63 @@ class WatchlistRepository {
     return groups;
   }
 
+  // ── Liste manga par statut ─────────────────────────────────────────────────
+
+  Future<List<MediaListGroup>> getUserMangaList(int userId) async {
+    final result = await AnilistClient.instance.query(
+      QueryOptions(
+        document: gql(WatchlistQueries.mangaListCollection),
+        variables: {'userId': userId},
+        fetchPolicy: FetchPolicy.networkOnly,
+      ),
+    );
+
+    if (result.hasException) {
+      throw Exception('Impossible de charger ta liste manga : ${result.exception}');
+    }
+
+    final collection = result.data?['MediaListCollection']
+        as Map<String, dynamic>?;
+    if (collection == null) return [];
+
+    final rawLists = collection['lists'] as List<dynamic>;
+    final groups = <MediaListGroup>[];
+
+    const orderedStatuses = [
+      ListStatus.current,
+      ListStatus.completed,
+      ListStatus.planning,
+      ListStatus.paused,
+      ListStatus.dropped,
+    ];
+
+    for (final targetStatus in orderedStatuses) {
+      final matchingLists = rawLists.where((l) {
+        final s = (l as Map<String, dynamic>)['status'] as String?;
+        return s == targetStatus.anilistValue;
+      }).toList();
+
+      if (matchingLists.isEmpty) continue;
+
+      final entries = <MediaListEntry>[];
+      for (final list in matchingLists) {
+        final rawEntries = (list as Map<String, dynamic>)['entries']
+            as List<dynamic>;
+        entries.addAll(
+          rawEntries.map(
+            (e) => MediaListEntry.fromJson(e as Map<String, dynamic>),
+          ),
+        );
+      }
+
+      if (entries.isNotEmpty) {
+        groups.add(MediaListGroup(status: targetStatus, entries: entries));
+      }
+    }
+
+    return groups;
+  }
+
   // ── Favoris ────────────────────────────────────────────────────────────────
 
   Future<List<MediaModel>> getUserFavourites(int userId) async {

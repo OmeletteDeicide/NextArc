@@ -20,6 +20,7 @@ Future<void> showWatchlistEditSheet(
   int? totalEpisodes,
   DateTime? startDate,
   MediaListEntry? existing,
+  bool isManga = false,
 }) {
   return showModalBottomSheet(
     context: context,
@@ -32,6 +33,7 @@ Future<void> showWatchlistEditSheet(
       totalEpisodes: totalEpisodes,
       startDate: startDate,
       existing: existing,
+      isManga: isManga,
     ),
   );
 }
@@ -44,6 +46,7 @@ class _WatchlistEditSheet extends ConsumerStatefulWidget {
     this.totalEpisodes,
     this.startDate,
     this.existing,
+    this.isManga = false,
   });
 
   final WidgetRef ref;
@@ -52,6 +55,7 @@ class _WatchlistEditSheet extends ConsumerStatefulWidget {
   final int? totalEpisodes;
   final DateTime? startDate;
   final MediaListEntry? existing;
+  final bool isManga;
 
   @override
   ConsumerState<_WatchlistEditSheet> createState() =>
@@ -155,15 +159,18 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
 
           const SizedBox(height: 24),
 
-          // ── Progression épisodes ────────────────────────────────────────
+          // ── Progression ────────────────────────────────────────────────
           Row(
             children: [
-              const Text('Progression',
-                  style:
-                      TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              Text(
+                widget.isManga ? 'Chapitres lus' : 'Progression',
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
               const Spacer(),
               Text(
-                '$_progress / ${widget.totalEpisodes ?? '?'}',
+                widget.isManga
+                    ? '$_progress ch. / ${widget.totalEpisodes ?? '?'}'
+                    : '$_progress / ${widget.totalEpisodes ?? '?'}',
                 style: TextStyle(
                     color: cs.onSurface.withValues(alpha: 0.54), fontSize: 13),
               ),
@@ -190,7 +197,7 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
                   child: Slider(
                     value: _progress.toDouble(),
                     min: 0,
-                    max: (widget.totalEpisodes ?? 100).toDouble(),
+                    max: (widget.totalEpisodes ?? 2000).toDouble(),
                     divisions: widget.totalEpisodes,
                     onChanged: (v) => setState(() => _progress = v.round()),
                   ),
@@ -332,8 +339,9 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
         await notifs.cancelReleaseNotifications(widget.animeId);
       }
 
-      // Rafraîchit la liste après sauvegarde
+      // Rafraîchit les listes après sauvegarde
       widget.ref.invalidate(userListProvider);
+      widget.ref.invalidate(userMangaListProvider);
       HapticFeedback.lightImpact();
 
       if (mounted) {
@@ -402,6 +410,7 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
       await NotificationService.instance.cancelReleaseNotifications(widget.animeId);
 
       widget.ref.invalidate(userListProvider);
+      widget.ref.invalidate(userMangaListProvider);
       HapticFeedback.lightImpact();
 
       if (mounted) {

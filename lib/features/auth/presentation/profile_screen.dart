@@ -175,7 +175,7 @@ class ProfileScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Retrouve ta liste perso, tes notes et tes favoris.\nDébloque les recommandations personnalisées.',
+            'Tu gardes tes listes, tes notes et tes favoris,\nMais surtout tu débloques les recommandations personnalisées.',
             style: TextStyle(
                 color: cs.onSurface.withValues(alpha: 0.54), height: 1.5),
             textAlign: TextAlign.center,

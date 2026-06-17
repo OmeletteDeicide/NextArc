@@ -1,4 +1,4 @@
-/// Modèle représentant un anime retourné par l'API AniList.
+/// Modèle représentant un média (anime ou manga) retourné par l'API AniList.
 class MediaModel {
   const MediaModel({
     required this.id,
@@ -10,6 +10,10 @@ class MediaModel {
     this.averageScore,
     this.genres,
     this.episodes,
+    this.chapters,
+    this.volumes,
+    this.countryOfOrigin,
+    this.mediaType,
     this.status,
     this.seasonYear,
     this.season,
@@ -38,21 +42,35 @@ class MediaModel {
 
   final List<String>? genres;
 
-  /// Nombre total d'épisodes (null si en cours / inconnu).
+  /// Nombre total d'épisodes (anime uniquement).
   final int? episodes;
 
-  /// Statut de diffusion : FINISHED, RELEASING, NOT_YET_RELEASED, CANCELLED, HIATUS.
+  /// Nombre total de chapitres (manga uniquement).
+  final int? chapters;
+
+  /// Nombre de volumes (manga uniquement).
+  final int? volumes;
+
+  /// Pays d'origine : JP = manga, KR = manhwa, CN = manhua.
+  final String? countryOfOrigin;
+
+  /// Type AniList : 'ANIME' ou 'MANGA'.
+  final String? mediaType;
+
+  /// Statut de diffusion/publication.
   final String? status;
 
   final int? seasonYear;
 
-  /// Saison : WINTER, SPRING, SUMMER, FALL.
+  /// Saison : WINTER, SPRING, SUMMER, FALL (anime uniquement).
   final String? season;
 
-  /// Date de début de diffusion (peut être partielle — seul year+month+day sont utilisés).
+  /// Date de début.
   final DateTime? startDate;
 
   // ── Helpers ──────────────────────────────────────────────────────────────
+
+  bool get isManga => mediaType == 'MANGA';
 
   /// Titre affiché : anglais si dispo, sinon romaji.
   String get displayTitle => titleEnglish ?? titleRomaji;
@@ -84,6 +102,10 @@ class MediaModel {
           ?.map((e) => e as String)
           .toList(),
       episodes: json['episodes'] as int?,
+      chapters: json['chapters'] as int?,
+      volumes: json['volumes'] as int?,
+      countryOfOrigin: json['countryOfOrigin'] as String?,
+      mediaType: json['type'] as String?,
       status: json['status'] as String?,
       seasonYear: json['seasonYear'] as int?,
       season: json['season'] as String?,
@@ -101,5 +123,5 @@ class MediaModel {
   }
 
   @override
-  String toString() => 'MediaModel(id: $id, title: $displayTitle)';
+  String toString() => 'MediaModel(id: $id, type: $mediaType, title: $displayTitle)';
 }

@@ -3,9 +3,10 @@
 class AnilistQueries {
   AnilistQueries._();
 
-  /// Fragment commun — champs récupérés pour chaque anime.
+  /// Fragment commun — champs récupérés pour chaque média (anime ou manga).
   static const String _mediaFields = '''
     id
+    type
     title {
       romaji
       english
@@ -18,6 +19,9 @@ class AnilistQueries {
     averageScore
     genres
     episodes
+    chapters
+    volumes
+    countryOfOrigin
     status
     seasonYear
     season
@@ -71,7 +75,43 @@ class AnilistQueries {
     }
   ''';
 
-  // ── 3. Recherche par titre ─────────────────────────────────────────────────
+  // ── 3. Manga tendance ─────────────────────────────────────────────────────
+
+  static const String trendingManga = '''
+    query TrendingManga(\$page: Int, \$perPage: Int) {
+      Page(page: \$page, perPage: \$perPage) {
+        pageInfo {
+          total
+          currentPage
+          lastPage
+          hasNextPage
+        }
+        media(sort: TRENDING_DESC, type: MANGA, isAdult: false) {
+          $_mediaFields
+        }
+      }
+    }
+  ''';
+
+  // ── 4. Manga en cours de publication ──────────────────────────────────────
+
+  static const String releasingManga = '''
+    query ReleasingManga(\$page: Int, \$perPage: Int) {
+      Page(page: \$page, perPage: \$perPage) {
+        pageInfo {
+          total
+          currentPage
+          lastPage
+          hasNextPage
+        }
+        media(status: RELEASING, type: MANGA, isAdult: false, sort: POPULARITY_DESC) {
+          $_mediaFields
+        }
+      }
+    }
+  ''';
+
+  // ── 5. Recherche par titre ─────────────────────────────────────────────────
 
   static const String searchAnime = '''
     query SearchAnime(\$search: String, \$page: Int, \$perPage: Int) {
@@ -82,7 +122,7 @@ class AnilistQueries {
           lastPage
           hasNextPage
         }
-        media(search: \$search, type: ANIME, isAdult: false) {
+        media(search: \$search, isAdult: false) {
           $_mediaFields
         }
       }

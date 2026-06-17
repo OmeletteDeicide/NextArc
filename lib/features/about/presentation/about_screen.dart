@@ -45,7 +45,7 @@ class AboutScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Version 1.0.0',
+                  'Version 1.2.0',
                   style: TextStyle(
                     color: cs.onSurface.withValues(alpha: 0.38),
                     fontSize: 13,
@@ -64,9 +64,9 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'NextArc est une application de suivi d\'animes et de recommandations personnalisées. '
+            'NextArc est une application de suivi d\'animes et de mangas avec recommandations personnalisées. '
             'Elle te permet de retrouver ta liste AniList, d\'explorer les tendances et de '
-            'découvrir de nouveaux animes basés sur tes goûts.',
+            'découvrir de nouveaux contenus basés sur tes goûts.',
             style: TextStyle(
               color: cs.onSurface.withValues(alpha: 0.7),
               height: 1.6,
@@ -104,7 +104,7 @@ class AboutScreen extends StatelessWidget {
             icon: Icons.data_object_rounded,
             title: 'AniList',
             subtitle:
-                'Toutes les données anime (titres, images, notes, listes utilisateur) '
+                'Toutes les données anime et manga (titres, images, notes, listes utilisateur) '
                 'proviennent de l\'API AniList. NextArc n\'est pas affilié à AniList.',
             url: 'https://anilist.co',
           ),

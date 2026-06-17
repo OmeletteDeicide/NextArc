@@ -15,6 +15,15 @@ final userListProvider = FutureProvider<List<MediaListGroup>>((ref) async {
   return repo.getUserList(auth.user!.id);
 });
 
+/// Liste manga groupée par statut — nécessite d'être connecté.
+final userMangaListProvider = FutureProvider<List<MediaListGroup>>((ref) async {
+  final auth = await ref.watch(authProvider.future);
+  if (!auth.isAuthenticated || auth.user == null) return [];
+
+  final repo = ref.read(watchlistRepositoryProvider);
+  return repo.getUserMangaList(auth.user!.id);
+});
+
 /// Favoris anime de l'utilisateur.
 final userFavouritesProvider = FutureProvider<List<MediaModel>>((ref) async {
   final auth = await ref.watch(authProvider.future);

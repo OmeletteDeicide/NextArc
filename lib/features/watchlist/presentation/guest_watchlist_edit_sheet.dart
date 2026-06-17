@@ -5,7 +5,7 @@ import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 
-/// BottomSheet pour ajouter ou modifier un anime dans la liste locale invité.
+/// BottomSheet pour ajouter ou modifier un média dans la liste locale invité.
 Future<void> showGuestWatchlistEditSheet(
   BuildContext context,
   WidgetRef ref, {
@@ -14,6 +14,7 @@ Future<void> showGuestWatchlistEditSheet(
   required String? coverImage,
   int? totalEpisodes,
   GuestWatchlistEntry? existing,
+  bool isManga = false,
 }) {
   return showModalBottomSheet(
     context: context,
@@ -26,6 +27,7 @@ Future<void> showGuestWatchlistEditSheet(
       coverImage: coverImage,
       totalEpisodes: totalEpisodes,
       existing: existing,
+      isManga: isManga,
     ),
   );
 }
@@ -38,6 +40,7 @@ class _GuestEditSheet extends ConsumerStatefulWidget {
     required this.coverImage,
     this.totalEpisodes,
     this.existing,
+    this.isManga = false,
   });
 
   final WidgetRef ref;
@@ -46,6 +49,7 @@ class _GuestEditSheet extends ConsumerStatefulWidget {
   final String? coverImage;
   final int? totalEpisodes;
   final GuestWatchlistEntry? existing;
+  final bool isManga;
 
   @override
   ConsumerState<_GuestEditSheet> createState() => _GuestEditSheetState();
@@ -177,11 +181,15 @@ class _GuestEditSheetState extends ConsumerState<_GuestEditSheet> {
           // Progression
           Row(
             children: [
-              const Text('Progression',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              Text(
+                widget.isManga ? 'Chapitres lus' : 'Progression',
+                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
               const Spacer(),
               Text(
-                '$_progress / ${widget.totalEpisodes ?? '?'}',
+                widget.isManga
+                    ? '$_progress ch. / ${widget.totalEpisodes ?? '?'}'
+                    : '$_progress / ${widget.totalEpisodes ?? '?'}',
                 style: TextStyle(
                     color: cs.onSurface.withValues(alpha: 0.54), fontSize: 13),
               ),
@@ -207,7 +215,7 @@ class _GuestEditSheetState extends ConsumerState<_GuestEditSheet> {
                   child: Slider(
                     value: _progress.toDouble(),
                     min: 0,
-                    max: (widget.totalEpisodes ?? 100).toDouble(),
+                    max: (widget.totalEpisodes ?? 2000).toDouble(),
                     divisions: widget.totalEpisodes,
                     onChanged: (v) => setState(() => _progress = v.round()),
                   ),
@@ -326,6 +334,7 @@ class _GuestEditSheetState extends ConsumerState<_GuestEditSheet> {
         score: _score > 0 ? _score : null,
         progress: _progress > 0 ? _progress : null,
         episodes: widget.totalEpisodes,
+        mediaType: widget.isManga ? 'MANGA' : 'ANIME',
       );
 
       await ref.read(guestWatchlistProvider.notifier).upsert(entry);

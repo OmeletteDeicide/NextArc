@@ -50,7 +50,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           // ← couleur du texte saisi adaptée au thème
           style: TextStyle(color: cs.onSurface),
           decoration: InputDecoration(
-            hintText: 'Rechercher un anime...',
+            hintText: 'Rechercher un anime, manga...',
             hintStyle: TextStyle(color: cs.onSurface.withValues(alpha: 0.4)),
             border: InputBorder.none,
             suffixIcon: query.isNotEmpty

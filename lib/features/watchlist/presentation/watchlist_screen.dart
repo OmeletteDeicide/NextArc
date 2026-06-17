@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/discover/domain/discover_providers.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
@@ -24,7 +25,7 @@ class WatchlistScreen extends ConsumerWidget {
         if (!authState.isAuthenticated) {
           return _buildGuestList(context, ref);
         }
-        return _buildList(context, ref);
+        return _buildAuthenticatedList(context, ref);
       },
     );
   }
@@ -98,7 +99,6 @@ class WatchlistScreen extends ConsumerWidget {
           );
         }
 
-        // Grouper par statut
         final grouped = <ListStatus, List<GuestWatchlistEntry>>{};
         for (final e in entries) {
           grouped.putIfAbsent(e.status, () => []).add(e);
@@ -150,107 +150,340 @@ class WatchlistScreen extends ConsumerWidget {
     );
   }
 
-  // ── Liste AniList avec onglets ────────────────────────────────────────────
+  // ── Vue authentifiée : onglets Anime / Manga ──────────────────────────────
 
-  Widget _buildList(BuildContext context, WidgetRef ref) {
-    final listAsync = ref.watch(userListProvider);
-    final cs = Theme.of(context).colorScheme;
+  Widget _buildAuthenticatedList(BuildContext context, WidgetRef ref) {
+    return const _AuthenticatedWatchlistView();
+  }
+}
 
-    return listAsync.when(
-      loading: () => const Scaffold(
+// ── Vue connectée avec onglet initial dynamique ───────────────────────────────
+
+class _AuthenticatedWatchlistView extends ConsumerStatefulWidget {
+  const _AuthenticatedWatchlistView();
+
+  @override
+  ConsumerState<_AuthenticatedWatchlistView> createState() =>
+      _AuthenticatedWatchlistViewState();
+}
+
+class _AuthenticatedWatchlistViewState
+    extends ConsumerState<_AuthenticatedWatchlistView>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    final preference = ref.read(contentPreferenceProvider);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: preference == 'MANGA' ? 1 : 0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final animeAsync = ref.watch(userListProvider);
+    final mangaAsync = ref.watch(userMangaListProvider);
+
+    if (animeAsync.isLoading && mangaAsync.isLoading) {
+      return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
-      ),
-      error: (e, _) => Scaffold(
-        appBar: AppBar(title: Image.asset('assets/images/logo.png', height: 40)),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.wifi_off_rounded,
-                  size: 48, color: cs.onSurface.withValues(alpha: 0.38)),
-              const SizedBox(height: 12),
-              Text(e.toString(),
-                  style: TextStyle(
-                      color: cs.onSurface.withValues(alpha: 0.54))),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                icon: const Icon(Icons.refresh),
-                label: const Text('Réessayer'),
-                onPressed: () => ref.invalidate(userListProvider),
-              ),
-            ],
-          ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Image.asset('assets/images/logo.png', height: 40),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: '🎬 Anime'),
+            Tab(text: '📖 Manga'),
+          ],
         ),
       ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _AnimeListTab(animeAsync: animeAsync),
+          _MangaListTab(mangaAsync: mangaAsync),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Onglet Anime ──────────────────────────────────────────────────────────────
+
+class _AnimeListTab extends ConsumerWidget {
+  const _AnimeListTab({required this.animeAsync});
+
+  final AsyncValue<List<MediaListGroup>> animeAsync;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return animeAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => _buildError(context, ref, e, isAnime: true),
       data: (groups) {
-        const orderedStatuses = [
-          ListStatus.current,
-          ListStatus.planning,
-          ListStatus.paused,
-          ListStatus.completed,
-          ListStatus.dropped,
-        ];
-
-        final orderedGroups = orderedStatuses
-            .map((s) => groups.where((g) => g.status == s).firstOrNull)
-            .whereType<MediaListGroup>()
-            .toList();
-
-        final favourites = groups
-            .expand((g) => g.entries)
-            .where((e) => (e.score ?? 0) >= 8)
-            .toList()
-          ..sort((a, b) => (b.score ?? 0).compareTo(a.score ?? 0));
-
-        final tabs = <Tab>[];
-        final views = <Widget>[];
-
-        for (final s in [ListStatus.current, ListStatus.planning]) {
-          final g = orderedGroups.where((g) => g.status == s).firstOrNull;
-          if (g != null) {
-            tabs.add(Tab(text: '${g.status.label} (${g.entries.length})'));
-            views.add(_StatusTab(
-              entries: g.entries,
-              onRetry: () => ref.invalidate(userListProvider),
-            ));
-          }
+        final total = groups.expand((g) => g.entries).length;
+        if (total == 0) {
+          return _buildEmpty(
+            context,
+            icon: Icons.live_tv_rounded,
+            message: 'Aucun anime dans ta liste',
+            sub: 'Explore les animés et ajoute-les à ta liste',
+          );
         }
-
-        tabs.add(Tab(text: '❤️ Favoris (${favourites.length})'));
-        views.add(_TopRatedTab(entries: favourites));
-
-        for (final s in [
-          ListStatus.paused,
-          ListStatus.completed,
-          ListStatus.dropped
-        ]) {
-          final g = orderedGroups.where((g) => g.status == s).firstOrNull;
-          if (g != null) {
-            tabs.add(Tab(text: '${g.status.label} (${g.entries.length})'));
-            views.add(_StatusTab(
-              entries: g.entries,
-              onRetry: () => ref.invalidate(userListProvider),
-            ));
-          }
-        }
-
-        return DefaultTabController(
-          length: tabs.length,
-          child: Scaffold(
-            appBar: AppBar(
-              title: Image.asset('assets/images/logo.png', height: 40),
-              bottom: TabBar(
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                tabs: tabs,
-              ),
-            ),
-            body: TabBarView(children: views),
-          ),
-        );
+        return _buildStatusTabs(context, ref, groups, isAnime: true);
       },
     );
   }
+
+  Widget _buildError(BuildContext context, WidgetRef ref, Object e,
+      {required bool isAnime}) {
+    final cs = Theme.of(context).colorScheme;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.wifi_off_rounded,
+              size: 48, color: cs.onSurface.withValues(alpha: 0.38)),
+          const SizedBox(height: 12),
+          Text(e.toString(),
+              style: TextStyle(color: cs.onSurface.withValues(alpha: 0.54))),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            icon: const Icon(Icons.refresh),
+            label: const Text('Réessayer'),
+            onPressed: () => ref.invalidate(userListProvider),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusTabs(
+    BuildContext context,
+    WidgetRef ref,
+    List<MediaListGroup> groups, {
+    required bool isAnime,
+  }) {
+    const orderedStatuses = [
+      ListStatus.current,
+      ListStatus.planning,
+      ListStatus.paused,
+      ListStatus.completed,
+      ListStatus.dropped,
+    ];
+
+    final orderedGroups = orderedStatuses
+        .map((s) => groups.where((g) => g.status == s).firstOrNull)
+        .whereType<MediaListGroup>()
+        .toList();
+
+    final favourites = groups
+        .expand((g) => g.entries)
+        .where((e) => (e.score ?? 0) >= 8)
+        .toList()
+      ..sort((a, b) => (b.score ?? 0).compareTo(a.score ?? 0));
+
+    final tabs = <Tab>[];
+    final views = <Widget>[];
+
+    for (final s in [ListStatus.current, ListStatus.planning]) {
+      final g = orderedGroups.where((g) => g.status == s).firstOrNull;
+      if (g != null) {
+        tabs.add(Tab(text: '${g.status.label} (${g.entries.length})'));
+        views.add(_StatusTab(
+          entries: g.entries,
+          onRetry: () => ref.invalidate(userListProvider),
+        ));
+      }
+    }
+
+    tabs.add(Tab(text: '❤️ Favoris (${favourites.length})'));
+    views.add(_TopRatedTab(entries: favourites));
+
+    for (final s in [ListStatus.paused, ListStatus.completed, ListStatus.dropped]) {
+      final g = orderedGroups.where((g) => g.status == s).firstOrNull;
+      if (g != null) {
+        tabs.add(Tab(text: '${g.status.label} (${g.entries.length})'));
+        views.add(_StatusTab(
+          entries: g.entries,
+          onRetry: () => ref.invalidate(userListProvider),
+        ));
+      }
+    }
+
+    return DefaultTabController(
+      length: tabs.length,
+      child: Column(
+        children: [
+          TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: tabs,
+          ),
+          Expanded(child: TabBarView(children: views)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Onglet Manga ──────────────────────────────────────────────────────────────
+
+class _MangaListTab extends ConsumerWidget {
+  const _MangaListTab({required this.mangaAsync});
+
+  final AsyncValue<List<MediaListGroup>> mangaAsync;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return mangaAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => _buildError(context, ref, e),
+      data: (groups) {
+        final total = groups.expand((g) => g.entries).length;
+        if (total == 0) {
+          return _buildEmpty(
+            context,
+            icon: Icons.menu_book_rounded,
+            message: 'Aucun manga dans ta liste',
+            sub: 'Explore les mangas, manhwa et manhua',
+          );
+        }
+        return _buildStatusTabs(context, ref, groups);
+      },
+    );
+  }
+
+  Widget _buildError(BuildContext context, WidgetRef ref, Object e) {
+    final cs = Theme.of(context).colorScheme;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.wifi_off_rounded,
+              size: 48, color: cs.onSurface.withValues(alpha: 0.38)),
+          const SizedBox(height: 12),
+          Text(e.toString(),
+              style: TextStyle(color: cs.onSurface.withValues(alpha: 0.54))),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            icon: const Icon(Icons.refresh),
+            label: const Text('Réessayer'),
+            onPressed: () => ref.invalidate(userMangaListProvider),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusTabs(
+    BuildContext context,
+    WidgetRef ref,
+    List<MediaListGroup> groups,
+  ) {
+    const orderedStatuses = [
+      ListStatus.current,
+      ListStatus.planning,
+      ListStatus.paused,
+      ListStatus.completed,
+      ListStatus.dropped,
+    ];
+
+    final orderedGroups = orderedStatuses
+        .map((s) => groups.where((g) => g.status == s).firstOrNull)
+        .whereType<MediaListGroup>()
+        .toList();
+
+    final favourites = groups
+        .expand((g) => g.entries)
+        .where((e) => (e.score ?? 0) >= 8)
+        .toList()
+      ..sort((a, b) => (b.score ?? 0).compareTo(a.score ?? 0));
+
+    final tabs = <Tab>[];
+    final views = <Widget>[];
+
+    for (final s in [ListStatus.current, ListStatus.planning]) {
+      final g = orderedGroups.where((g) => g.status == s).firstOrNull;
+      if (g != null) {
+        tabs.add(Tab(text: '${g.status.label} (${g.entries.length})'));
+        views.add(_StatusTab(
+          entries: g.entries,
+          onRetry: () => ref.invalidate(userMangaListProvider),
+        ));
+      }
+    }
+
+    tabs.add(Tab(text: '❤️ Favoris (${favourites.length})'));
+    views.add(_TopRatedTab(entries: favourites));
+
+    for (final s in [ListStatus.paused, ListStatus.completed, ListStatus.dropped]) {
+      final g = orderedGroups.where((g) => g.status == s).firstOrNull;
+      if (g != null) {
+        tabs.add(Tab(text: '${g.status.label} (${g.entries.length})'));
+        views.add(_StatusTab(
+          entries: g.entries,
+          onRetry: () => ref.invalidate(userMangaListProvider),
+        ));
+      }
+    }
+
+    return DefaultTabController(
+      length: tabs.length,
+      child: Column(
+        children: [
+          TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: tabs,
+          ),
+          Expanded(child: TabBarView(children: views)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Helpers d'état vide ───────────────────────────────────────────────────────
+
+Widget _buildEmpty(
+  BuildContext context, {
+  required IconData icon,
+  required String message,
+  required String sub,
+}) {
+  final cs = Theme.of(context).colorScheme;
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 64, color: cs.onSurface.withValues(alpha: 0.24)),
+        const SizedBox(height: 16),
+        Text(message, style: const TextStyle(fontSize: 16)),
+        const SizedBox(height: 8),
+        Text(
+          sub,
+          style: TextStyle(
+              color: cs.onSurface.withValues(alpha: 0.54), fontSize: 13),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    ),
+  );
 }
 
 // ── Onglet invité ─────────────────────────────────────────────────────────────
@@ -319,8 +552,12 @@ class _GuestEntryTile extends StatelessWidget {
         padding: const EdgeInsets.only(top: 4),
         child: Row(
           children: [
-            Icon(Icons.play_circle_outline,
-                size: 13, color: cs.onSurface.withValues(alpha: 0.38)),
+            Icon(
+                entry.isManga
+                    ? Icons.menu_book_outlined
+                    : Icons.play_circle_outline,
+                size: 13,
+                color: cs.onSurface.withValues(alpha: 0.38)),
             const SizedBox(width: 4),
             Text(
               entry.progressLabel,
@@ -354,7 +591,7 @@ class _StatusTab extends StatelessWidget {
     if (entries.isEmpty) {
       return Center(
         child: Text(
-          'Aucun anime dans cette liste',
+          'Aucun élément dans cette liste',
           style: TextStyle(color: cs.onSurface.withValues(alpha: 0.38)),
         ),
       );
@@ -381,26 +618,26 @@ class _EntryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final anime = entry.media;
+    final media = entry.media;
     final cs = Theme.of(context).colorScheme;
 
     return ListTile(
-      onTap: () => context.push('/detail/${anime.id}'),
+      onTap: () => context.push('/detail/${media.id}'),
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(6),
         child: SizedBox(
           width: 48,
           height: 68,
-          child: anime.coverImage != null
+          child: media.coverImage != null
               ? CachedNetworkImage(
-                  imageUrl: anime.coverImage!,
+                  imageUrl: media.coverImage!,
                   fit: BoxFit.cover,
                 )
               : Container(color: cs.surfaceContainerHighest),
         ),
       ),
       title: Text(
-        anime.displayTitle,
+        media.displayTitle,
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
@@ -411,8 +648,13 @@ class _EntryTile extends StatelessWidget {
           const SizedBox(height: 4),
           Row(
             children: [
-              Icon(Icons.play_circle_outline,
-                  size: 13, color: cs.onSurface.withValues(alpha: 0.38)),
+              Icon(
+                entry.isManga
+                    ? Icons.menu_book_outlined
+                    : Icons.play_circle_outline,
+                size: 13,
+                color: cs.onSurface.withValues(alpha: 0.38),
+              ),
               const SizedBox(width: 4),
               Text(
                 entry.progressLabel,
@@ -420,13 +662,24 @@ class _EntryTile extends StatelessWidget {
                     fontSize: 12,
                     color: cs.onSurface.withValues(alpha: 0.54)),
               ),
+              if (media.countryOfOrigin != null &&
+                  media.countryOfOrigin != 'JP') ...[
+                const SizedBox(width: 8),
+                Text(
+                  media.countryOfOrigin == 'KR' ? 'Manhwa' : 'Manhua',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: cs.primary.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
             ],
           ),
         ],
       ),
       trailing: entry.formattedScore != null
           ? _ScoreBadge(score: entry.formattedScore!)
-          : SizedBox(width: 40),
+          : const SizedBox(width: 40),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
   }
@@ -487,15 +740,8 @@ class _TopRatedTab extends StatelessWidget {
                 size: 48, color: cs.onSurface.withValues(alpha: 0.24)),
             const SizedBox(height: 12),
             Text(
-              'Aucun anime noté ≥ 8 pour l\'instant',
+              'Aucun élément noté ≥ 8 pour l\'instant',
               style: TextStyle(color: cs.onSurface.withValues(alpha: 0.38)),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Note tes animes sur AniList pour les voir ici',
-              style: TextStyle(
-                  color: cs.onSurface.withValues(alpha: 0.24), fontSize: 12),
               textAlign: TextAlign.center,
             ),
           ],
@@ -509,24 +755,24 @@ class _TopRatedTab extends StatelessWidget {
       separatorBuilder: (_, idx) => const Divider(height: 1, indent: 80),
       itemBuilder: (context, index) {
         final entry = entries[index];
-        final anime = entry.media;
+        final media = entry.media;
         return ListTile(
-          onTap: () => context.push('/detail/${anime.id}'),
+          onTap: () => context.push('/detail/${media.id}'),
           leading: ClipRRect(
             borderRadius: BorderRadius.circular(6),
             child: SizedBox(
               width: 48,
               height: 68,
-              child: anime.coverImage != null
+              child: media.coverImage != null
                   ? CachedNetworkImage(
-                      imageUrl: anime.coverImage!,
+                      imageUrl: media.coverImage!,
                       fit: BoxFit.cover,
                     )
                   : Container(color: cs.surfaceContainerHighest),
             ),
           ),
           title: Text(
-            anime.displayTitle,
+            media.displayTitle,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),

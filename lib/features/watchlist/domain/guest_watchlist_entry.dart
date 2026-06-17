@@ -10,6 +10,7 @@ class GuestWatchlistEntry {
     this.score,
     this.progress,
     this.episodes,
+    this.mediaType = 'ANIME',
   });
 
   final int animeId;
@@ -19,6 +20,9 @@ class GuestWatchlistEntry {
   final double? score;
   final int? progress;
   final int? episodes;
+  final String mediaType;
+
+  bool get isManga => mediaType == 'MANGA';
 
   String? get formattedScore {
     if (score == null || score == 0) return null;
@@ -27,6 +31,7 @@ class GuestWatchlistEntry {
 
   String get progressLabel {
     final seen = progress ?? 0;
+    if (isManga) return '$seen ch. / ${episodes ?? '?'}';
     return '$seen / ${episodes ?? '?'}';
   }
 
@@ -38,6 +43,7 @@ class GuestWatchlistEntry {
         if (score != null) 'score': score,
         if (progress != null) 'progress': progress,
         if (episodes != null) 'episodes': episodes,
+        'mediaType': mediaType,
       };
 
   factory GuestWatchlistEntry.fromJson(Map<String, dynamic> json) {
@@ -50,6 +56,7 @@ class GuestWatchlistEntry {
       score: (json['score'] as num?)?.toDouble(),
       progress: json['progress'] as int?,
       episodes: json['episodes'] as int?,
+      mediaType: json['mediaType'] as String? ?? 'ANIME',
     );
   }
 
@@ -66,5 +73,6 @@ class GuestWatchlistEntry {
         score: score ?? this.score,
         progress: progress ?? this.progress,
         episodes: episodes,
+        mediaType: mediaType,
       );
 }

@@ -104,7 +104,7 @@ class HorizontalAnimeList extends StatelessWidget {
       final cs = Theme.of(context).colorScheme;
       return Center(
         child: Text(
-          'Aucun anime disponible',
+          'Aucun résultat disponible',
           style: TextStyle(color: cs.onSurface.withValues(alpha: 0.38)),
         ),
       );

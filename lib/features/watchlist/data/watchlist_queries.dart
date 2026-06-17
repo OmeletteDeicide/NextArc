@@ -30,6 +30,36 @@ class WatchlistQueries {
     }
   ''';
 
+  /// Récupère toute la liste manga de l'utilisateur (groupée par statut).
+  static const String mangaListCollection = '''
+    query MangaListCollection(\$userId: Int) {
+      MediaListCollection(userId: \$userId, type: MANGA) {
+        lists {
+          name
+          status
+          entries {
+            id
+            status
+            score
+            progress
+            media {
+              id
+              type
+              title { romaji english }
+              coverImage { large medium }
+              chapters
+              volumes
+              countryOfOrigin
+              averageScore
+              genres
+              status
+            }
+          }
+        }
+      }
+    }
+  ''';
+
   /// Récupère les favoris anime de l'utilisateur.
   static const String userFavourites = '''
     query UserFavourites(\$userId: Int) {

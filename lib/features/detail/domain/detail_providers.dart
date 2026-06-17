@@ -8,7 +8,7 @@ import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 import 'package:nextarc/features/watchlist/domain/watchlist_providers.dart';
 
-/// Provider paramétré par l'id de l'anime.
+/// Provider paramétré par l'id du média (anime ou manga).
 final animeDetailProvider =
     FutureProvider.family<MediaModel, int>((ref, id) async {
   final client = AnilistClient.instance;
@@ -21,25 +21,37 @@ final animeDetailProvider =
   );
 
   if (result.hasException) {
-    throw Exception('Impossible de charger l\'anime #$id');
+    throw Exception('Impossible de charger le média #$id');
   }
 
   final data = result.data?['Media'] as Map<String, dynamic>?;
-  if (data == null) throw Exception('Anime introuvable');
+  if (data == null) throw Exception('Média introuvable');
 
   return MediaModel.fromJson(data);
 });
 
-/// Retourne l'entrée AniList de l'utilisateur pour un anime donné (ou null).
+/// Retourne l'entrée AniList de l'utilisateur pour un média donné (anime ou manga).
 final userListEntryProvider =
-    Provider.family<MediaListEntry?, int>((ref, animeId) {
-  final listAsync = ref.watch(userListProvider);
-
-  return listAsync.whenOrNull(
+    Provider.family<MediaListEntry?, int>((ref, mediaId) {
+  // Cherche dans la liste anime
+  final animeEntry = ref.watch(userListProvider).whenOrNull(
     data: (groups) {
       for (final group in groups) {
         for (final entry in group.entries) {
-          if (entry.media.id == animeId) return entry;
+          if (entry.media.id == mediaId) return entry;
+        }
+      }
+      return null;
+    },
+  );
+  if (animeEntry != null) return animeEntry;
+
+  // Cherche dans la liste manga
+  return ref.watch(userMangaListProvider).whenOrNull(
+    data: (groups) {
+      for (final group in groups) {
+        for (final entry in group.entries) {
+          if (entry.media.id == mediaId) return entry;
         }
       }
       return null;
@@ -47,7 +59,7 @@ final userListEntryProvider =
   );
 });
 
-/// Retourne l'entrée locale invité pour un anime donné (ou null).
+/// Retourne l'entrée locale invité pour un média donné (ou null).
 final guestListEntryProvider =
     Provider.family<GuestWatchlistEntry?, int>((ref, animeId) {
   final listAsync = ref.watch(guestWatchlistProvider);
