@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -92,11 +93,11 @@ class _AnimeRecoTab extends ConsumerWidget {
         isLoggedIn: isLoggedIn,
         onRetry: () => ref.invalidate(recommendationsProvider),
         bannerLoggedInText:
-            'Basé sur tes favoris et tes notes AniList',
+            'reco_banner_personalised_anime'.tr(),
         bannerGuestText:
-            'Connecte-toi pour des recommandations personnalisées',
+            'reco_banner_guest_anime'.tr(),
         bannerInfoText:
-            'Note des animes sur AniList pour des recos personnalisées',
+            'reco_banner_no_data_anime'.tr(),
       ),
     );
   }
@@ -124,11 +125,11 @@ class _MangaRecoTab extends ConsumerWidget {
         isLoggedIn: isLoggedIn,
         onRetry: () => ref.invalidate(mangaRecommendationsProvider),
         bannerLoggedInText:
-            'Basé sur tes manga notés sur AniList',
+            'reco_banner_personalised_manga'.tr(),
         bannerGuestText:
-            'Connecte-toi pour des recommandations manga personnalisées',
+            'reco_banner_guest_manga'.tr(),
         bannerInfoText:
-            'Note des manga sur AniList pour des recos personnalisées',
+            'reco_banner_no_data_manga'.tr(),
       ),
     );
   }
@@ -222,7 +223,7 @@ Widget _buildError(BuildContext context, WidgetRef ref, Object error,
         const SizedBox(height: 16),
         FilledButton.icon(
           icon: const Icon(Icons.refresh),
-          label: const Text('Réessayer'),
+          label: Text('action_retry'.tr()),
           onPressed: onRetry,
         ),
       ],
@@ -324,7 +325,7 @@ class _RecoCard extends ConsumerWidget {
                 children: [
                   if (!isFallback && item.sourceTitle.isNotEmpty) ...[
                     Text(
-                      'Parce que tu as aimé',
+                      'reco_because_you_liked'.tr(),
                       style: TextStyle(
                           fontSize: 11,
                           color: cs.onSurface.withValues(alpha: 0.38)),

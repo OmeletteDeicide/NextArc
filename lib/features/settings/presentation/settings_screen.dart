@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,7 +30,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur export : $e')),
+          SnackBar(content: Text('settings_export_error'.tr(namedArgs: {'error': e.toString()}))),
         );
       }
     } finally {
@@ -56,13 +57,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Liste importée avec succès ✓')),
+          SnackBar(content: Text('settings_import_success'.tr())),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur import : $e')),
+          SnackBar(content: Text('settings_import_error'.tr(namedArgs: {'error': e.toString()}))),
         );
       }
     } finally {
@@ -76,16 +77,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Paramètres')),
+      appBar: AppBar(title: Text('settings_title'.tr())),
       body: ListView(
         children: [
           // ── Apparence ───────────────────────────────────────────────────────
-          _SectionHeader(label: 'Apparence'),
+          _SectionHeader(label: 'settings_section_appearance'.tr()),
 
           _ThemeOption(
             icon: Icons.brightness_auto_rounded,
-            title: 'Système',
-            subtitle: 'Suit le mode de ton téléphone',
+            title: 'settings_theme_system'.tr(),
+            subtitle: 'settings_theme_system_subtitle'.tr(),
             selected: currentMode == ThemeMode.system,
             onTap: () =>
                 ref.read(themeProvider.notifier).setTheme(ThemeMode.system),
@@ -93,8 +94,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           _ThemeOption(
             icon: Icons.dark_mode_rounded,
-            title: 'Mode sombre',
-            subtitle: 'Noir et bleu denim foncé',
+            title: 'settings_theme_dark'.tr(),
+            subtitle: 'settings_theme_dark_subtitle'.tr(),
             selected: currentMode == ThemeMode.dark,
             onTap: () =>
                 ref.read(themeProvider.notifier).setTheme(ThemeMode.dark),
@@ -102,8 +103,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           _ThemeOption(
             icon: Icons.light_mode_rounded,
-            title: 'Mode clair',
-            subtitle: 'Blanc doux et bleu denim',
+            title: 'settings_theme_light'.tr(),
+            subtitle: 'settings_theme_light_subtitle'.tr(),
             selected: currentMode == ThemeMode.light,
             onTap: () =>
                 ref.read(themeProvider.notifier).setTheme(ThemeMode.light),
@@ -114,7 +115,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 8),
 
           // ── Liste locale ─────────────────────────────────────────────────────
-          _SectionHeader(label: 'Liste locale (mode invité)'),
+          _SectionHeader(label: 'settings_section_local_list'.tr()),
 
           ListTile(
             leading: _isExporting
@@ -124,9 +125,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Icon(Icons.upload_rounded, color: cs.primary),
-            title: const Text('Exporter ma liste'),
+            title: Text('settings_export_title'.tr()),
             subtitle: Text(
-              'Partager la watchlist locale en JSON',
+              'settings_export_subtitle'.tr(),
               style: TextStyle(
                   fontSize: 12, color: cs.onSurface.withValues(alpha: 0.54)),
             ),
@@ -141,9 +142,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Icon(Icons.download_rounded, color: cs.primary),
-            title: const Text('Importer une liste'),
+            title: Text('settings_import_title'.tr()),
             subtitle: Text(
-              'Charger une watchlist depuis un fichier .json',
+              'settings_import_subtitle'.tr(),
               style: TextStyle(
                   fontSize: 12, color: cs.onSurface.withValues(alpha: 0.54)),
             ),
@@ -154,12 +155,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Divider(color: cs.outline.withValues(alpha: 0.2)),
           const SizedBox(height: 8),
 
+          // ── Langue ───────────────────────────────────────────────────────────
+          _SectionHeader(label: 'settings_section_language'.tr()),
+
+          _LanguageOption(
+            flag: '🇫🇷',
+            label: 'Français',
+            locale: const Locale('fr'),
+            selected: context.locale.languageCode == 'fr',
+            onTap: () => context.setLocale(const Locale('fr')),
+          ),
+          _LanguageOption(
+            flag: '🇬🇧',
+            label: 'English',
+            locale: const Locale('en'),
+            selected: context.locale.languageCode == 'en',
+            onTap: () => context.setLocale(const Locale('en')),
+          ),
+          _LanguageOption(
+            flag: '🇪🇸',
+            label: 'Español',
+            locale: const Locale('es'),
+            selected: context.locale.languageCode == 'es',
+            onTap: () => context.setLocale(const Locale('es')),
+          ),
+
+          const SizedBox(height: 8),
+          Divider(color: cs.outline.withValues(alpha: 0.2)),
+          const SizedBox(height: 8),
+
           // ── À propos ────────────────────────────────────────────────────────
-          _SectionHeader(label: 'Application'),
+          _SectionHeader(label: 'settings_section_app'.tr()),
 
           ListTile(
             leading: Icon(Icons.info_outline_rounded, color: cs.primary),
-            title: const Text('Version'),
+            title: Text('settings_version_title'.tr()),
             trailing: Text(
               '1.0.0',
               style: TextStyle(
@@ -193,6 +223,54 @@ class _SectionHeader extends StatelessWidget {
           letterSpacing: 1.2,
           color: cs.onSurface.withValues(alpha: 0.45),
         ),
+      ),
+    );
+  }
+}
+
+class _LanguageOption extends StatelessWidget {
+  const _LanguageOption({
+    required this.flag,
+    required this.label,
+    required this.locale,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String flag;
+  final String label;
+  final Locale locale;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: selected ? cs.primary.withValues(alpha: 0.12) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: selected ? cs.primary.withValues(alpha: 0.5) : Colors.transparent,
+          width: 1.5,
+        ),
+      ),
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        onTap: onTap,
+        leading: Text(flag, style: const TextStyle(fontSize: 22)),
+        title: Text(
+          label,
+          style: TextStyle(
+            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+            color: selected ? cs.primary : cs.onSurface,
+          ),
+        ),
+        trailing: selected
+            ? Icon(Icons.check_circle_rounded, color: cs.primary, size: 20)
+            : null,
       ),
     );
   }

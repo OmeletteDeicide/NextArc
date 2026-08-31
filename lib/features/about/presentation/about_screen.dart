@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 /// Écran "À propos" — crédits AniList + infos app.
@@ -9,7 +10,7 @@ class AboutScreen extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('À propos')),
+      appBar: AppBar(title: Text('about_title'.tr())),
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
@@ -45,7 +46,7 @@ class AboutScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Version 1.2.0',
+                  'about_version'.tr(namedArgs: {'version': '1.2.0'}),
                   style: TextStyle(
                     color: cs.onSurface.withValues(alpha: 0.38),
                     fontSize: 13,
@@ -58,15 +59,13 @@ class AboutScreen extends StatelessWidget {
           const SizedBox(height: 32),
 
           // ── Description ────────────────────────────────────────────────
-          const Text(
-            'À propos de NextArc',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            'about_section_title'.tr(),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
           Text(
-            'NextArc est une application de suivi d\'animes et de mangas avec recommandations personnalisées. '
-            'Elle te permet de retrouver ta liste AniList, d\'explorer les tendances et de '
-            'découvrir de nouveaux contenus basés sur tes goûts.',
+            'about_description'.tr(),
             style: TextStyle(
               color: cs.onSurface.withValues(alpha: 0.7),
               height: 1.6,
@@ -88,7 +87,7 @@ class AboutScreen extends StatelessWidget {
                   border: Border.all(color: cs.primary.withValues(alpha: 0.25)),
                 ),
                 child: Text(
-                  'Données fournies par',
+                  'about_data_provided_by'.tr(),
                   style: TextStyle(
                     color: cs.primary,
                     fontSize: 12,
@@ -102,18 +101,15 @@ class AboutScreen extends StatelessWidget {
 
           _CreditCard(
             icon: Icons.data_object_rounded,
-            title: 'AniList',
-            subtitle:
-                'Toutes les données anime et manga (titres, images, notes, listes utilisateur) '
-                'proviennent de l\'API AniList. NextArc n\'est pas affilié à AniList.',
+            title: 'about_credit_anilist_title'.tr(),
+            subtitle: 'about_credit_anilist_subtitle'.tr(),
             url: 'https://anilist.co',
           ),
           const SizedBox(height: 12),
           _CreditCard(
             icon: Icons.code_rounded,
-            title: 'AniList GraphQL API',
-            subtitle: 'API publique utilisée conformément aux conditions '
-                'd\'utilisation d\'AniList (anilist.gitbook.io/anilist-apiv2-docs).',
+            title: 'about_credit_api_title'.tr(),
+            subtitle: 'about_credit_api_subtitle'.tr(),
             url: 'https://anilist.gitbook.io/anilist-apiv2-docs',
           ),
 
@@ -122,9 +118,9 @@ class AboutScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           // ── Stack technique ────────────────────────────────────────────
-          const Text(
-            'Technologies',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            'about_section_technologies'.tr(),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           const Wrap(
@@ -145,18 +141,18 @@ class AboutScreen extends StatelessWidget {
           const SizedBox(height: 20),
 
           // ── Développeur ────────────────────────────────────────────────
-          const Text(
-            'Développeur',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          Text(
+            'about_section_developer'.tr(),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
           Text(
-            'Développé par Espiègle · 2026',
+            'about_developer_name'.tr(),
             style: TextStyle(color: cs.onSurface.withValues(alpha: 0.7)),
           ),
           const SizedBox(height: 4),
           Text(
-            'Projet réalisé à des fins d\'apprentissage et de portfolio.',
+            'about_developer_note'.tr(),
             style: TextStyle(
               color: cs.onSurface.withValues(alpha: 0.45),
               fontSize: 13,

@@ -10,6 +10,7 @@ class MediaModel {
     this.averageScore,
     this.genres,
     this.episodes,
+    this.duration,
     this.chapters,
     this.volumes,
     this.countryOfOrigin,
@@ -18,6 +19,7 @@ class MediaModel {
     this.seasonYear,
     this.season,
     this.startDate,
+    this.nextAiringEpisode,
   });
 
   final int id;
@@ -45,6 +47,9 @@ class MediaModel {
   /// Nombre total d'épisodes (anime uniquement).
   final int? episodes;
 
+  /// Durée moyenne d'un épisode en minutes (anime uniquement, fourni par AniList).
+  final int? duration;
+
   /// Nombre total de chapitres (manga uniquement).
   final int? chapters;
 
@@ -67,6 +72,9 @@ class MediaModel {
 
   /// Date de début.
   final DateTime? startDate;
+
+  /// Prochain épisode à diffuser (anime RELEASING uniquement).
+  final NextAiringEpisode? nextAiringEpisode;
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -102,6 +110,7 @@ class MediaModel {
           ?.map((e) => e as String)
           .toList(),
       episodes: json['episodes'] as int?,
+      duration: json['duration'] as int?,
       chapters: json['chapters'] as int?,
       volumes: json['volumes'] as int?,
       countryOfOrigin: json['countryOfOrigin'] as String?,
@@ -110,6 +119,8 @@ class MediaModel {
       seasonYear: json['seasonYear'] as int?,
       season: json['season'] as String?,
       startDate: _parseDate(json['startDate'] as Map<String, dynamic>?),
+      nextAiringEpisode: NextAiringEpisode.fromJson(
+          json['nextAiringEpisode'] as Map<String, dynamic>?),
     );
   }
 
@@ -123,5 +134,24 @@ class MediaModel {
   }
 
   @override
-  String toString() => 'MediaModel(id: $id, type: $mediaType, title: $displayTitle)';
+  String toString() =>
+      'MediaModel(id: $id, type: $mediaType, title: $displayTitle)';
+}
+
+class NextAiringEpisode {
+  final int episode;
+  final DateTime airingAt;
+
+  const NextAiringEpisode({required this.episode, required this.airingAt});
+
+  static NextAiringEpisode? fromJson(Map<String, dynamic>? json) {
+    if (json == null) return null;
+    final ts = json['airingAt'] as int?;
+    final ep = json['episode'] as int?;
+    if (ts == null || ep == null) return null;
+    return NextAiringEpisode(
+      episode: ep,
+      airingAt: DateTime.fromMillisecondsSinceEpoch(ts * 1000),
+    );
+  }
 }

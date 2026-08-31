@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
@@ -48,7 +49,7 @@ class DetailScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   FilledButton.icon(
                     icon: const Icon(Icons.refresh),
-                    label: const Text('Réessayer'),
+                    label: Text('action_retry'.tr()),
                     onPressed: () =>
                         ref.invalidate(animeDetailProvider(animeId)),
                   ),
@@ -201,6 +202,7 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
         coverImage: widget.anime.coverImage,
         totalEpisodes: totalCount,
         existing: guestEntry,
+        isManga: widget.anime.isManga,
       );
     }
   }
@@ -327,12 +329,14 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
                                 if (!anime.isManga && anime.episodes != null)
                                   _InfoChip(
                                     icon: Icons.play_circle_outline,
-                                    label: '${anime.episodes} ép.',
+                                    label: 'detail_episodes_count'.tr(
+                                        namedArgs: {'count': '${anime.episodes}'}),
                                   ),
                                 if (anime.isManga && anime.chapters != null)
                                   _InfoChip(
                                     icon: Icons.menu_book_outlined,
-                                    label: '${anime.chapters} ch.',
+                                    label: 'detail_chapters_count'.tr(
+                                        namedArgs: {'count': '${anime.chapters}'}),
                                   ),
                                 if (anime.isManga &&
                                     anime.countryOfOrigin != null &&
@@ -340,8 +344,8 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
                                   _InfoChip(
                                     icon: Icons.public,
                                     label: anime.countryOfOrigin == 'KR'
-                                        ? 'Manhwa'
-                                        : 'Manhua',
+                                        ? 'label_manhwa'.tr()
+                                        : 'label_manhua'.tr(),
                                     color: Theme.of(context).colorScheme.primary,
                                   ),
                                 if (anime.status != null)
@@ -380,9 +384,9 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
                   // ── Synopsis ──────────────────────────────────────────
                   if (anime.description != null &&
                       anime.description!.isNotEmpty) ...[
-                    const Text(
-                      'Synopsis',
-                      style: TextStyle(
+                    Text(
+                      'detail_synopsis'.tr(),
+                      style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
@@ -428,7 +432,7 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
                                   Text(
                                     (userEntry?.status ?? guestEntry?.status)
                                             ?.label ??
-                                        'Dans ta liste',
+                                        'detail_in_list'.tr(),
                                     style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: cs.onPrimaryContainer),
@@ -466,7 +470,7 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
                       width: double.infinity,
                       child: FilledButton.icon(
                         icon: const Icon(Icons.bookmark_add_outlined),
-                        label: const Text('Ajouter à ma watchlist'),
+                        label: Text('detail_add_to_watchlist'.tr()),
                         onPressed: () => _openSheet(isLoggedIn: isLoggedIn),
                       ),
                     ),
@@ -498,11 +502,11 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
   }
 
   String _statusLabel(String status) => switch (status) {
-        'FINISHED' => 'Terminé',
-        'RELEASING' => 'En cours',
-        'NOT_YET_RELEASED' => 'À venir',
-        'CANCELLED' => 'Annulé',
-        'HIATUS' => 'En pause',
+        'FINISHED' => 'detail_status_finished'.tr(),
+        'RELEASING' => 'detail_status_releasing'.tr(),
+        'NOT_YET_RELEASED' => 'detail_status_not_yet_released'.tr(),
+        'CANCELLED' => 'detail_status_cancelled'.tr(),
+        'HIATUS' => 'detail_status_hiatus'.tr(),
         _ => status,
       };
 

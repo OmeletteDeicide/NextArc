@@ -1,8 +1,8 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/router/app_router.dart';
 
-/// Shell principal : contient la BottomNavigationBar persistante.
 class MainShell extends StatelessWidget {
   const MainShell({super.key, required this.child});
 
@@ -30,26 +30,26 @@ class MainShell extends StatelessWidget {
             case 3: context.go(AppRoutes.profile);
           }
         },
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.explore_outlined),
-            activeIcon: Icon(Icons.explore),
-            label: 'Découvrir',
+            icon: const Icon(Icons.explore_outlined),
+            activeIcon: const Icon(Icons.explore),
+            label: 'nav_discover'.tr(),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.recommend_outlined),
-            activeIcon: Icon(Icons.recommend),
-            label: 'Pour toi',
+            icon: const Icon(Icons.recommend_outlined),
+            activeIcon: const Icon(Icons.recommend),
+            label: 'nav_for_you'.tr(),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.list_alt_outlined),
-            activeIcon: Icon(Icons.list_alt),
-            label: 'Ma liste',
+            icon: const Icon(Icons.list_alt_outlined),
+            activeIcon: const Icon(Icons.list_alt),
+            label: 'nav_my_list'.tr(),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profil',
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
+            label: 'nav_profile'.tr(),
           ),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -50,7 +51,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           // ← couleur du texte saisi adaptée au thème
           style: TextStyle(color: cs.onSurface),
           decoration: InputDecoration(
-            hintText: 'Rechercher un anime, manga...',
+            hintText: 'search_hint'.tr(),
             hintStyle: TextStyle(color: cs.onSurface.withValues(alpha: 0.4)),
             border: InputBorder.none,
             suffixIcon: query.isNotEmpty
@@ -86,7 +87,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           Icon(Icons.search, size: 64, color: cs.onSurface.withValues(alpha: 0.12)),
           const SizedBox(height: 16),
           Text(
-            'Tape un titre pour commencer',
+            'search_idle_message'.tr(),
             style: TextStyle(color: cs.onSurface.withValues(alpha: 0.38)),
           ),
         ],
@@ -103,7 +104,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           Icon(Icons.search_off, size: 48, color: cs.onSurface.withValues(alpha: 0.24)),
           const SizedBox(height: 12),
           Text(
-            'Aucun résultat pour "$query"',
+            'search_empty_results'.tr(namedArgs: {'query': query}),
             style: TextStyle(color: cs.onSurface.withValues(alpha: 0.54)),
           ),
         ],

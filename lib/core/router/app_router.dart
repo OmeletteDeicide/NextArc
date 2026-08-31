@@ -8,6 +8,9 @@ import 'package:nextarc/features/discover/presentation/discover_screen.dart';
 import 'package:nextarc/features/search/presentation/search_screen.dart';
 import 'package:nextarc/features/recommendations/presentation/recommendations_screen.dart';
 import 'package:nextarc/features/settings/presentation/settings_screen.dart';
+import 'package:nextarc/features/browse/presentation/browse_screen.dart';
+import 'package:nextarc/features/calendar/presentation/calendar_screen.dart';
+import 'package:nextarc/features/stats/presentation/stats_screen.dart';
 import 'package:nextarc/features/watchlist/presentation/watchlist_screen.dart';
 
 /// Transition slide-depuis-la-droite + fade (pour détail, settings, about).
@@ -65,6 +68,9 @@ class AppRoutes {
   static const String detail = '/detail/:id';
   static const String about = '/about';
   static const String settings = '/settings';
+  static const String stats = '/stats';
+  static const String calendar = '/calendar';
+  static const String browse = '/browse';
 }
 
 final GoRouter appRouter = GoRouter(
@@ -126,6 +132,27 @@ final GoRouter appRouter = GoRouter(
       path: '/settings',
       pageBuilder: (context, state) =>
           _slideFade(state: state, child: const SettingsScreen()),
+    ),
+
+    // Statistiques — hors shell
+    GoRoute(
+      path: '/stats',
+      pageBuilder: (context, state) =>
+          _slideFade(state: state, child: const StatsScreen()),
+    ),
+
+    // Calendrier de diffusion — hors shell
+    GoRoute(
+      path: '/calendar',
+      pageBuilder: (context, state) =>
+          _slideFade(state: state, child: const CalendarScreen()),
+    ),
+
+    // Navigation filtrée — hors shell
+    GoRoute(
+      path: '/browse',
+      pageBuilder: (context, state) =>
+          _slideFade(state: state, child: const BrowseScreen()),
     ),
   ],
 );

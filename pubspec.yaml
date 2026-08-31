@@ -55,6 +55,9 @@ dependencies:
   # Sélecteur de fichiers (import watchlist invité)
   file_picker: ^8.0.0
 
+  # Internationalisation (FR / EN / ES)
+  easy_localization: ^3.0.7
+
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
@@ -79,6 +82,7 @@ flutter:
   assets:
     - assets/icon/
     - assets/images/
+    - assets/translations/
 
 # ── Configuration icône d'app ──────────────────────────────────────────────────
 flutter_launcher_icons:

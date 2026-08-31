@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -48,7 +49,7 @@ class ProfileScreen extends ConsumerWidget {
         actions: [
           TextButton.icon(
             icon: const Icon(Icons.logout, size: 18),
-            label: const Text('Déconnexion'),
+            label: Text('profile_logout_button'.tr()),
             onPressed: () => _confirmLogout(context, ref),
           ),
         ],
@@ -122,11 +123,21 @@ class ProfileScreen extends ConsumerWidget {
 
                 const SizedBox(height: 24),
 
+                // Carte "Mes statistiques"
+                _ProfileCard(
+                  icon: Icons.bar_chart_rounded,
+                  title: 'profile_stats_title'.tr(),
+                  subtitle: 'profile_stats_subtitle'.tr(),
+                  onTap: () => context.push(AppRoutes.stats),
+                ),
+
+                const SizedBox(height: 8),
+
                 // Carte "Paramètres"
                 _ProfileCard(
                   icon: Icons.settings_outlined,
-                  title: 'Paramètres',
-                  subtitle: 'Apparence, thème sombre / clair',
+                  title: 'profile_settings_title'.tr(),
+                  subtitle: 'profile_settings_subtitle'.tr(),
                   onTap: () => context.push(AppRoutes.settings),
                 ),
 
@@ -140,8 +151,8 @@ class ProfileScreen extends ConsumerWidget {
                 // Carte "À propos"
                 _ProfileCard(
                   icon: Icons.info_outline_rounded,
-                  title: 'À propos',
-                  subtitle: 'Crédits, données AniList, technologies',
+                  title: 'profile_about_title'.tr(),
+                  subtitle: 'profile_about_subtitle'.tr(),
                   onTap: () => context.push(AppRoutes.about),
                 ),
               ],
@@ -166,7 +177,7 @@ class ProfileScreen extends ConsumerWidget {
               size: 80, color: cs.onSurface.withValues(alpha: 0.24)),
           const SizedBox(height: 24),
           Text(
-            'Connecte-toi avec AniList',
+            'profile_login_title'.tr(),
             style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -175,7 +186,7 @@ class ProfileScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Tu gardes tes listes, tes notes et tes favoris,\nMais surtout tu débloques les recommandations personnalisées.',
+            'profile_login_description'.tr(),
             style: TextStyle(
                 color: cs.onSurface.withValues(alpha: 0.54), height: 1.5),
             textAlign: TextAlign.center,
@@ -202,7 +213,7 @@ class ProfileScreen extends ConsumerWidget {
             width: double.infinity,
             child: FilledButton.icon(
               icon: const Icon(Icons.login),
-              label: const Text('Se connecter avec AniList'),
+              label: Text('profile_login_button'.tr()),
               onPressed: () => ref.read(authProvider.notifier).login(),
             ),
           ),
@@ -210,8 +221,8 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 48),
           _ProfileCard(
             icon: Icons.settings_outlined,
-            title: 'Paramètres',
-            subtitle: 'Apparence, thème sombre / clair',
+            title: 'profile_settings_title'.tr(),
+            subtitle: 'profile_settings_subtitle'.tr(),
             onTap: () => context.push(AppRoutes.settings),
           ),
           const SizedBox(height: 8),
@@ -219,8 +230,8 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           _ProfileCard(
             icon: Icons.info_outline_rounded,
-            title: 'À propos',
-            subtitle: 'Crédits, données AniList, technologies',
+            title: 'profile_about_title'.tr(),
+            subtitle: 'profile_about_subtitle'.tr(),
             onTap: () => context.push(AppRoutes.about),
           ),
         ],
@@ -270,9 +281,8 @@ class ProfileScreen extends ConsumerWidget {
       ref.invalidate(guestWatchlistProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Ta liste locale est déjà synchronisée avec AniList ✓')),
+          SnackBar(
+              content: Text('profile_migration_already_synced'.tr())),
         );
       }
       return;
@@ -285,18 +295,18 @@ class ProfileScreen extends ConsumerWidget {
     final merge = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Fusionner ta liste locale ?'),
+        title: Text('profile_migration_dialog_title'.tr()),
         content: Text(
           '${newEntries.length} anime(s) à ajouter sur ton compte AniList.$skippedNote',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Ignorer'),
+            child: Text('dialog_ignore'.tr()),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Fusionner avec AniList'),
+            child: Text('profile_migration_merge_button'.tr()),
           ),
         ],
       ),
@@ -342,16 +352,16 @@ class ProfileScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Déconnexion'),
-        content: const Text('Tu veux vraiment te déconnecter de NextArc ?'),
+        title: Text('profile_logout_dialog_title'.tr()),
+        content: Text('profile_logout_dialog_content'.tr()),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
+            child: Text('dialog_cancel'.tr()),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Déconnexion'),
+            child: Text('dialog_confirm_logout'.tr()),
           ),
         ],
       ),
@@ -388,18 +398,18 @@ class _KofiCard extends StatelessWidget {
                 height: 26,
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Soutenir NextArc',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      'profile_kofi_title'.tr(),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
-                      'Offre-moi un café sur Ko-fi ☕',
-                      style: TextStyle(fontSize: 12),
+                      'profile_kofi_subtitle'.tr(),
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ],
                 ),

@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/discover/domain/discover_providers.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
@@ -42,7 +44,7 @@ class WatchlistScreen extends ConsumerWidget {
         dense: true,
         leading: Icon(Icons.info_outline_rounded, color: cs.primary, size: 18),
         title: Text(
-          'Mode invité · Connecte-toi pour synchroniser avec AniList',
+          'watchlist_guest_banner'.tr(),
           style: TextStyle(fontSize: 11, color: cs.onPrimaryContainer),
         ),
         trailing: TextButton(
@@ -52,7 +54,7 @@ class WatchlistScreen extends ConsumerWidget {
             minimumSize: Size.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: Text('Connexion',
+          child: Text('watchlist_guest_banner_login'.tr(),
               style: TextStyle(fontSize: 11, color: cs.primary)),
         ),
       ),
@@ -80,11 +82,11 @@ class WatchlistScreen extends ConsumerWidget {
                             size: 64,
                             color: cs.onSurface.withValues(alpha: 0.24)),
                         const SizedBox(height: 16),
-                        const Text('Ta liste locale est vide',
-                            style: TextStyle(fontSize: 16)),
+                        Text('watchlist_guest_empty_title'.tr(),
+                            style: const TextStyle(fontSize: 16)),
                         const SizedBox(height: 8),
                         Text(
-                          'Explore les animés et ajoute-les à ta liste',
+                          'watchlist_anime_empty_subtitle'.tr(),
                           style: TextStyle(
                               color: cs.onSurface.withValues(alpha: 0.54),
                               fontSize: 13),
@@ -203,6 +205,13 @@ class _AuthenticatedWatchlistViewState
     return Scaffold(
       appBar: AppBar(
         title: Image.asset('assets/images/logo.png', height: 40),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month_outlined),
+            tooltip: 'calendar_title'.tr(),
+            onPressed: () => context.push(AppRoutes.calendar),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -240,8 +249,8 @@ class _AnimeListTab extends ConsumerWidget {
           return _buildEmpty(
             context,
             icon: Icons.live_tv_rounded,
-            message: 'Aucun anime dans ta liste',
-            sub: 'Explore les animés et ajoute-les à ta liste',
+            message: 'watchlist_anime_empty_title'.tr(),
+            sub: 'watchlist_anime_empty_subtitle'.tr(),
           );
         }
         return _buildStatusTabs(context, ref, groups, isAnime: true);
@@ -264,7 +273,7 @@ class _AnimeListTab extends ConsumerWidget {
           const SizedBox(height: 16),
           FilledButton.icon(
             icon: const Icon(Icons.refresh),
-            label: const Text('Réessayer'),
+            label: Text('action_retry'.tr()),
             onPressed: () => ref.invalidate(userListProvider),
           ),
         ],
@@ -359,8 +368,8 @@ class _MangaListTab extends ConsumerWidget {
           return _buildEmpty(
             context,
             icon: Icons.menu_book_rounded,
-            message: 'Aucun manga dans ta liste',
-            sub: 'Explore les mangas, manhwa et manhua',
+            message: 'watchlist_manga_empty_title'.tr(),
+            sub: 'watchlist_manga_empty_subtitle'.tr(),
           );
         }
         return _buildStatusTabs(context, ref, groups);
@@ -382,7 +391,7 @@ class _MangaListTab extends ConsumerWidget {
           const SizedBox(height: 16),
           FilledButton.icon(
             icon: const Icon(Icons.refresh),
-            label: const Text('Réessayer'),
+            label: Text('action_retry'.tr()),
             onPressed: () => ref.invalidate(userMangaListProvider),
           ),
         ],
@@ -591,7 +600,7 @@ class _StatusTab extends StatelessWidget {
     if (entries.isEmpty) {
       return Center(
         child: Text(
-          'Aucun élément dans cette liste',
+          'watchlist_status_tab_empty'.tr(),
           style: TextStyle(color: cs.onSurface.withValues(alpha: 0.38)),
         ),
       );
@@ -666,7 +675,9 @@ class _EntryTile extends StatelessWidget {
                   media.countryOfOrigin != 'JP') ...[
                 const SizedBox(width: 8),
                 Text(
-                  media.countryOfOrigin == 'KR' ? 'Manhwa' : 'Manhua',
+                  media.countryOfOrigin == 'KR'
+                      ? 'label_manhwa'.tr()
+                      : 'label_manhua'.tr(),
                   style: TextStyle(
                     fontSize: 11,
                     color: cs.primary.withValues(alpha: 0.7),
@@ -740,7 +751,7 @@ class _TopRatedTab extends StatelessWidget {
                 size: 48, color: cs.onSurface.withValues(alpha: 0.24)),
             const SizedBox(height: 12),
             Text(
-              'Aucun élément noté ≥ 8 pour l\'instant',
+              'watchlist_favorites_empty'.tr(),
               style: TextStyle(color: cs.onSurface.withValues(alpha: 0.38)),
               textAlign: TextAlign.center,
             ),

@@ -128,4 +128,43 @@ class AnilistQueries {
       }
     }
   ''';
+
+  // ── 6. Navigation avancée avec filtres ────────────────────────────────────
+
+  static const String browseMedia = '''
+    query BrowseMedia(
+      \$type: MediaType,
+      \$genre_in: [String],
+      \$format_in: [MediaFormat],
+      \$seasonYear_greater: Int,
+      \$seasonYear_lesser: Int,
+      \$averageScore_greater: Int,
+      \$status: MediaStatus,
+      \$sort: [MediaSort],
+      \$page: Int,
+      \$perPage: Int
+    ) {
+      Page(page: \$page, perPage: \$perPage) {
+        pageInfo {
+          total
+          currentPage
+          lastPage
+          hasNextPage
+        }
+        media(
+          type: \$type,
+          genre_in: \$genre_in,
+          format_in: \$format_in,
+          seasonYear_greater: \$seasonYear_greater,
+          seasonYear_lesser: \$seasonYear_lesser,
+          averageScore_greater: \$averageScore_greater,
+          status: \$status,
+          sort: \$sort,
+          isAdult: false
+        ) {
+          $_mediaFields
+        }
+      }
+    }
+  ''';
 }

@@ -1,0 +1,149 @@
+import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
+
+/// Stats cumulées calculées à partir des listes AniList de l'utilisateur.
+class StatsModel {
+  final int animeWatched;        // Total anime avec progress > 0 (current + completed)
+  final int animeCompleted;      // Anime avec status = completed
+  final int episodesWatched;     // Somme de progress pour les anime
+  final int watchTimeMinutes;    // Temps de visionnage estimé en minutes
+
+  final int mangaRead;           // Total manga avec progress > 0
+  final int mangaCompleted;      // Manga avec status = completed
+  final int chaptersRead;        // Somme de progress pour les manga
+
+  final double? meanScore;       // Moyenne des scores utilisateur (non-zéro)
+  final List<GenreStat> topGenres; // Top genres toutes catégories confondues
+
+  final MediaListEntry? bestAnime;  // Anime avec le score utilisateur le plus haut
+  final MediaListEntry? bestManga;  // Manga avec le score utilisateur le plus haut
+
+  const StatsModel({
+    required this.animeWatched,
+    required this.animeCompleted,
+    required this.episodesWatched,
+    required this.watchTimeMinutes,
+    required this.mangaRead,
+    required this.mangaCompleted,
+    required this.chaptersRead,
+    required this.topGenres,
+    this.meanScore,
+    this.bestAnime,
+    this.bestManga,
+  });
+
+  /// Temps de visionnage formaté lisible (ex: "4j 12h" ou "3h 20min").
+  String get watchTimeFormatted {
+    final totalMinutes = watchTimeMinutes;
+    final days = totalMinutes ~/ (60 * 24);
+    final hours = (totalMinutes % (60 * 24)) ~/ 60;
+    final minutes = totalMinutes % 60;
+
+    if (days > 0) return '${days}j ${hours}h';
+    if (hours > 0) return '${hours}h ${minutes}min';
+    return '${minutes}min';
+  }
+
+  /// Calcule les stats depuis les deux listes (anime + manga).
+  static StatsModel compute({
+    required List<MediaListGroup> animeGroups,
+    required List<MediaListGroup> mangaGroups,
+  }) {
+    final allEntries = [
+      ...animeGroups.expand((g) => g.entries),
+      ...mangaGroups.expand((g) => g.entries),
+    ];
+
+    final animeEntries = allEntries.where((e) => !e.isManga).toList();
+    final mangaEntries = allEntries.where((e) => e.isManga).toList();
+
+    // ── Anime ─────────────────────────────────────────────────────────────────
+    final animeWithProgress = animeEntries.where((e) => (e.progress ?? 0) > 0);
+    final animeCompleted = animeEntries
+        .where((e) => e.status == ListStatus.completed)
+        .length;
+    final episodesWatched = animeWithProgress
+        .fold<int>(0, (sum, e) => sum + (e.progress ?? 0));
+    final watchTimeMinutes = animeWithProgress.fold<int>(0, (sum, e) {
+      final dur = e.media.duration ?? 24;
+      return sum + (e.progress ?? 0) * dur;
+    });
+
+    // ── Manga ─────────────────────────────────────────────────────────────────
+    final mangaWithProgress = mangaEntries.where((e) => (e.progress ?? 0) > 0);
+    final mangaCompleted = mangaEntries
+        .where((e) => e.status == ListStatus.completed)
+        .length;
+    final chaptersRead = mangaWithProgress
+        .fold<int>(0, (sum, e) => sum + (e.progress ?? 0));
+
+    // ── Score moyen ───────────────────────────────────────────────────────────
+    final scored = allEntries
+        .where((e) => (e.score ?? 0) > 0)
+        .map((e) => e.score!)
+        .toList();
+    final meanScore = scored.isEmpty
+        ? null
+        : scored.reduce((a, b) => a + b) / scored.length;
+
+    // ── Genres (fréquence pondérée par score si dispo) ────────────────────────
+    final genreCount = <String, double>{};
+    for (final entry in allEntries) {
+      if (entry.status == ListStatus.dropped) continue;
+      final genres = entry.media.genres;
+      if (genres == null) continue;
+      final weight = (entry.score ?? 0) > 0 ? (entry.score! / 10.0) : 1.0;
+      for (final genre in genres) {
+        genreCount[genre] = (genreCount[genre] ?? 0) + weight;
+      }
+    }
+    final sortedGenres = genreCount.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final maxCount = sortedGenres.isEmpty ? 1.0 : sortedGenres.first.value;
+    final topGenres = sortedGenres
+        .take(5)
+        .map((e) => GenreStat(
+              name: e.key,
+              ratio: e.value / maxCount,
+            ))
+        .toList();
+
+    // ── Best rated ────────────────────────────────────────────────────────────
+    MediaListEntry? bestAnime;
+    for (final e in animeEntries) {
+      if ((e.score ?? 0) > 0) {
+        if (bestAnime == null || (e.score! > (bestAnime.score ?? 0))) {
+          bestAnime = e;
+        }
+      }
+    }
+    MediaListEntry? bestManga;
+    for (final e in mangaEntries) {
+      if ((e.score ?? 0) > 0) {
+        if (bestManga == null || (e.score! > (bestManga.score ?? 0))) {
+          bestManga = e;
+        }
+      }
+    }
+
+    return StatsModel(
+      animeWatched: animeWithProgress.length,
+      animeCompleted: animeCompleted,
+      episodesWatched: episodesWatched,
+      watchTimeMinutes: watchTimeMinutes,
+      mangaRead: mangaWithProgress.length,
+      mangaCompleted: mangaCompleted,
+      chaptersRead: chaptersRead,
+      meanScore: meanScore,
+      topGenres: topGenres,
+      bestAnime: bestAnime,
+      bestManga: bestManga,
+    );
+  }
+}
+
+class GenreStat {
+  final String name;
+  final double ratio; // 0.0 → 1.0, relatif au genre le plus fréquent
+
+  const GenreStat({required this.name, required this.ratio});
+}

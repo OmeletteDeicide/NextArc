@@ -1,7 +1,9 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nextarc/core/services/notification_service.dart';
+import 'package:nextarc/core/services/notification_prefs_repository.dart';
 import 'package:nextarc/features/watchlist/data/mutation_repository.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 import 'package:nextarc/features/watchlist/domain/watchlist_providers.dart';
@@ -66,16 +68,17 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
   late ListStatus _selectedStatus;
   late double _score;
   late int _progress;
+  late bool _notifEnabled;
   bool _isSaving = false;
   bool _isDeleting = false;
 
   @override
   void initState() {
     super.initState();
-    // Pré-remplissage si entrée existante
     _selectedStatus = widget.existing?.status ?? ListStatus.planning;
     _score = widget.existing?.score ?? 0;
     _progress = widget.existing?.progress ?? 0;
+    _notifEnabled = NotificationPrefsRepository.instance.isEnabled(widget.animeId);
   }
 
   @override
@@ -115,7 +118,7 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
           ),
           const SizedBox(height: 16),
           Text(
-            isEditing ? 'Modifier dans ma liste' : 'Ajouter à ma liste',
+            isEditing ? 'sheet_edit_title'.tr() : 'sheet_add_title'.tr(),
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
@@ -130,8 +133,8 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
           const SizedBox(height: 24),
 
           // ── Sélecteur de statut ─────────────────────────────────────────
-          const Text('Statut',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          Text('sheet_status_label'.tr(),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
@@ -163,7 +166,7 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
           Row(
             children: [
               Text(
-                widget.isManga ? 'Chapitres lus' : 'Progression',
+                widget.isManga ? 'sheet_progress_chapters'.tr() : 'sheet_progress_episodes'.tr(),
                 style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
               ),
               const Spacer(),
@@ -220,9 +223,9 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
 
           Row(
             children: [
-              const Text('Ma note',
+              Text('sheet_score_label'.tr(),
                   style:
-                      TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                      const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
               const Spacer(),
               if (_score > 0) ...[
                 const Icon(Icons.star_rounded,
@@ -238,7 +241,7 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
                       fontSize: 15),
                 ),
               ] else
-                Text('Non noté',
+                Text('sheet_score_unrated'.tr(),
                     style: TextStyle(
                         color: cs.onSurface.withValues(alpha: 0.38),
                         fontSize: 13)),
@@ -263,7 +266,32 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
 
           ], // fin if != planning
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
+
+          // ── Toggle notifications épisodes ───────────────────────────────
+          _NotifToggle(
+            enabled: _notifEnabled,
+            isManga: widget.isManga,
+            onChanged: (v) async {
+              final granted = v
+                  ? await NotificationService.instance.requestPermission()
+                  : true;
+              if (!granted) return;
+              if (v) {
+                await NotificationPrefsRepository.instance.enable(
+                  widget.animeId,
+                  title: widget.animeTitle,
+                  isManga: widget.isManga,
+                  currentCount: widget.totalEpisodes,
+                );
+              } else {
+                await NotificationPrefsRepository.instance.disable(widget.animeId);
+              }
+              if (mounted) setState(() => _notifEnabled = v);
+            },
+          ),
+
+          const SizedBox(height: 16),
 
           // ── Boutons action ──────────────────────────────────────────────
           Row(
@@ -278,7 +306,7 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('Retirer'),
+                  label: Text('sheet_remove_button'.tr()),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.redAccent,
                     side: const BorderSide(color: Colors.redAccent),
@@ -299,7 +327,7 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
                               strokeWidth: 2, color: Colors.white),
                         )
                       : const Icon(Icons.check, size: 18),
-                  label: Text(isEditing ? 'Mettre à jour' : 'Ajouter'),
+                  label: Text(isEditing ? 'sheet_update_button'.tr() : 'sheet_add_button'.tr()),
                   onPressed: _isSaving || _isDeleting ? null : _save,
                 ),
               ),
@@ -350,7 +378,9 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              widget.existing != null ? '✅ Liste mise à jour !' : '✅ Ajouté à ta liste !',
+              widget.existing != null
+                  ? 'sheet_snackbar_updated'.tr()
+                  : 'sheet_snackbar_added'.tr(),
               style: TextStyle(color: cs2.onSurfaceVariant),
             ),
             backgroundColor: cs2.surfaceContainerHighest,
@@ -366,7 +396,7 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Erreur : $e'),
+            content: Text('sheet_snackbar_error'.tr(namedArgs: {'error': e.toString()})),
             backgroundColor: Colors.red.shade800,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 2),
@@ -382,18 +412,18 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Retirer de la liste'),
+        title: Text('sheet_delete_dialog_title'.tr()),
         content: Text(
-            'Supprimer "${widget.animeTitle}" de ta liste AniList ?'),
+            'sheet_delete_dialog_content_anilist'.tr(namedArgs: {'title': widget.animeTitle})),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annuler'),
+            child: Text('dialog_cancel'.tr()),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Supprimer'),
+            child: Text('dialog_confirm_delete'.tr()),
           ),
         ],
       ),
@@ -419,7 +449,7 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '🗑️ Retiré de ta liste.',
+              'sheet_snackbar_removed'.tr(),
               style: TextStyle(color: cs3.onSurfaceVariant),
             ),
             backgroundColor: cs3.surfaceContainerHighest,
@@ -435,7 +465,7 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
         setState(() => _isDeleting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Erreur : $e'),
+            content: Text('sheet_snackbar_error'.tr(namedArgs: {'error': e.toString()})),
             backgroundColor: Colors.red.shade800,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 2),
@@ -445,6 +475,55 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
         );
       }
     }
+  }
+}
+
+// ── Toggle notifications ───────────────────────────────────────────────────────
+
+class _NotifToggle extends StatelessWidget {
+  const _NotifToggle({
+    required this.enabled,
+    required this.isManga,
+    required this.onChanged,
+  });
+
+  final bool enabled;
+  final bool isManga;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final label = isManga
+        ? 'sheet_notif_chapters'.tr()
+        : 'sheet_notif_episodes'.tr();
+
+    return Row(
+      children: [
+        Icon(
+          enabled ? Icons.notifications_active_rounded : Icons.notifications_none_rounded,
+          size: 20,
+          color: enabled ? cs.primary : cs.onSurface.withValues(alpha: 0.45),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: enabled ? cs.onSurface : cs.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+        ),
+        Switch(
+          value: enabled,
+          onChanged: onChanged,
+          activeThumbColor: cs.primary,
+          activeTrackColor: cs.primary.withValues(alpha: 0.4),
+        ),
+      ],
+    );
   }
 }
 

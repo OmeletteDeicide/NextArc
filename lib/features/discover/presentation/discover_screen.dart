@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,7 +39,7 @@ class DiscoverScreen extends ConsumerWidget {
 
     final animeSliders = [
       HorizontalAnimeList(
-        title: 'Tendances anime',
+        title: 'discover_trending_anime'.tr(),
         asyncValue: trending,
         sectionKey: 'trending',
         onAnimeTap: (id, tag) => context.push('/detail/$id',
@@ -47,7 +48,7 @@ class DiscoverScreen extends ConsumerWidget {
         onWatchlistTap: openWatchlist,
       ),
       HorizontalAnimeList(
-        title: 'En ce moment',
+        title: 'discover_seasonal_anime'.tr(),
         asyncValue: seasonal,
         sectionKey: 'seasonal',
         onAnimeTap: (id, tag) => context.push('/detail/$id',
@@ -59,7 +60,7 @@ class DiscoverScreen extends ConsumerWidget {
 
     final mangaSliders = [
       HorizontalAnimeList(
-        title: 'Tendances manga',
+        title: 'discover_trending_manga'.tr(),
         asyncValue: trendingManga,
         sectionKey: 'trending_manga',
         onAnimeTap: (id, tag) => context.push('/detail/$id',
@@ -68,7 +69,7 @@ class DiscoverScreen extends ConsumerWidget {
         onWatchlistTap: openWatchlist,
       ),
       HorizontalAnimeList(
-        title: 'En cours de publication',
+        title: 'discover_releasing_manga'.tr(),
         asyncValue: releasingManga,
         sectionKey: 'releasing_manga',
         onAnimeTap: (id, tag) => context.push('/detail/$id',
@@ -90,6 +91,11 @@ class DiscoverScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Image.asset('assets/images/logo.png', height: 40),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.tune_rounded),
+            tooltip: 'browse_filters'.tr(),
+            onPressed: () => context.push('/browse'),
+          ),
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () => context.push('/search'),

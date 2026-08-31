@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nextarc/core/domain/paginated_result.dart';
@@ -90,7 +91,7 @@ class HorizontalAnimeList extends StatelessWidget {
             const SizedBox(height: 12),
             TextButton.icon(
               icon: const Icon(Icons.refresh, size: 16),
-              label: const Text('Réessayer'),
+              label: Text('action_retry'.tr()),
               onPressed: onRetry,
             ),
           ],
@@ -104,7 +105,7 @@ class HorizontalAnimeList extends StatelessWidget {
       final cs = Theme.of(context).colorScheme;
       return Center(
         child: Text(
-          'Aucun résultat disponible',
+          'horizontal_list_empty'.tr(),
           style: TextStyle(color: cs.onSurface.withValues(alpha: 0.38)),
         ),
       );
