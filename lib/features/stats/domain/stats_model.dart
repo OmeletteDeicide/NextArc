@@ -1,3 +1,4 @@
+import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 
 /// Stats cumulées calculées à partir des listes AniList de l'utilisateur.
@@ -137,6 +138,41 @@ class StatsModel {
       topGenres: topGenres,
       bestAnime: bestAnime,
       bestManga: bestManga,
+    );
+  }
+
+  /// Stats simplifiées depuis la watchlist locale (invité ou Firebase-only).
+  /// Pas de genres, pas de temps de visionnage, pas de bestAnime/bestManga.
+  static StatsModel computeFromGuestList(List<GuestWatchlistEntry> entries) {
+    final animeEntries = entries.where((e) => !e.isManga).toList();
+    final mangaEntries = entries.where((e) => e.isManga).toList();
+
+    final animeWithProgress = animeEntries.where((e) => (e.progress ?? 0) > 0);
+    final mangaWithProgress = mangaEntries.where((e) => (e.progress ?? 0) > 0);
+
+    final scores = entries
+        .where((e) => (e.score ?? 0) > 0)
+        .map((e) => e.score!)
+        .toList();
+
+    return StatsModel(
+      animeWatched: animeWithProgress.length,
+      animeCompleted:
+          animeEntries.where((e) => e.status == ListStatus.completed).length,
+      episodesWatched:
+          animeWithProgress.fold(0, (s, e) => s + (e.progress ?? 0)),
+      watchTimeMinutes: 0,
+      mangaRead: mangaWithProgress.length,
+      mangaCompleted:
+          mangaEntries.where((e) => e.status == ListStatus.completed).length,
+      chaptersRead:
+          mangaWithProgress.fold(0, (s, e) => s + (e.progress ?? 0)),
+      topGenres: [],
+      meanScore: scores.isEmpty
+          ? null
+          : scores.reduce((a, b) => a + b) / scores.length,
+      bestAnime: null,
+      bestManga: null,
     );
   }
 }

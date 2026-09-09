@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -9,6 +10,7 @@ import 'package:nextarc/core/services/notification_service.dart';
 import 'package:nextarc/core/services/notification_prefs_repository.dart';
 import 'package:nextarc/core/services/episode_checker_task.dart';
 import 'package:nextarc/core/utils/hive_cache.dart';
+import 'package:nextarc/features/search/domain/search_history_service.dart';
 import 'package:workmanager/workmanager.dart';
 
 /// Point d'entrée de la tâche de fond workmanager (isolate séparé).
@@ -25,11 +27,13 @@ void callbackDispatcher() {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await Firebase.initializeApp();
   await EasyLocalization.ensureInitialized();
 
   await Hive.initFlutter();
   await HiveCache.init();
   await NotificationPrefsRepository.instance.init();
+  await SearchHistoryService.instance.init();
   await NotificationService.instance.init();
 
   // Planifie la vérification périodique des épisodes (toutes les 6 h).

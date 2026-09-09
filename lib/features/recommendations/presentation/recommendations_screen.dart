@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/auth/domain/user_model.dart';
 import 'package:nextarc/features/detail/domain/detail_providers.dart';
+import 'package:nextarc/features/watchlist/domain/firestore_watchlist_providers.dart';
 import 'package:nextarc/features/discover/domain/discover_providers.dart';
 import 'package:nextarc/features/discover/domain/media_model.dart';
 import 'package:nextarc/features/recommendations/domain/reco_providers.dart';
@@ -79,9 +81,9 @@ class _AnimeRecoTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final recoAsync = ref.watch(recommendationsProvider);
     final isPersonalised = ref.watch(recoIsPersonalisedProvider);
-    final isLoggedIn =
-        ref.watch(authProvider).whenOrNull(data: (a) => a.isAuthenticated) ??
-            false;
+    final user = ref.watch(authProvider).whenOrNull<UserModel?>(
+          data: (a) => a.user,
+        );
 
     return recoAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -90,7 +92,7 @@ class _AnimeRecoTab extends ConsumerWidget {
       data: (recos) => _RecoList(
         recos: recos,
         isPersonalised: isPersonalised,
-        isLoggedIn: isLoggedIn,
+        user: user,
         onRetry: () => ref.invalidate(recommendationsProvider),
         bannerLoggedInText:
             'reco_banner_personalised_anime'.tr(),
@@ -111,9 +113,9 @@ class _MangaRecoTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final recoAsync = ref.watch(mangaRecommendationsProvider);
-    final isLoggedIn =
-        ref.watch(authProvider).whenOrNull(data: (a) => a.isAuthenticated) ??
-            false;
+    final user = ref.watch(authProvider).whenOrNull<UserModel?>(
+          data: (a) => a.user,
+        );
 
     return recoAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -121,8 +123,8 @@ class _MangaRecoTab extends ConsumerWidget {
           onRetry: () => ref.invalidate(mangaRecommendationsProvider)),
       data: (recos) => _RecoList(
         recos: recos,
-        isPersonalised: isLoggedIn,
-        isLoggedIn: isLoggedIn,
+        isPersonalised: user?.hasAnilist == true,
+        user: user,
         onRetry: () => ref.invalidate(mangaRecommendationsProvider),
         bannerLoggedInText:
             'reco_banner_personalised_manga'.tr(),
@@ -141,7 +143,7 @@ class _RecoList extends ConsumerWidget {
   const _RecoList({
     required this.recos,
     required this.isPersonalised,
-    required this.isLoggedIn,
+    required this.user,
     required this.onRetry,
     required this.bannerLoggedInText,
     required this.bannerGuestText,
@@ -150,7 +152,7 @@ class _RecoList extends ConsumerWidget {
 
   final List<RecommendationItem> recos;
   final bool isPersonalised;
-  final bool isLoggedIn;
+  final UserModel? user;
   final VoidCallback onRetry;
   final String bannerLoggedInText;
   final String bannerGuestText;
@@ -159,7 +161,7 @@ class _RecoList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     void openWatchlist(MediaModel media) =>
-        openWatchlistSheet(context, ref, anime: media, isLoggedIn: isLoggedIn);
+        openWatchlistSheet(context, ref, anime: media, user: user);
 
     return RefreshIndicator(
       onRefresh: () async => onRetry(),
@@ -175,15 +177,15 @@ class _RecoList extends ConsumerWidget {
                       color: Theme.of(context).colorScheme.primary,
                     )
                   : _InfoBanner(
-                      icon: isLoggedIn
+                      icon: user != null
                           ? Icons.info_outline
                           : Icons.lock_outline,
-                      text: isLoggedIn ? bannerInfoText : bannerGuestText,
+                      text: user != null ? bannerInfoText : bannerGuestText,
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
                           .withValues(alpha: 0.35),
-                      onTap: isLoggedIn ? null : () => context.go('/profile'),
+                      onTap: user != null ? null : () => context.go('/profile'),
                     ),
             ),
           ),
@@ -250,12 +252,17 @@ class _RecoCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final anime = item.recommended;
     final cs = Theme.of(context).colorScheme;
-    final isLoggedIn =
-        ref.watch(authProvider).whenOrNull(data: (a) => a.isAuthenticated) ??
-            false;
-    final isInWatchlist = isLoggedIn
-        ? ref.watch(userListEntryProvider(anime.id)) != null
-        : ref.watch(guestListEntryProvider(anime.id)) != null;
+    final user =
+        ref.watch(authProvider).whenOrNull(data: (a) => a.user);
+    final bool isInWatchlist;
+    if (user?.hasAnilist == true) {
+      isInWatchlist = ref.watch(userListEntryProvider(anime.id)) != null;
+    } else if (user?.hasFirebase == true) {
+      isInWatchlist =
+          ref.watch(firestoreListEntryProvider(anime.id)) != null;
+    } else {
+      isInWatchlist = ref.watch(guestListEntryProvider(anime.id)) != null;
+    }
     final heroTag = 'reco_$index';
 
     return GestureDetector(

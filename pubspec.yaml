@@ -46,11 +46,24 @@ dependencies:
   # Tâches de fond (vérification périodique des dates de sortie)
   workmanager: ^0.9.0
 
+  # Firebase Auth (identité NextArc — email + Google)
+  firebase_core: ^3.13.1
+  firebase_auth: ^5.5.2
+  firebase_storage: ^12.4.5
+  cloud_firestore: ^5.6.6
+  google_sign_in: ^6.2.2
+
+  # Sélection de photo depuis la galerie / caméra
+  image_picker: ^1.1.2
+
   # Ouvre des URLs dans le navigateur (Ko-fi, liens externes)
   url_launcher: ^6.3.1
 
-  # Partage de fichiers (export watchlist invité)
+  # Partage de fichiers (export watchlist invité + carte stats)
   share_plus: ^10.0.0
+
+  # Répertoire temporaire (sauvegarde image avant partage)
+  path_provider: ^2.1.5
 
   # Sélecteur de fichiers (import watchlist invité)
   file_picker: ^8.0.0

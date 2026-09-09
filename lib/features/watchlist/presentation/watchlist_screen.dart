@@ -1,11 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/auth/domain/user_model.dart';
+import 'package:nextarc/features/watchlist/domain/firestore_watchlist_providers.dart';
+import 'package:nextarc/features/watchlist/presentation/watchlist_sheet_helper.dart';
 import 'package:nextarc/features/discover/domain/discover_providers.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
@@ -152,10 +156,100 @@ class WatchlistScreen extends ConsumerWidget {
     );
   }
 
-  // ── Vue authentifiée : onglets Anime / Manga ──────────────────────────────
+  // ── Vue authentifiée : AniList ou Firestore selon le compte ─────────────
 
   Widget _buildAuthenticatedList(BuildContext context, WidgetRef ref) {
-    return const _AuthenticatedWatchlistView();
+    final user =
+        ref.watch(authProvider).whenOrNull<UserModel?>(data: (a) => a.user);
+    if (user?.hasAnilist == true) {
+      return const _AuthenticatedWatchlistView();
+    }
+    return _buildFirestoreList(context, ref, user);
+  }
+
+  // ── Vue Firebase-only (Firestore) ─────────────────────────────────────────
+
+  Widget _buildFirestoreList(
+      BuildContext context, WidgetRef ref, UserModel? user) {
+    final firestoreAsync = ref.watch(firestoreWatchlistProvider);
+    final cs = Theme.of(context).colorScheme;
+
+    return firestoreAsync.when(
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, _) => Scaffold(body: Center(child: Text(e.toString()))),
+      data: (entries) {
+        if (entries.isEmpty) {
+          return Scaffold(
+            appBar:
+                AppBar(title: Image.asset('assets/images/logo.png', height: 40)),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.list_alt_rounded,
+                      size: 64, color: cs.onSurface.withValues(alpha: 0.24)),
+                  const SizedBox(height: 16),
+                  Text('watchlist_guest_empty_title'.tr(),
+                      style: const TextStyle(fontSize: 16)),
+                  const SizedBox(height: 8),
+                  Text(
+                    'watchlist_anime_empty_subtitle'.tr(),
+                    style: TextStyle(
+                        color: cs.onSurface.withValues(alpha: 0.54),
+                        fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final grouped = <ListStatus, List<GuestWatchlistEntry>>{};
+        for (final e in entries) {
+          grouped.putIfAbsent(e.status, () => []).add(e);
+        }
+
+        const orderedStatuses = [
+          ListStatus.current,
+          ListStatus.planning,
+          ListStatus.paused,
+          ListStatus.completed,
+          ListStatus.dropped,
+        ];
+
+        final tabs = <Tab>[];
+        final views = <Widget>[];
+
+        for (final status in orderedStatuses) {
+          final group = grouped[status];
+          if (group != null && group.isNotEmpty) {
+            tabs.add(Tab(text: '${status.label} (${group.length})'));
+            views.add(_GuestStatusTab(
+              entries: group,
+              onDelete: (id) =>
+                  ref.read(firestoreWatchlistProvider.notifier).remove(id),
+            ));
+          }
+        }
+
+        return DefaultTabController(
+          length: tabs.length,
+          child: Scaffold(
+            appBar: AppBar(
+              title: Image.asset('assets/images/logo.png', height: 40),
+              bottom: TabBar(
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                tabs: tabs,
+              ),
+            ),
+            body: TabBarView(children: views),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -520,7 +614,10 @@ class _GuestStatusTab extends StatelessWidget {
             color: Colors.red.shade800,
             child: const Icon(Icons.delete_outline, color: Colors.white),
           ),
-          onDismissed: (_) => onDelete(entry.animeId),
+          onDismissed: (_) {
+            HapticFeedback.mediumImpact();
+            onDelete(entry.animeId);
+          },
           child: _GuestEntryTile(entry: entry),
         );
       },
@@ -588,14 +685,14 @@ class _GuestEntryTile extends StatelessWidget {
 
 // ── Onglet statut AniList ─────────────────────────────────────────────────────
 
-class _StatusTab extends StatelessWidget {
+class _StatusTab extends ConsumerWidget {
   const _StatusTab({required this.entries, required this.onRetry});
 
   final List<MediaListEntry> entries;
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
     if (entries.isEmpty) {
       return Center(
@@ -606,13 +703,39 @@ class _StatusTab extends StatelessWidget {
       );
     }
 
+    final user = ref.watch(authProvider).whenOrNull<UserModel?>(
+          data: (a) => a.user,
+        );
+
     return RefreshIndicator(
       onRefresh: () async => onRetry(),
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: entries.length,
         separatorBuilder: (_, _) => const Divider(height: 1, indent: 80),
-        itemBuilder: (context, index) => _EntryTile(entry: entries[index]),
+        itemBuilder: (context, index) {
+          final entry = entries[index];
+          return Dismissible(
+            key: ValueKey('swipe_${entry.media.id}'),
+            direction: DismissDirection.endToStart,
+            confirmDismiss: (_) async {
+              HapticFeedback.mediumImpact();
+              openWatchlistSheet(
+                context, ref,
+                anime: entry.media,
+                user: user,
+              );
+              return false; // ne retire pas l'item
+            },
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              color: cs.primary.withValues(alpha: 0.15),
+              child: Icon(Icons.edit_outlined, color: cs.primary),
+            ),
+            child: _EntryTile(entry: entry),
+          );
+        },
       ),
     );
   }

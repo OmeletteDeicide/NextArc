@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/presentation/main_shell.dart';
 import 'package:nextarc/features/about/presentation/about_screen.dart';
+import 'package:nextarc/features/auth/presentation/login_screen.dart';
+import 'package:nextarc/features/auth/presentation/profile_edit_screen.dart';
 import 'package:nextarc/features/auth/presentation/profile_screen.dart';
 import 'package:nextarc/features/detail/presentation/detail_screen.dart';
 import 'package:nextarc/features/discover/presentation/discover_screen.dart';
@@ -9,6 +11,7 @@ import 'package:nextarc/features/search/presentation/search_screen.dart';
 import 'package:nextarc/features/recommendations/presentation/recommendations_screen.dart';
 import 'package:nextarc/features/settings/presentation/settings_screen.dart';
 import 'package:nextarc/features/browse/presentation/browse_screen.dart';
+import 'package:nextarc/features/share/presentation/share_stats_screen.dart';
 import 'package:nextarc/features/calendar/presentation/calendar_screen.dart';
 import 'package:nextarc/features/stats/presentation/stats_screen.dart';
 import 'package:nextarc/features/watchlist/presentation/watchlist_screen.dart';
@@ -71,6 +74,9 @@ class AppRoutes {
   static const String stats = '/stats';
   static const String calendar = '/calendar';
   static const String browse = '/browse';
+  static const String shareStats = '/share-stats';
+  static const String login = '/login';
+  static const String profileEdit = '/profile-edit';
 }
 
 final GoRouter appRouter = GoRouter(
@@ -153,6 +159,27 @@ final GoRouter appRouter = GoRouter(
       path: '/browse',
       pageBuilder: (context, state) =>
           _slideFade(state: state, child: const BrowseScreen()),
+    ),
+
+    // Partage de stats — hors shell
+    GoRoute(
+      path: '/share-stats',
+      pageBuilder: (context, state) =>
+          _slideFade(state: state, child: const ShareStatsScreen()),
+    ),
+
+    // Connexion email/password — hors shell
+    GoRoute(
+      path: '/login',
+      pageBuilder: (context, state) =>
+          _slideFade(state: state, child: const LoginScreen()),
+    ),
+
+    // Édition du profil — hors shell
+    GoRoute(
+      path: '/profile-edit',
+      pageBuilder: (context, state) =>
+          _slideFade(state: state, child: const ProfileEditScreen()),
     ),
   ],
 );

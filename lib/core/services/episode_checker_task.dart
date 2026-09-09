@@ -40,18 +40,30 @@ class EpisodeCheckerTask {
 
     for (final entry in entries) {
       try {
-        final current = await _fetchCurrentCount(entry.mediaId, entry.isManga);
-        if (current == null) continue;
+        final info = await _fetchMediaInfo(entry.mediaId, entry.isManga);
+        if (info == null) continue;
 
         final last = repo.getLastCount(entry.mediaId);
-        if (current > last) {
+        if (info.currentCount != null && info.currentCount! > last) {
           await NotificationService.instance.showNewContentNotification(
             mediaId: entry.mediaId,
             title: entry.title,
-            count: current,
+            count: info.currentCount!,
             isManga: entry.isManga,
           );
-          await repo.updateLastCount(entry.mediaId, current);
+          await repo.updateLastCount(entry.mediaId, info.currentCount!);
+        }
+
+        // Programme une notification précise pour le prochain épisode
+        if (!entry.isManga &&
+            info.nextAiringAt != null &&
+            info.nextEpisode != null) {
+          await NotificationService.instance.scheduleNextEpisodeNotification(
+            mediaId: entry.mediaId,
+            title: entry.title,
+            episode: info.nextEpisode!,
+            airingAt: info.nextAiringAt!,
+          );
         }
       } catch (_) {
         // Silencieux : on ne bloque pas les autres médias si l'un échoue
@@ -60,8 +72,8 @@ class EpisodeCheckerTask {
   }
 
   /// Requête AniList minimale pour un media.
-  /// Retourne le nombre d'épisodes/chapitres publiés, ou null si inconnu.
-  static Future<int?> _fetchCurrentCount(int mediaId, bool isManga) async {
+  /// Retourne les infos du media : compteur actuel, prochain épisode et timestamp.
+  static Future<_MediaInfo?> _fetchMediaInfo(int mediaId, bool isManga) async {
     const endpoint = 'https://graphql.anilist.co';
     final query = isManga ? _mangaCountQuery : _animeCountQuery;
 
@@ -81,15 +93,30 @@ class EpisodeCheckerTask {
     if (media == null) return null;
 
     if (isManga) {
-      return media['chapters'] as int?;
+      return _MediaInfo(currentCount: media['chapters'] as int?);
     } else {
-      // nextAiringEpisode.episode − 1 = dernier épisode sorti
       final nextAiring = media['nextAiringEpisode'] as Map?;
+      int? currentCount;
+      int? nextEpisode;
+      DateTime? nextAiringAt;
+
       if (nextAiring != null) {
         final nextEp = nextAiring['episode'] as int?;
-        if (nextEp != null && nextEp > 1) return nextEp - 1;
+        final airingAtSec = nextAiring['airingAt'] as int?;
+        if (nextEp != null && nextEp > 1) currentCount = nextEp - 1;
+        nextEpisode = nextEp;
+        if (airingAtSec != null) {
+          nextAiringAt =
+              DateTime.fromMillisecondsSinceEpoch(airingAtSec * 1000);
+        }
       }
-      return media['episodes'] as int?;
+      currentCount ??= media['episodes'] as int?;
+
+      return _MediaInfo(
+        currentCount: currentCount,
+        nextEpisode: nextEpisode,
+        nextAiringAt: nextAiringAt,
+      );
     }
   }
 
@@ -97,7 +124,7 @@ class EpisodeCheckerTask {
     query MediaCount(\$id: Int) {
       Media(id: \$id) {
         episodes
-        nextAiringEpisode { episode }
+        nextAiringEpisode { episode airingAt }
         status
       }
     }
@@ -111,6 +138,14 @@ class EpisodeCheckerTask {
       }
     }
   ''';
+}
+
+class _MediaInfo {
+  final int? currentCount;
+  final int? nextEpisode;
+  final DateTime? nextAiringAt;
+
+  const _MediaInfo({this.currentCount, this.nextEpisode, this.nextAiringAt});
 }
 
 extension _MapExt on Map {

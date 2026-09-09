@@ -3,7 +3,6 @@ import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/discover/data/anime_providers.dart';
 import 'package:nextarc/features/recommendations/data/reco_repository.dart';
 import 'package:nextarc/features/recommendations/domain/recommendation_model.dart';
-import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 import 'package:nextarc/features/watchlist/domain/watchlist_providers.dart';
 
 final recoRepositoryProvider = Provider((_) => RecoRepository());
@@ -14,17 +13,15 @@ final recommendationsProvider =
   final auth = await ref.watch(authProvider.future);
   final repo = ref.read(recoRepositoryProvider);
 
-  if (auth.isAuthenticated) {
+  if (auth.user?.hasAnilist == true) {
     final groups = await ref.watch(userListProvider.future);
     final favs = await ref.watch(userFavouritesProvider.future);
 
+    // Exclure TOUS les éléments de la watchlist (pas seulement terminés/abandonnés)
     final seenIds = <int>{};
     for (final group in groups) {
-      if (group.status == ListStatus.completed ||
-          group.status == ListStatus.dropped) {
-        for (final e in group.entries) {
-          seenIds.add(e.media.id);
-        }
+      for (final e in group.entries) {
+        seenIds.add(e.media.id);
       }
     }
 
@@ -44,8 +41,10 @@ final recommendationsProvider =
     }
 
     if (sources.isNotEmpty) {
-      final allRecos = <RecommendationItem>[];
+      // Récupérer max 3 recos par source (interleave pour diversifier)
+      const maxPerSource = 3;
       final seenRecoIds = <int>{...seenIds};
+      final perSource = <List<RecommendationItem>>[];
 
       for (final source in sources.take(5)) {
         final recos = await repo.getRecommendationsForAnime(
@@ -53,12 +52,23 @@ final recommendationsProvider =
           sourceTitle: source.title,
           excludeIds: seenRecoIds,
         );
-
+        final picked = <RecommendationItem>[];
         for (final reco in recos) {
           if (!seenRecoIds.contains(reco.recommended.id)) {
-            allRecos.add(reco);
+            picked.add(reco);
             seenRecoIds.add(reco.recommended.id);
+            if (picked.length >= maxPerSource) break;
           }
+        }
+        if (picked.isNotEmpty) perSource.add(picked);
+      }
+
+      // Interleave : 1 reco de chaque source à tour de rôle
+      final allRecos = <RecommendationItem>[];
+      final maxRound = perSource.fold(0, (m, l) => l.length > m ? l.length : m);
+      for (var i = 0; i < maxRound; i++) {
+        for (final list in perSource) {
+          if (i < list.length) allRecos.add(list[i]);
         }
       }
 
@@ -80,16 +90,14 @@ final mangaRecommendationsProvider =
   final auth = await ref.watch(authProvider.future);
   final repo = ref.read(recoRepositoryProvider);
 
-  if (auth.isAuthenticated) {
+  if (auth.user?.hasAnilist == true) {
     final groups = await ref.watch(userMangaListProvider.future);
 
+    // Exclure TOUS les éléments de la watchlist manga
     final seenIds = <int>{};
     for (final group in groups) {
-      if (group.status == ListStatus.completed ||
-          group.status == ListStatus.dropped) {
-        for (final e in group.entries) {
-          seenIds.add(e.media.id);
-        }
+      for (final e in group.entries) {
+        seenIds.add(e.media.id);
       }
     }
 
@@ -104,8 +112,9 @@ final mangaRecommendationsProvider =
     }
 
     if (sources.isNotEmpty) {
-      final allRecos = <RecommendationItem>[];
+      const maxPerSource = 3;
       final seenRecoIds = <int>{...seenIds};
+      final perSource = <List<RecommendationItem>>[];
 
       for (final source in sources.take(5)) {
         final recos = await repo.getRecommendationsForAnime(
@@ -113,12 +122,22 @@ final mangaRecommendationsProvider =
           sourceTitle: source.title,
           excludeIds: seenRecoIds,
         );
-
+        final picked = <RecommendationItem>[];
         for (final reco in recos) {
           if (!seenRecoIds.contains(reco.recommended.id)) {
-            allRecos.add(reco);
+            picked.add(reco);
             seenRecoIds.add(reco.recommended.id);
+            if (picked.length >= maxPerSource) break;
           }
+        }
+        if (picked.isNotEmpty) perSource.add(picked);
+      }
+
+      final allRecos = <RecommendationItem>[];
+      final maxRound = perSource.fold(0, (m, l) => l.length > m ? l.length : m);
+      for (var i = 0; i < maxRound; i++) {
+        for (final list in perSource) {
+          if (i < list.length) allRecos.add(list[i]);
         }
       }
 
@@ -135,8 +154,8 @@ final mangaRecommendationsProvider =
       .toList();
 });
 
-/// Indique si les recos anime viennent du compte perso.
+/// Indique si les recos anime viennent du compte AniList perso.
 final recoIsPersonalisedProvider = Provider<bool>((ref) {
   final auth = ref.watch(authProvider);
-  return auth.whenOrNull(data: (a) => a.isAuthenticated) ?? false;
+  return auth.whenOrNull(data: (a) => a.user?.hasAnilist == true) ?? false;
 });

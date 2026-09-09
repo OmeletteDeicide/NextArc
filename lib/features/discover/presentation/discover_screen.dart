@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/widgets/horizontal_anime_list.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/auth/domain/user_model.dart';
 import 'package:nextarc/features/discover/domain/discover_providers.dart';
 import 'package:nextarc/features/discover/domain/media_model.dart';
 import 'package:nextarc/features/watchlist/presentation/watchlist_sheet_helper.dart';
@@ -29,13 +30,12 @@ class DiscoverScreen extends ConsumerWidget {
     final releasingManga = ref.watch(releasingMangaProvider);
     final preference = ref.watch(contentPreferenceProvider);
 
-    final isLoggedIn = ref.watch(authProvider).whenOrNull(
-              data: (a) => a.isAuthenticated,
-            ) ??
-        false;
+    final user = ref.watch(authProvider).whenOrNull<UserModel?>(
+          data: (a) => a.user,
+        );
 
     void openWatchlist(MediaModel media) =>
-        openWatchlistSheet(context, ref, anime: media, isLoggedIn: isLoggedIn);
+        openWatchlistSheet(context, ref, anime: media, user: user);
 
     final animeSliders = [
       HorizontalAnimeList(

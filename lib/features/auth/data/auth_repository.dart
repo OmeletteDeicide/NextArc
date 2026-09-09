@@ -152,7 +152,7 @@ class AuthRepository {
     final data = result.data?['Viewer'] as Map<String, dynamic>?;
     if (data == null) throw const AuthException('Profil utilisateur introuvable.');
 
-    return UserModel.fromJson(data);
+    return UserModel.fromAnilistJson(data);
   }
 }
 

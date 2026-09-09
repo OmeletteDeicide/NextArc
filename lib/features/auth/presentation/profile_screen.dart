@@ -7,6 +7,7 @@ import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/watchlist/data/mutation_repository.dart';
 import 'package:nextarc/features/watchlist/data/watchlist_repository.dart';
+import 'package:nextarc/features/watchlist/domain/firestore_watchlist_providers.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -47,6 +48,12 @@ class ProfileScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Image.asset('assets/images/logo.png', height: 40),
         actions: [
+          if (user.hasFirebase)
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'profile_edit_title'.tr(),
+              onPressed: () => context.push(AppRoutes.profileEdit),
+            ),
           TextButton.icon(
             icon: const Icon(Icons.logout, size: 18),
             label: Text('profile_logout_button'.tr()),
@@ -61,7 +68,6 @@ class ProfileScreen extends ConsumerWidget {
             clipBehavior: Clip.none,
             alignment: Alignment.bottomLeft,
             children: [
-              // Bannière
               Container(
                 height: 140,
                 color: const Color(0xFF1A1A1A),
@@ -73,7 +79,6 @@ class ProfileScreen extends ConsumerWidget {
                       )
                     : null,
               ),
-              // Avatar
               Positioned(
                 bottom: -40,
                 left: 16,
@@ -107,48 +112,56 @@ class ProfileScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Pseudo
                 Text(
-                  user.name,
+                  user.displayName,
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  'ID AniList : ${user.id}',
-                  style: const TextStyle(color: Colors.white38, fontSize: 13),
-                ),
+                if (user.hasAnilist)
+                  Text(
+                    'profile_anilist_id'.tr(namedArgs: {'id': '${user.id}'}),
+                    style: const TextStyle(
+                        color: Colors.white38, fontSize: 13),
+                  )
+                else if (user.email != null)
+                  Text(
+                    user.email!,
+                    style: const TextStyle(
+                        color: Colors.white38, fontSize: 13),
+                  ),
 
                 const SizedBox(height: 24),
 
-                // Carte "Mes statistiques"
+                // Lier AniList (si Firebase-only)
+                if (user.hasFirebase && !user.hasAnilist) ...[
+                  _ProfileCard(
+                    icon: Icons.link_rounded,
+                    title: 'profile_link_anilist_title'.tr(),
+                    subtitle: 'profile_link_anilist_subtitle'.tr(),
+                    onTap: () => ref.read(authProvider.notifier).login(),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+
                 _ProfileCard(
                   icon: Icons.bar_chart_rounded,
                   title: 'profile_stats_title'.tr(),
                   subtitle: 'profile_stats_subtitle'.tr(),
                   onTap: () => context.push(AppRoutes.stats),
                 ),
-
                 const SizedBox(height: 8),
-
-                // Carte "Paramètres"
                 _ProfileCard(
                   icon: Icons.settings_outlined,
                   title: 'profile_settings_title'.tr(),
                   subtitle: 'profile_settings_subtitle'.tr(),
                   onTap: () => context.push(AppRoutes.settings),
                 ),
-
                 const SizedBox(height: 8),
-
-                // Bouton Ko-fi
                 const _KofiCard(),
-
                 const SizedBox(height: 8),
-
-                // Carte "À propos"
                 _ProfileCard(
                   icon: Icons.info_outline_rounded,
                   title: 'profile_about_title'.tr(),
@@ -167,10 +180,12 @@ class ProfileScreen extends ConsumerWidget {
 
   Widget _buildLogin(BuildContext context, WidgetRef ref, AuthState auth) {
     final cs = Theme.of(context).colorScheme;
+    final isLoading = ref.watch(authProvider).isLoading;
+
     return Scaffold(
       appBar: AppBar(title: Image.asset('assets/images/logo.png', height: 40)),
       body: ListView(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.symmetric(horizontal: 32),
         children: [
           const SizedBox(height: 48),
           Icon(Icons.account_circle_outlined,
@@ -197,28 +212,71 @@ class ProfileScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.shade900.withValues(alpha: 0.4),
+                color: cs.errorContainer,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                auth.error!,
-                style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+                auth.error!.tr(),
+                style: TextStyle(color: cs.onErrorContainer, fontSize: 13),
                 textAlign: TextAlign.center,
               ),
             ),
           ],
 
           const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              icon: const Icon(Icons.login),
-              label: Text('profile_login_button'.tr()),
-              onPressed: () => ref.read(authProvider.notifier).login(),
-            ),
+
+          // ── Google ────────────────────────────────────────────────────
+          _SocialButton(
+            label: 'auth_continue_google'.tr(),
+            icon: _GoogleIcon(),
+            loading: isLoading,
+            onPressed: () => ref.read(authProvider.notifier).loginWithGoogle(),
           ),
 
-          const SizedBox(height: 48),
+          const SizedBox(height: 12),
+
+          // ── Email ─────────────────────────────────────────────────────
+          OutlinedButton.icon(
+            icon: const Icon(Icons.email_outlined),
+            label: Text('auth_continue_email'.tr()),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 48),
+            ),
+            onPressed: isLoading ? null : () => context.push(AppRoutes.login),
+          ),
+
+          const SizedBox(height: 24),
+
+          // ── Séparateur ────────────────────────────────────────────────
+          Row(children: [
+            const Expanded(child: Divider()),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                'auth_or'.tr(),
+                style: TextStyle(
+                    color: cs.onSurface.withValues(alpha: 0.4), fontSize: 13),
+              ),
+            ),
+            const Expanded(child: Divider()),
+          ]),
+
+          const SizedBox(height: 16),
+
+          // ── AniList (secondaire) ──────────────────────────────────────
+          TextButton.icon(
+            icon: const Icon(Icons.link_rounded, size: 18),
+            label: Text('profile_login_button'.tr()),
+            style: TextButton.styleFrom(
+              minimumSize: const Size(double.infinity, 44),
+            ),
+            onPressed: isLoading
+                ? null
+                : () => ref.read(authProvider.notifier).login(),
+          ),
+
+          const SizedBox(height: 40),
+
           _ProfileCard(
             icon: Icons.settings_outlined,
             title: 'profile_settings_title'.tr(),
@@ -234,6 +292,7 @@ class ProfileScreen extends ConsumerWidget {
             subtitle: 'profile_about_subtitle'.tr(),
             onTap: () => context.push(AppRoutes.about),
           ),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -246,16 +305,44 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  // ── Migration invité → AniList ────────────────────────────────────────────
+  // ── Migration invité → Firestore (Firebase-only) ou AniList ──────────────
 
   Future<void> _checkGuestMigration(BuildContext context, WidgetRef ref) async {
     final guestEntries =
         await ref.read(guestWatchlistRepositoryProvider).getEntries();
     if (guestEntries.isEmpty || !context.mounted) return;
 
-    // Récupère la liste AniList existante pour éviter d'écraser ses données
     final authState = ref.read(authProvider).value;
     if (authState == null || !authState.isAuthenticated) return;
+
+    // ── Firebase-only → migration silencieuse vers Firestore ─────────────
+    if (authState.user?.hasFirebase == true &&
+        authState.user?.hasAnilist != true) {
+      final uid = authState.user!.firebaseUid!;
+      final repo = ref.read(firestoreWatchlistRepositoryProvider);
+      for (final entry in guestEntries) {
+        try {
+          await repo.upsertEntry(uid, entry);
+        } catch (_) {}
+      }
+      await ref.read(guestWatchlistRepositoryProvider).clearAll();
+      ref.invalidate(guestWatchlistProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${guestEntries.length} anime(s) synchronisé(s) avec ton compte NextArc ✓',
+            ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    // ── AniList → migration avec confirmation ─────────────────────────────
+    if (authState.user?.hasAnilist != true) return;
 
     Set<int> existingIds = {};
     try {
@@ -370,6 +457,67 @@ class ProfileScreen extends ConsumerWidget {
     if (confirmed == true) {
       await ref.read(authProvider.notifier).logout();
     }
+  }
+}
+
+// ── Bouton social générique ───────────────────────────────────────────────────
+
+class _SocialButton extends StatelessWidget {
+  const _SocialButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.loading = false,
+  });
+
+  final String label;
+  final Widget icon;
+  final VoidCallback? onPressed;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: loading ? null : onPressed,
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(double.infinity, 48),
+      ),
+      child: loading
+          ? const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                icon,
+                const SizedBox(width: 10),
+                Text(label),
+              ],
+            ),
+    );
+  }
+}
+
+class _GoogleIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    // Icône Google SVG simplifiée en Container coloré
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: const BoxDecoration(shape: BoxShape.circle),
+      child: const Text(
+        'G',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF4285F4),
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
   }
 }
 

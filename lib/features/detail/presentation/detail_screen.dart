@@ -3,8 +3,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/auth/domain/user_model.dart';
 import 'package:nextarc/features/detail/domain/detail_providers.dart';
 import 'package:nextarc/features/discover/domain/media_model.dart';
+import 'package:nextarc/features/share/presentation/share_media_sheet.dart';
+import 'package:nextarc/features/reviews/domain/review_providers.dart';
+import 'package:nextarc/features/watchlist/domain/firestore_watchlist_providers.dart';
+import 'package:nextarc/features/watchlist/presentation/firestore_watchlist_edit_sheet.dart';
 import 'package:nextarc/features/watchlist/presentation/guest_watchlist_edit_sheet.dart';
 import 'package:nextarc/features/watchlist/presentation/watchlist_edit_sheet.dart';
 
@@ -175,12 +180,12 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
     }
   }
 
-  void _openSheet({required bool isLoggedIn}) {
+  void _openSheet({required UserModel? user}) {
     final totalCount = widget.anime.isManga
         ? widget.anime.chapters
         : widget.anime.episodes;
 
-    if (isLoggedIn) {
+    if (user?.hasAnilist == true) {
       final entry = ref.read(userListEntryProvider(widget.anime.id));
       showWatchlistEditSheet(
         context,
@@ -190,6 +195,19 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
         totalEpisodes: totalCount,
         startDate: widget.anime.startDate,
         existing: entry,
+        isManga: widget.anime.isManga,
+      );
+    } else if (user?.hasFirebase == true) {
+      final firestoreEntry =
+          ref.read(firestoreListEntryProvider(widget.anime.id));
+      showFirestoreWatchlistEditSheet(
+        context,
+        ref,
+        animeId: widget.anime.id,
+        animeTitle: widget.anime.displayTitle,
+        coverImage: widget.anime.coverImage,
+        totalEpisodes: totalCount,
+        existing: firestoreEntry,
         isManga: widget.anime.isManga,
       );
     } else {
@@ -210,15 +228,19 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
   @override
   Widget build(BuildContext context) {
     final anime = widget.anime;
-    final isLoggedIn = ref.watch(authProvider).whenOrNull(
-              data: (a) => a.isAuthenticated,
-            ) ??
-        false;
+    final user = ref.watch(authProvider).whenOrNull<UserModel?>(
+          data: (a) => a.user,
+        );
     final userEntry =
-        isLoggedIn ? ref.watch(userListEntryProvider(anime.id)) : null;
+        user?.hasAnilist == true ? ref.watch(userListEntryProvider(anime.id)) : null;
+    final firestoreEntry =
+        user?.hasFirebase == true && user?.hasAnilist != true
+            ? ref.watch(firestoreListEntryProvider(anime.id))
+            : null;
     final guestEntry =
-        isLoggedIn ? null : ref.watch(guestListEntryProvider(anime.id));
-    final hasEntry = userEntry != null || guestEntry != null;
+        user == null ? ref.watch(guestListEntryProvider(anime.id)) : null;
+    final hasEntry =
+        userEntry != null || firestoreEntry != null || guestEntry != null;
 
     final cs = Theme.of(context).colorScheme;
     final fabInactiveBg = Theme.of(context).brightness == Brightness.dark
@@ -238,7 +260,7 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
           child: FloatingActionButton.small(
             heroTag: 'watchlist_fab_${anime.id}',
             backgroundColor: hasEntry ? cs.primary : fabInactiveBg,
-            onPressed: () => _openSheet(isLoggedIn: isLoggedIn),
+            onPressed: () => _openSheet(user: user),
             child: Icon(
               hasEntry ? Icons.bookmark : Icons.bookmark_add_outlined,
               color: hasEntry ? Colors.white : cs.primary,
@@ -255,6 +277,13 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
           SliverAppBar(
             expandedHeight: 260,
             pinned: true,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.ios_share_rounded),
+                tooltip: 'share_media_title'.tr(),
+                onPressed: () => showShareMediaSheet(context, anime),
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
                 fit: StackFit.expand,
@@ -410,7 +439,7 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
                   // ── Bouton watchlist (en bas du scroll) ───────────────
                   if (hasEntry) ...[
                     GestureDetector(
-                      onTap: () => _openSheet(isLoggedIn: isLoggedIn),
+                      onTap: () => _openSheet(user: user),
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
@@ -430,7 +459,9 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    (userEntry?.status ?? guestEntry?.status)
+                                    (userEntry?.status ??
+                                                firestoreEntry?.status ??
+                                                guestEntry?.status)
                                             ?.label ??
                                         'detail_in_list'.tr(),
                                     style: TextStyle(
@@ -439,11 +470,13 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
                                   ),
                                   Text(
                                     (userEntry?.progressLabel ??
+                                            firestoreEntry?.progressLabel ??
                                             guestEntry?.progressLabel ??
                                             '') +
                                         (() {
                                           final score = userEntry
                                                   ?.formattedScore ??
+                                              firestoreEntry?.formattedScore ??
                                               guestEntry?.formattedScore;
                                           return score != null
                                               ? '  •  ⭐ $score'
@@ -471,8 +504,17 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
                       child: FilledButton.icon(
                         icon: const Icon(Icons.bookmark_add_outlined),
                         label: Text('detail_add_to_watchlist'.tr()),
-                        onPressed: () => _openSheet(isLoggedIn: isLoggedIn),
+                        onPressed: () => _openSheet(user: user),
                       ),
+                    ),
+                  ],
+
+                  // ── Note personnelle (Firebase uniquement) ────────────
+                  if (user?.hasFirebase == true) ...[
+                    const SizedBox(height: 16),
+                    _PersonalNoteCard(
+                      mediaId: anime.id,
+                      uid: user!.firebaseUid!,
                     ),
                   ],
 
@@ -540,6 +582,152 @@ class _InfoChip extends StatelessWidget {
         Text(label, style: TextStyle(fontSize: 12, color: color ?? fallback)),
       ],
     );
+  }
+}
+
+// ── Note personnelle (Firestore) ──────────────────────────────────────────────
+
+class _PersonalNoteCard extends ConsumerWidget {
+  const _PersonalNoteCard({required this.mediaId, required this.uid});
+
+  final int mediaId;
+  final String uid;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final noteAsync = ref.watch(reviewNoteProvider(mediaId));
+    final cs = Theme.of(context).colorScheme;
+
+    return noteAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (note) {
+        final hasNote = note != null && note.isNotEmpty;
+        return GestureDetector(
+          onTap: () => _openNoteDialog(context, ref, current: note),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: hasNote
+                  ? cs.secondaryContainer.withValues(alpha: 0.5)
+                  : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: hasNote
+                    ? cs.secondary.withValues(alpha: 0.4)
+                    : cs.onSurface.withValues(alpha: 0.12),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  hasNote ? Icons.sticky_note_2_rounded : Icons.note_add_outlined,
+                  size: 18,
+                  color: hasNote
+                      ? cs.secondary
+                      : cs.onSurface.withValues(alpha: 0.4),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: hasNote
+                      ? Text(
+                          note!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: cs.onSurface.withValues(alpha: 0.8),
+                            height: 1.5,
+                          ),
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : Text(
+                          'detail_note_placeholder'.tr(),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontStyle: FontStyle.italic,
+                            color: cs.onSurface.withValues(alpha: 0.38),
+                          ),
+                        ),
+                ),
+                if (hasNote) ...[
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => _deleteNote(context, ref),
+                    child: Icon(
+                      Icons.close,
+                      size: 16,
+                      color: cs.onSurface.withValues(alpha: 0.38),
+                    ),
+                  ),
+                ] else ...[
+                  Icon(
+                    Icons.edit_outlined,
+                    size: 14,
+                    color: cs.onSurface.withValues(alpha: 0.3),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openNoteDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    String? current,
+  }) async {
+    final controller = TextEditingController(text: current ?? '');
+    final cs = Theme.of(context).colorScheme;
+
+    final saved = await showDialog<String?>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('detail_note_dialog_title'.tr()),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: 5,
+          maxLength: 500,
+          decoration: InputDecoration(
+            hintText: 'detail_note_hint'.tr(),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: cs.primary),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('dialog_cancel'.tr()),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: Text('dialog_save'.tr()),
+          ),
+        ],
+      ),
+    );
+
+    controller.dispose();
+    if (saved == null) return;
+
+    final repo = ref.read(firestoreReviewRepositoryProvider);
+    if (saved.trim().isEmpty) {
+      await repo.deleteNote(uid, mediaId);
+    } else {
+      await repo.saveNote(uid, mediaId, saved);
+    }
+  }
+
+  Future<void> _deleteNote(BuildContext context, WidgetRef ref) async {
+    await ref.read(firestoreReviewRepositoryProvider).deleteNote(uid, mediaId);
   }
 }
 

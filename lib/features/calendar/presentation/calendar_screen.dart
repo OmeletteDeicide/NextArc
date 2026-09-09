@@ -203,7 +203,7 @@ class _AiringCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
-    final media = entry.listEntry.media;
+    final media = entry.media;
     final now = DateTime.now();
     final isAired = entry.airingAt.isBefore(now);
     final cardBg = Theme.of(context).brightness == Brightness.dark

@@ -132,6 +132,29 @@ class NotificationService {
     }
   }
 
+  /// Programme une notification précise pour le prochain épisode d'un anime.
+  ///
+  /// Utilise [airingAt] (timestamp exact de diffusion AniList) pour déclencher
+  /// la notification à l'heure réelle. N'utilise PAS mediaId*2 pour éviter les
+  /// collisions avec les notifs J-7/J-0 : utilise mediaId + 100_000_000.
+  Future<void> scheduleNextEpisodeNotification({
+    required int mediaId,
+    required String title,
+    required int episode,
+    required DateTime airingAt,
+  }) async {
+    final now = DateTime.now();
+    if (airingAt.isBefore(now)) return;
+
+    final notifId = mediaId + 100000000;
+    await _scheduleNotif(
+      id: notifId,
+      title: title,
+      body: '▶️ Épisode $episode disponible !',
+      scheduledDate: airingAt,
+    );
+  }
+
   /// Annule les notifications d'un anime (utile si retiré de la liste "Prévu").
   Future<void> cancelReleaseNotifications(int animeId) async {
     await _plugin.cancel(animeId * 2);

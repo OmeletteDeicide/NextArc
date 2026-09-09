@@ -5,6 +5,7 @@ import 'package:nextarc/core/theme/app_theme.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/detail/domain/detail_providers.dart';
 import 'package:nextarc/features/discover/domain/media_model.dart';
+import 'package:nextarc/features/watchlist/domain/firestore_watchlist_providers.dart';
 
 /// Carte anime verticale — jaquette + titre + score.
 /// Utilisée dans les listes horizontales et la grille de recherche.
@@ -31,13 +32,16 @@ class AnimeCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
-    final isLoggedIn = ref.watch(authProvider).whenOrNull(
-              data: (a) => a.isAuthenticated,
-            ) ??
-        false;
-    final isInWatchlist = isLoggedIn
-        ? ref.watch(userListEntryProvider(anime.id)) != null
-        : ref.watch(guestListEntryProvider(anime.id)) != null;
+    final user =
+        ref.watch(authProvider).whenOrNull(data: (a) => a.user);
+    final bool isInWatchlist;
+    if (user?.hasAnilist == true) {
+      isInWatchlist = ref.watch(userListEntryProvider(anime.id)) != null;
+    } else if (user?.hasFirebase == true) {
+      isInWatchlist = ref.watch(firestoreListEntryProvider(anime.id)) != null;
+    } else {
+      isInWatchlist = ref.watch(guestListEntryProvider(anime.id)) != null;
+    }
 
     final jacket = ClipRRect(
       borderRadius: BorderRadius.circular(8),
