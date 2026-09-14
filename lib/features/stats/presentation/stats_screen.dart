@@ -247,12 +247,18 @@ class _BigStatCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: accent ? cs.primary : cs.onSurface,
+                // Réduit la taille plutôt que de passer à la ligne
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: accent ? cs.primary : cs.onSurface,
+                    ),
+                    maxLines: 1,
                   ),
                 ),
                 Text(

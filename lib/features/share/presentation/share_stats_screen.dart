@@ -364,15 +364,19 @@ class _StatTile extends StatelessWidget {
         children: [
           Icon(icon, color: color.withValues(alpha: 0.7), size: w * 0.045),
           SizedBox(height: w * 0.02),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: w * 0.055,
+          // Réduit la taille plutôt que de couper (ex : « 41j 16h », « 9h 36min »)
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: w * 0.055,
+              ),
+              maxLines: 1,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
           Text(
             label,
