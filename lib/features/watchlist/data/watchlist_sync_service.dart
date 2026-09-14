@@ -102,6 +102,8 @@ class WatchlistSyncService {
               coverImage { large medium }
               episodes
               chapters
+              duration
+              genres
             }
           }
         }
@@ -190,6 +192,8 @@ class WatchlistSyncService {
           : null,
       'episodes': media.isManga ? media.chapters : media.episodes,
       'mediaType': media.isManga ? 'MANGA' : 'ANIME',
+      'genres': media.genres,
+      'duration': media.duration,
       'favourite': favouriteIds.contains(media.id),
       // AniList renvoie des secondes
       if (updatedAt is int && updatedAt > 0) 'updatedAt': updatedAt * 1000,

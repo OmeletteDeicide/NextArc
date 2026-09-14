@@ -6,6 +6,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nextarc/core/constants/app_links.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -65,7 +66,7 @@ class _ShareBodyState extends State<_ShareBody> {
 
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'image/png')],
-        text: 'share_stats_text'.tr(),
+        text: '${'share_stats_text'.tr()}\n${AppLinks.playStore}',
       );
     } catch (e) {
       if (mounted) {
@@ -248,24 +249,13 @@ class _CardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: w * 0.1,
-          height: w * 0.1,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF4F6EF5), Color(0xFF7C4DFF)],
-            ),
-          ),
-          child: Center(
-            child: Text(
-              'N',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: w * 0.055,
-              ),
-            ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.asset(
+            'assets/images/logo.png',
+            width: w * 0.1,
+            height: w * 0.1,
+            fit: BoxFit.cover,
           ),
         ),
         SizedBox(width: w * 0.035),
@@ -390,7 +380,8 @@ class _StatTile extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.4),
               fontSize: w * 0.028,
             ),
-            maxLines: 1,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -591,7 +582,7 @@ class _CardFooter extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
-            'nextarc.app',
+            'share_card_store'.tr(),
             style: TextStyle(
               color: Colors.white,
               fontSize: w * 0.028,

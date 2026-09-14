@@ -96,7 +96,10 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        // Clavier + barre de navigation système (edge-to-edge)
+        bottom: MediaQuery.viewInsetsOf(context).bottom +
+            MediaQuery.viewPaddingOf(context).bottom +
+            24,
         top: 16,
         left: 20,
         right: 20,

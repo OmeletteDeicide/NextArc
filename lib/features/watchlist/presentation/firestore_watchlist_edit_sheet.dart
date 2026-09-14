@@ -19,6 +19,8 @@ Future<void> showFirestoreWatchlistEditSheet(
   int? totalEpisodes,
   GuestWatchlistEntry? existing,
   bool isManga = false,
+  List<String>? genres,
+  int? duration,
 }) {
   return showModalBottomSheet(
     context: context,
@@ -32,6 +34,8 @@ Future<void> showFirestoreWatchlistEditSheet(
       totalEpisodes: totalEpisodes,
       existing: existing,
       isManga: isManga,
+      genres: genres,
+      duration: duration,
     ),
   );
 }
@@ -45,6 +49,8 @@ class _FirestoreEditSheet extends ConsumerStatefulWidget {
     this.totalEpisodes,
     this.existing,
     this.isManga = false,
+    this.genres,
+    this.duration,
   });
 
   final WidgetRef ref;
@@ -54,6 +60,8 @@ class _FirestoreEditSheet extends ConsumerStatefulWidget {
   final int? totalEpisodes;
   final GuestWatchlistEntry? existing;
   final bool isManga;
+  final List<String>? genres;
+  final int? duration;
 
   @override
   ConsumerState<_FirestoreEditSheet> createState() =>
@@ -94,7 +102,10 @@ class _FirestoreEditSheetState extends ConsumerState<_FirestoreEditSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+        // Clavier + barre de navigation système (edge-to-edge)
+        bottom: MediaQuery.viewInsetsOf(context).bottom +
+            MediaQuery.viewPaddingOf(context).bottom +
+            24,
         top: 16,
         left: 20,
         right: 20,
@@ -371,6 +382,8 @@ class _FirestoreEditSheetState extends ConsumerState<_FirestoreEditSheet> {
         progress: _progress > 0 ? _progress : null,
         episodes: widget.totalEpisodes,
         mediaType: widget.isManga ? 'MANGA' : 'ANIME',
+        genres: widget.genres ?? widget.existing?.genres,
+        duration: widget.duration ?? widget.existing?.duration,
         favourite: _favourite,
       );
 

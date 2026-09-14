@@ -87,26 +87,11 @@ class StatsModel {
         : scored.reduce((a, b) => a + b) / scored.length;
 
     // ── Genres (fréquence pondérée par score si dispo) ────────────────────────
-    final genreCount = <String, double>{};
-    for (final entry in allEntries) {
-      if (entry.status == ListStatus.dropped) continue;
-      final genres = entry.media.genres;
-      if (genres == null) continue;
-      final weight = (entry.score ?? 0) > 0 ? (entry.score! / 10.0) : 1.0;
-      for (final genre in genres) {
-        genreCount[genre] = (genreCount[genre] ?? 0) + weight;
-      }
-    }
-    final sortedGenres = genreCount.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    final maxCount = sortedGenres.isEmpty ? 1.0 : sortedGenres.first.value;
-    final topGenres = sortedGenres
-        .take(5)
-        .map((e) => GenreStat(
-              name: e.key,
-              ratio: e.value / maxCount,
-            ))
-        .toList();
+    final topGenres = _topGenres(
+      allEntries
+          .where((e) => e.status != ListStatus.dropped)
+          .map((e) => (genres: e.media.genres, score: e.score)),
+    );
 
     // ── Best rated ────────────────────────────────────────────────────────────
     MediaListEntry? bestAnime;
@@ -141,8 +126,10 @@ class StatsModel {
     );
   }
 
-  /// Stats simplifiées depuis la watchlist locale (invité ou Firebase-only).
-  /// Pas de genres, pas de temps de visionnage, pas de bestAnime/bestManga.
+  /// Stats depuis la watchlist NextArc (invité ou compte NextArc).
+  /// Temps de visionnage et genres viennent des champs `duration` / `genres`
+  /// de chaque entrée (24 min par épisode si la durée est inconnue, comme pour
+  /// AniList). Pas de bestAnime/bestManga (modèle AniList).
   static StatsModel computeFromGuestList(List<GuestWatchlistEntry> entries) {
     final animeEntries = entries.where((e) => !e.isManga).toList();
     final mangaEntries = entries.where((e) => e.isManga).toList();
@@ -161,19 +148,46 @@ class StatsModel {
           animeEntries.where((e) => e.status == ListStatus.completed).length,
       episodesWatched:
           animeWithProgress.fold(0, (s, e) => s + (e.progress ?? 0)),
-      watchTimeMinutes: 0,
+      watchTimeMinutes: animeWithProgress.fold(
+          0, (s, e) => s + (e.progress ?? 0) * (e.duration ?? 24)),
       mangaRead: mangaWithProgress.length,
       mangaCompleted:
           mangaEntries.where((e) => e.status == ListStatus.completed).length,
       chaptersRead:
           mangaWithProgress.fold(0, (s, e) => s + (e.progress ?? 0)),
-      topGenres: [],
+      topGenres: _topGenres(
+        entries
+            .where((e) => e.status != ListStatus.dropped)
+            .map((e) => (genres: e.genres, score: e.score)),
+      ),
       meanScore: scores.isEmpty
           ? null
           : scores.reduce((a, b) => a + b) / scores.length,
       bestAnime: null,
       bestManga: null,
     );
+  }
+
+  /// Top 5 genres, fréquence pondérée par la note quand elle existe.
+  static List<GenreStat> _topGenres(
+    Iterable<({List<String>? genres, double? score})> items,
+  ) {
+    final genreCount = <String, double>{};
+    for (final item in items) {
+      final genres = item.genres;
+      if (genres == null) continue;
+      final weight = (item.score ?? 0) > 0 ? item.score! / 10.0 : 1.0;
+      for (final genre in genres) {
+        genreCount[genre] = (genreCount[genre] ?? 0) + weight;
+      }
+    }
+    final sorted = genreCount.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final maxCount = sorted.isEmpty ? 1.0 : sorted.first.value;
+    return sorted
+        .take(5)
+        .map((e) => GenreStat(name: e.key, ratio: e.value / maxCount))
+        .toList();
   }
 }
 

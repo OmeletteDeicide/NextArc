@@ -15,6 +15,8 @@ class GuestWatchlistEntry {
     this.progress,
     this.episodes,
     this.mediaType = 'ANIME',
+    this.genres,
+    this.duration,
     this.favourite = false,
     this.deleted = false,
     this.updatedAt,
@@ -23,6 +25,9 @@ class GuestWatchlistEntry {
   static const maxTitleLength = 500;
   static const maxCount = 50000;
   static const maxUrlLength = 2048;
+  static const maxGenres = 20;
+  static const maxGenreLength = 50;
+  static const maxDuration = 10000;
 
   final int animeId;
   final String title;
@@ -32,6 +37,12 @@ class GuestWatchlistEntry {
   final int? progress;
   final int? episodes;
   final String mediaType;
+
+  /// Genres AniList du média (pour les stats).
+  final List<String>? genres;
+
+  /// Durée moyenne d'un épisode en minutes (anime, pour le temps de visionnage).
+  final int? duration;
 
   /// ❤️ explicite posé par l'utilisateur (ou favori importé d'AniList).
   final bool favourite;
@@ -70,6 +81,8 @@ class GuestWatchlistEntry {
         if (progress != null) 'progress': progress,
         if (episodes != null) 'episodes': episodes,
         'mediaType': mediaType,
+        if (genres != null) 'genres': genres,
+        if (duration != null) 'duration': duration,
         'favourite': favourite,
         if (deleted) 'deleted': true,
         if (updatedAt != null) 'updatedAt': updatedAt!.millisecondsSinceEpoch,
@@ -86,6 +99,8 @@ class GuestWatchlistEntry {
       progress: json['progress'] as int?,
       episodes: json['episodes'] as int?,
       mediaType: json['mediaType'] as String? ?? 'ANIME',
+      genres: _parseGenres(json['genres']),
+      duration: _parseDuration(json['duration']),
       favourite: json['favourite'] == true,
       deleted: json['deleted'] == true,
       updatedAt: _parseDate(json['updatedAt']),
@@ -127,6 +142,8 @@ class GuestWatchlistEntry {
       progress: _validCount(raw['progress']),
       episodes: _validCount(raw['episodes']),
       mediaType: type as String,
+      genres: _parseGenres(raw['genres']),
+      duration: _parseDuration(raw['duration']),
       favourite: raw['favourite'] == true,
       deleted: raw['deleted'] == true,
       updatedAt: _parseDate(raw['updatedAt']),
@@ -135,6 +152,18 @@ class GuestWatchlistEntry {
 
   static int? _validCount(Object? v) =>
       v is int && v >= 0 && v <= maxCount ? v : null;
+
+  static List<String>? _parseGenres(Object? v) {
+    if (v is! List) return null;
+    return v
+        .whereType<String>()
+        .where((g) => g.isNotEmpty && g.length <= maxGenreLength)
+        .take(maxGenres)
+        .toList();
+  }
+
+  static int? _parseDuration(Object? v) =>
+      v is int && v > 0 && v <= maxDuration ? v : null;
 
   static DateTime? _parseDate(Object? v) => switch (v) {
         Timestamp t => t.toDate(),
@@ -147,6 +176,8 @@ class GuestWatchlistEntry {
     ListStatus? status,
     double? score,
     int? progress,
+    List<String>? genres,
+    int? duration,
     bool? favourite,
     bool? deleted,
     DateTime? updatedAt,
@@ -160,6 +191,8 @@ class GuestWatchlistEntry {
         progress: progress ?? this.progress,
         episodes: episodes,
         mediaType: mediaType,
+        genres: genres ?? this.genres,
+        duration: duration ?? this.duration,
         favourite: favourite ?? this.favourite,
         deleted: deleted ?? this.deleted,
         updatedAt: updatedAt ?? this.updatedAt,

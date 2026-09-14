@@ -8,6 +8,7 @@ import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'package:nextarc/core/constants/app_links.dart';
 import 'package:nextarc/features/discover/domain/media_model.dart';
 
 /// Ouvre le bottom sheet de partage pour un anime ou manga.
@@ -57,7 +58,7 @@ class _ShareMediaSheetState extends State<_ShareMediaSheet> {
       final url = 'https://anilist.co/$type/${widget.media.id}';
       final title =
           'share_media_text'.tr(namedArgs: {'title': widget.media.displayTitle});
-      final text = '$title\n$url';
+      final text = '$title\n$url\n\n${AppLinks.playStore}';
 
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'image/png')],
@@ -79,7 +80,9 @@ class _ShareMediaSheetState extends State<_ShareMediaSheet> {
     final cs = Theme.of(context).colorScheme;
 
     return Container(
-      margin: const EdgeInsets.all(12),
+      // Marge basse + barre de navigation système (edge-to-edge)
+      margin: EdgeInsets.fromLTRB(
+          12, 12, 12, 12 + MediaQuery.viewPaddingOf(context).bottom),
       decoration: BoxDecoration(
         color: cs.surface,
         borderRadius: BorderRadius.circular(20),
@@ -314,24 +317,13 @@ class _ShareLogo extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(6),
-            gradient: const LinearGradient(
-              colors: [Color(0xFF4F6EF5), Color(0xFF7C4DFF)],
-            ),
-          ),
-          child: const Center(
-            child: Text(
-              'N',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-            ),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Image.asset(
+            'assets/images/logo.png',
+            width: 22,
+            height: 22,
+            fit: BoxFit.cover,
           ),
         ),
         const SizedBox(width: 6),

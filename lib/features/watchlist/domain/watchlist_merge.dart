@@ -66,6 +66,8 @@ GuestWatchlistEntry mergeEntryFields({
     progress: (newer.progress ?? 0) > 0 ? newer.progress : older.progress,
     episodes: newer.episodes ?? older.episodes,
     mediaType: newer.mediaType,
+    genres: newer.genres ?? older.genres,
+    duration: newer.duration ?? older.duration,
     favourite: newer.favourite || older.favourite,
     updatedAt: newer.updatedAt,
   );
@@ -77,5 +79,7 @@ bool _sameContent(GuestWatchlistEntry a, GuestWatchlistEntry b) =>
     a.progress == b.progress &&
     a.episodes == b.episodes &&
     a.coverImage == b.coverImage &&
+    a.genres?.join('|') == b.genres?.join('|') &&
+    a.duration == b.duration &&
     a.favourite == b.favourite &&
     a.deleted == b.deleted;

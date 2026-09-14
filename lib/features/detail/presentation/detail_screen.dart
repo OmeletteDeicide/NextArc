@@ -209,6 +209,8 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
         totalEpisodes: totalCount,
         existing: firestoreEntry,
         isManga: widget.anime.isManga,
+        genres: widget.anime.genres,
+        duration: widget.anime.duration,
       );
     } else {
       final guestEntry = ref.read(guestListEntryProvider(widget.anime.id));
@@ -221,6 +223,8 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
         totalEpisodes: totalCount,
         existing: guestEntry,
         isManga: widget.anime.isManga,
+        genres: widget.anime.genres,
+        duration: widget.anime.duration,
       );
     }
   }

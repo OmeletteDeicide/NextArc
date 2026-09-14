@@ -43,6 +43,8 @@ void openWatchlistSheet(
       totalEpisodes: totalCount,
       existing: ref.read(firestoreListEntryProvider(anime.id)),
       isManga: anime.isManga,
+      genres: anime.genres,
+      duration: anime.duration,
     );
   } else {
     showGuestWatchlistEditSheet(
@@ -54,6 +56,8 @@ void openWatchlistSheet(
       totalEpisodes: totalCount,
       existing: ref.read(guestListEntryProvider(anime.id)),
       isManga: anime.isManga,
+      genres: anime.genres,
+      duration: anime.duration,
     );
   }
 }
