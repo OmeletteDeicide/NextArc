@@ -7,6 +7,7 @@ import 'package:nextarc/core/services/notification_prefs_repository.dart';
 import 'package:nextarc/features/watchlist/domain/firestore_watchlist_providers.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
+import 'package:nextarc/features/watchlist/presentation/favourite_button.dart';
 
 /// BottomSheet pour ajouter ou modifier un média dans la watchlist Firestore.
 Future<void> showFirestoreWatchlistEditSheet(
@@ -64,6 +65,7 @@ class _FirestoreEditSheetState extends ConsumerState<_FirestoreEditSheet> {
   late double _score;
   late int _progress;
   late bool _notifEnabled;
+  late bool _favourite;
   bool _isSaving = false;
   bool _isDeleting = false;
 
@@ -73,6 +75,7 @@ class _FirestoreEditSheetState extends ConsumerState<_FirestoreEditSheet> {
     _selectedStatus = widget.existing?.status ?? ListStatus.planning;
     _score = widget.existing?.score ?? 0;
     _progress = widget.existing?.progress ?? 0;
+    _favourite = widget.existing?.favourite ?? false;
     _notifEnabled =
         NotificationPrefsRepository.instance.isEnabled(widget.animeId);
   }
@@ -112,19 +115,37 @@ class _FirestoreEditSheetState extends ConsumerState<_FirestoreEditSheet> {
           ),
           const SizedBox(height: 16),
 
-          // Titre + titre du média
-          Text(
-            isEditing ? 'sheet_edit_title'.tr() : 'sheet_add_title'.tr(),
-            style:
-                const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            widget.animeTitle,
-            style: TextStyle(
-                color: cs.onSurface.withValues(alpha: 0.54), fontSize: 13),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          // Titre + titre du média + ❤️
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isEditing
+                          ? 'sheet_edit_title'.tr()
+                          : 'sheet_add_title'.tr(),
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.animeTitle,
+                      style: TextStyle(
+                          color: cs.onSurface.withValues(alpha: 0.54),
+                          fontSize: 13),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              FavouriteButton(
+                value: _favourite,
+                onChanged: (v) => setState(() => _favourite = v),
+              ),
+            ],
           ),
 
           const SizedBox(height: 24),
@@ -350,6 +371,7 @@ class _FirestoreEditSheetState extends ConsumerState<_FirestoreEditSheet> {
         progress: _progress > 0 ? _progress : null,
         episodes: widget.totalEpisodes,
         mediaType: widget.isManga ? 'MANGA' : 'ANIME',
+        favourite: _favourite,
       );
 
       await ref.read(firestoreWatchlistProvider.notifier).upsert(entry);

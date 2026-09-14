@@ -7,6 +7,7 @@ import 'package:nextarc/core/services/notification_prefs_repository.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
+import 'package:nextarc/features/watchlist/presentation/favourite_button.dart';
 
 /// BottomSheet pour ajouter ou modifier un média dans la liste locale invité.
 Future<void> showGuestWatchlistEditSheet(
@@ -63,6 +64,7 @@ class _GuestEditSheetState extends ConsumerState<_GuestEditSheet> {
   late double _score;
   late int _progress;
   late bool _notifEnabled;
+  late bool _favourite;
   bool _isSaving = false;
   bool _isDeleting = false;
 
@@ -72,6 +74,7 @@ class _GuestEditSheetState extends ConsumerState<_GuestEditSheet> {
     _selectedStatus = widget.existing?.status ?? ListStatus.planning;
     _score = widget.existing?.score ?? 0;
     _progress = widget.existing?.progress ?? 0;
+    _favourite = widget.existing?.favourite ?? false;
     _notifEnabled = NotificationPrefsRepository.instance.isEnabled(widget.animeId);
   }
 
@@ -133,6 +136,10 @@ class _GuestEditSheetState extends ConsumerState<_GuestEditSheet> {
                     ),
                   ],
                 ),
+              ),
+              FavouriteButton(
+                value: _favourite,
+                onChanged: (v) => setState(() => _favourite = v),
               ),
               // Badge "Mode invité"
               Container(
@@ -365,6 +372,7 @@ class _GuestEditSheetState extends ConsumerState<_GuestEditSheet> {
         progress: _progress > 0 ? _progress : null,
         episodes: widget.totalEpisodes,
         mediaType: widget.isManga ? 'MANGA' : 'ANIME',
+        favourite: _favourite,
       );
 
       await ref.read(guestWatchlistProvider.notifier).upsert(entry);

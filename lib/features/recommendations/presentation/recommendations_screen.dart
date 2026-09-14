@@ -80,7 +80,6 @@ class _AnimeRecoTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final recoAsync = ref.watch(recommendationsProvider);
-    final isPersonalised = ref.watch(recoIsPersonalisedProvider);
     final user = ref.watch(authProvider).whenOrNull<UserModel?>(
           data: (a) => a.user,
         );
@@ -89,17 +88,11 @@ class _AnimeRecoTab extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => _buildError(context, ref, e,
           onRetry: () => ref.invalidate(recommendationsProvider)),
-      data: (recos) => _RecoList(
-        recos: recos,
-        isPersonalised: isPersonalised,
+      data: (feed) => _RecoList(
+        feed: feed,
         user: user,
         onRetry: () => ref.invalidate(recommendationsProvider),
-        bannerLoggedInText:
-            'reco_banner_personalised_anime'.tr(),
-        bannerGuestText:
-            'reco_banner_guest_anime'.tr(),
-        bannerInfoText:
-            'reco_banner_no_data_anime'.tr(),
+        hintText: 'reco_banner_no_data_anime'.tr(),
       ),
     );
   }
@@ -121,17 +114,11 @@ class _MangaRecoTab extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => _buildError(context, ref, e,
           onRetry: () => ref.invalidate(mangaRecommendationsProvider)),
-      data: (recos) => _RecoList(
-        recos: recos,
-        isPersonalised: user?.hasAnilist == true,
+      data: (feed) => _RecoList(
+        feed: feed,
         user: user,
         onRetry: () => ref.invalidate(mangaRecommendationsProvider),
-        bannerLoggedInText:
-            'reco_banner_personalised_manga'.tr(),
-        bannerGuestText:
-            'reco_banner_guest_manga'.tr(),
-        bannerInfoText:
-            'reco_banner_no_data_manga'.tr(),
+        hintText: 'reco_banner_no_data_manga'.tr(),
       ),
     );
   }
@@ -141,25 +128,23 @@ class _MangaRecoTab extends ConsumerWidget {
 
 class _RecoList extends ConsumerWidget {
   const _RecoList({
-    required this.recos,
-    required this.isPersonalised,
+    required this.feed,
     required this.user,
     required this.onRetry,
-    required this.bannerLoggedInText,
-    required this.bannerGuestText,
-    required this.bannerInfoText,
+    required this.hintText,
   });
 
-  final List<RecommendationItem> recos;
-  final bool isPersonalised;
+  final RecoFeed feed;
   final UserModel? user;
   final VoidCallback onRetry;
-  final String bannerLoggedInText;
-  final String bannerGuestText;
-  final String bannerInfoText;
+
+  /// Invite à ajouter des ❤️ ou des notes, affiché tant que les recos
+  /// ne sont pas personnalisées.
+  final String hintText;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final recos = feed.items;
     void openWatchlist(MediaModel media) =>
         openWatchlistSheet(context, ref, anime: media, user: user);
 
@@ -168,33 +153,26 @@ class _RecoList extends ConsumerWidget {
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: isPersonalised
-                  ? _InfoBanner(
-                      icon: Icons.person,
-                      text: bannerLoggedInText,
-                      color: Theme.of(context).colorScheme.primary,
-                    )
-                  : _InfoBanner(
-                      icon: user != null
-                          ? Icons.info_outline
-                          : Icons.lock_outline,
-                      text: user != null ? bannerInfoText : bannerGuestText,
+            child: feed.isPersonalised
+                ? const SizedBox(height: 8)
+                : Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: _InfoBanner(
+                      icon: Icons.favorite_border_rounded,
+                      text: hintText,
                       color: Theme.of(context)
                           .colorScheme
                           .onSurface
                           .withValues(alpha: 0.35),
-                      onTap: user != null ? null : () => context.go('/profile'),
                     ),
-            ),
+                  ),
           ),
           SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) => _RecoCard(
                 item: recos[index],
                 index: index,
-                isFallback: !isPersonalised,
+                isFallback: !feed.isPersonalised,
                 onWatchlistTap: () => openWatchlist(recos[index].recommended),
               ),
               childCount: recos.length,
@@ -255,7 +233,7 @@ class _RecoCard extends ConsumerWidget {
     final user =
         ref.watch(authProvider).whenOrNull(data: (a) => a.user);
     final bool isInWatchlist;
-    if (user?.hasAnilist == true) {
+    if (user?.usesAnilistList == true) {
       isInWatchlist = ref.watch(userListEntryProvider(anime.id)) != null;
     } else if (user?.hasFirebase == true) {
       isInWatchlist =
@@ -421,36 +399,29 @@ class _InfoBanner extends StatelessWidget {
     required this.icon,
     required this.text,
     required this.color,
-    this.onTap,
   });
 
   final IconData icon;
   final String text;
   final Color color;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(text, style: TextStyle(fontSize: 12, color: color)),
-            ),
-            if (onTap != null)
-              Icon(Icons.chevron_right, size: 16, color: color),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: TextStyle(fontSize: 12, color: color)),
+          ),
+        ],
       ),
     );
   }

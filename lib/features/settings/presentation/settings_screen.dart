@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nextarc/core/providers/theme_provider.dart';
+import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -51,7 +54,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final bytes = result.files.first.bytes;
       if (bytes == null) return;
 
-      final jsonStr = String.fromCharCodes(bytes);
+      final jsonStr = utf8.decode(bytes);
       await ref.read(guestWatchlistRepositoryProvider).importJson(jsonStr);
       ref.invalidate(guestWatchlistProvider);
 
@@ -75,6 +78,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final currentMode = ref.watch(themeProvider);
     final cs = Theme.of(context).colorScheme;
+    // L'export/import ne concerne que la liste locale : un compte NextArc
+    // est sauvegardé dans Firestore.
+    final isGuest = ref
+            .watch(authProvider)
+            .whenOrNull(data: (a) => !a.isAuthenticated) ??
+        true;
 
     return Scaffold(
       appBar: AppBar(title: Text('settings_title'.tr())),
@@ -114,46 +123,48 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Divider(color: cs.outline.withValues(alpha: 0.2)),
           const SizedBox(height: 8),
 
-          // ── Liste locale ─────────────────────────────────────────────────────
-          _SectionHeader(label: 'settings_section_local_list'.tr()),
+          // ── Liste locale (invité uniquement) ─────────────────────────────────
+          if (isGuest) ...[
+            _SectionHeader(label: 'settings_section_local_list'.tr()),
 
-          ListTile(
-            leading: _isExporting
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Icon(Icons.upload_rounded, color: cs.primary),
-            title: Text('settings_export_title'.tr()),
-            subtitle: Text(
-              'settings_export_subtitle'.tr(),
-              style: TextStyle(
-                  fontSize: 12, color: cs.onSurface.withValues(alpha: 0.54)),
+            ListTile(
+              leading: _isExporting
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(Icons.upload_rounded, color: cs.primary),
+              title: Text('settings_export_title'.tr()),
+              subtitle: Text(
+                'settings_export_subtitle'.tr(),
+                style: TextStyle(
+                    fontSize: 12, color: cs.onSurface.withValues(alpha: 0.54)),
+              ),
+              onTap: _isExporting ? null : _export,
             ),
-            onTap: _isExporting ? null : _export,
-          ),
 
-          ListTile(
-            leading: _isImporting
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Icon(Icons.download_rounded, color: cs.primary),
-            title: Text('settings_import_title'.tr()),
-            subtitle: Text(
-              'settings_import_subtitle'.tr(),
-              style: TextStyle(
-                  fontSize: 12, color: cs.onSurface.withValues(alpha: 0.54)),
+            ListTile(
+              leading: _isImporting
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(Icons.download_rounded, color: cs.primary),
+              title: Text('settings_import_title'.tr()),
+              subtitle: Text(
+                'settings_import_subtitle'.tr(),
+                style: TextStyle(
+                    fontSize: 12, color: cs.onSurface.withValues(alpha: 0.54)),
+              ),
+              onTap: _isImporting ? null : _import,
             ),
-            onTap: _isImporting ? null : _import,
-          ),
 
-          const SizedBox(height: 8),
-          Divider(color: cs.outline.withValues(alpha: 0.2)),
-          const SizedBox(height: 8),
+            const SizedBox(height: 8),
+            Divider(color: cs.outline.withValues(alpha: 0.2)),
+            const SizedBox(height: 8),
+          ],
 
           // ── Langue ───────────────────────────────────────────────────────────
           _SectionHeader(label: 'settings_section_language'.tr()),

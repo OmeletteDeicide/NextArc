@@ -69,186 +69,200 @@ class WatchlistScreen extends ConsumerWidget {
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) =>
           Scaffold(body: Center(child: Text(e.toString()))),
-      data: (entries) {
-        if (entries.isEmpty) {
-          return Scaffold(
-            appBar: AppBar(
-                title: Image.asset('assets/images/logo.png', height: 40)),
-            body: Column(
-              children: [
-                loginBanner,
-                Expanded(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.list_alt_rounded,
-                            size: 64,
-                            color: cs.onSurface.withValues(alpha: 0.24)),
-                        const SizedBox(height: 16),
-                        Text('watchlist_guest_empty_title'.tr(),
-                            style: const TextStyle(fontSize: 16)),
-                        const SizedBox(height: 8),
-                        Text(
-                          'watchlist_anime_empty_subtitle'.tr(),
-                          style: TextStyle(
-                              color: cs.onSurface.withValues(alpha: 0.54),
-                              fontSize: 13),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final grouped = <ListStatus, List<GuestWatchlistEntry>>{};
-        for (final e in entries) {
-          grouped.putIfAbsent(e.status, () => []).add(e);
-        }
-
-        const orderedStatuses = [
-          ListStatus.current,
-          ListStatus.planning,
-          ListStatus.paused,
-          ListStatus.completed,
-          ListStatus.dropped,
-        ];
-
-        final tabs = <Tab>[];
-        final views = <Widget>[];
-
-        for (final status in orderedStatuses) {
-          final group = grouped[status];
-          if (group != null && group.isNotEmpty) {
-            tabs.add(Tab(text: '${status.label} (${group.length})'));
-            views.add(_GuestStatusTab(
-              entries: group,
-              onDelete: (id) =>
-                  ref.read(guestWatchlistProvider.notifier).remove(id),
-            ));
-          }
-        }
-
-        return DefaultTabController(
-          length: tabs.length,
-          child: Scaffold(
-            appBar: AppBar(
-              title: Image.asset('assets/images/logo.png', height: 40),
-              bottom: TabBar(
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                tabs: tabs,
-              ),
-            ),
-            body: Column(
-              children: [
-                loginBanner,
-                Expanded(child: TabBarView(children: views)),
-              ],
-            ),
-          ),
-        );
-      },
+      data: (entries) => _LocalWatchlistView(
+        entries: entries,
+        banner: loginBanner,
+        onDelete: (id) => ref.read(guestWatchlistProvider.notifier).remove(id),
+      ),
     );
   }
 
-  // ── Vue authentifiée : AniList ou Firestore selon le compte ─────────────
+  // ── Vue authentifiée : AniList seul ou compte NextArc ────────────────────
 
   Widget _buildAuthenticatedList(BuildContext context, WidgetRef ref) {
     final user =
         ref.watch(authProvider).whenOrNull<UserModel?>(data: (a) => a.user);
-    if (user?.hasAnilist == true) {
+    if (user?.usesAnilistList == true) {
       return const _AuthenticatedWatchlistView();
     }
-    return _buildFirestoreList(context, ref, user);
+    return _buildFirestoreList(ref);
   }
 
-  // ── Vue Firebase-only (Firestore) ─────────────────────────────────────────
+  // ── Vue compte NextArc (Firestore, AniList fusionné) ──────────────────────
 
-  Widget _buildFirestoreList(
-      BuildContext context, WidgetRef ref, UserModel? user) {
-    final firestoreAsync = ref.watch(firestoreWatchlistProvider);
-    final cs = Theme.of(context).colorScheme;
-
-    return firestoreAsync.when(
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => Scaffold(body: Center(child: Text(e.toString()))),
-      data: (entries) {
-        if (entries.isEmpty) {
-          return Scaffold(
-            appBar:
-                AppBar(title: Image.asset('assets/images/logo.png', height: 40)),
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.list_alt_rounded,
-                      size: 64, color: cs.onSurface.withValues(alpha: 0.24)),
-                  const SizedBox(height: 16),
-                  Text('watchlist_guest_empty_title'.tr(),
-                      style: const TextStyle(fontSize: 16)),
-                  const SizedBox(height: 8),
-                  Text(
-                    'watchlist_anime_empty_subtitle'.tr(),
-                    style: TextStyle(
-                        color: cs.onSurface.withValues(alpha: 0.54),
-                        fontSize: 13),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
-
-        final grouped = <ListStatus, List<GuestWatchlistEntry>>{};
-        for (final e in entries) {
-          grouped.putIfAbsent(e.status, () => []).add(e);
-        }
-
-        const orderedStatuses = [
-          ListStatus.current,
-          ListStatus.planning,
-          ListStatus.paused,
-          ListStatus.completed,
-          ListStatus.dropped,
-        ];
-
-        final tabs = <Tab>[];
-        final views = <Widget>[];
-
-        for (final status in orderedStatuses) {
-          final group = grouped[status];
-          if (group != null && group.isNotEmpty) {
-            tabs.add(Tab(text: '${status.label} (${group.length})'));
-            views.add(_GuestStatusTab(
-              entries: group,
-              onDelete: (id) =>
-                  ref.read(firestoreWatchlistProvider.notifier).remove(id),
-            ));
-          }
-        }
-
-        return DefaultTabController(
-          length: tabs.length,
-          child: Scaffold(
-            appBar: AppBar(
-              title: Image.asset('assets/images/logo.png', height: 40),
-              bottom: TabBar(
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                tabs: tabs,
-              ),
-            ),
-            body: TabBarView(children: views),
+  Widget _buildFirestoreList(WidgetRef ref) {
+    return ref.watch(firestoreWatchlistProvider).when(
+          loading: () =>
+              const Scaffold(body: Center(child: CircularProgressIndicator())),
+          error: (e, _) => Scaffold(body: Center(child: Text(e.toString()))),
+          data: (entries) => _LocalWatchlistView(
+            entries: entries,
+            onDelete: (id) =>
+                ref.read(firestoreWatchlistProvider.notifier).remove(id),
           ),
         );
-      },
+  }
+}
+
+// ── Liste NextArc (Firestore ou invité) : onglets Anime / Manga ───────────────
+
+class _LocalWatchlistView extends ConsumerStatefulWidget {
+  const _LocalWatchlistView({
+    required this.entries,
+    required this.onDelete,
+    this.banner,
+  });
+
+  final List<GuestWatchlistEntry> entries;
+  final void Function(int mediaId) onDelete;
+  final Widget? banner;
+
+  @override
+  ConsumerState<_LocalWatchlistView> createState() =>
+      _LocalWatchlistViewState();
+}
+
+class _LocalWatchlistViewState extends ConsumerState<_LocalWatchlistView>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    final preference = ref.read(contentPreferenceProvider);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: preference == 'MANGA' ? 1 : 0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final anime = widget.entries.where((e) => !e.isManga).toList();
+    final manga = widget.entries.where((e) => e.isManga).toList();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Image.asset('assets/images/logo.png', height: 40),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month_outlined),
+            tooltip: 'calendar_title'.tr(),
+            onPressed: () => context.push(AppRoutes.calendar),
+          ),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: '🎬 Anime'),
+            Tab(text: '📖 Manga'),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          ?widget.banner,
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _LocalMediaTab(
+                    entries: anime, isManga: false, onDelete: widget.onDelete),
+                _LocalMediaTab(
+                    entries: manga, isManga: true, onDelete: widget.onDelete),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LocalMediaTab extends StatelessWidget {
+  const _LocalMediaTab({
+    required this.entries,
+    required this.isManga,
+    required this.onDelete,
+  });
+
+  final List<GuestWatchlistEntry> entries;
+  final bool isManga;
+  final void Function(int mediaId) onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    if (entries.isEmpty) {
+      return _buildEmpty(
+        context,
+        icon: isManga ? Icons.menu_book_rounded : Icons.live_tv_rounded,
+        message: isManga
+            ? 'watchlist_manga_empty_title'.tr()
+            : 'watchlist_anime_empty_title'.tr(),
+        sub: isManga
+            ? 'watchlist_manga_empty_subtitle'.tr()
+            : 'watchlist_anime_empty_subtitle'.tr(),
+      );
+    }
+
+    // ❤️ explicites d'abord, puis par note
+    final favourites = entries.where((e) => e.isFavourite).toList()
+      ..sort((a, b) {
+        if (a.favourite != b.favourite) return a.favourite ? -1 : 1;
+        return (b.score ?? 0).compareTo(a.score ?? 0);
+      });
+
+    final tabs = <Tab>[];
+    final views = <Widget>[];
+
+    void addStatus(ListStatus status) {
+      final group = entries.where((e) => e.status == status).toList();
+      if (group.isEmpty) return;
+      tabs.add(Tab(text: '${status.label} (${group.length})'));
+      views.add(_GuestStatusTab(entries: group, onDelete: onDelete));
+    }
+
+    addStatus(ListStatus.current);
+    addStatus(ListStatus.planning);
+
+    tabs.add(Tab(text: '❤️ Favoris (${favourites.length})'));
+    views.add(favourites.isEmpty
+        ? Center(
+            child: Text(
+              'watchlist_favorites_empty'.tr(),
+              style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.38)),
+              textAlign: TextAlign.center,
+            ),
+          )
+        : _GuestStatusTab(entries: favourites, onDelete: onDelete));
+
+    addStatus(ListStatus.paused);
+    addStatus(ListStatus.completed);
+    addStatus(ListStatus.dropped);
+
+    return DefaultTabController(
+      length: tabs.length,
+      child: Column(
+        children: [
+          TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: tabs,
+          ),
+          Expanded(child: TabBarView(children: views)),
+        ],
+      ),
     );
   }
 }

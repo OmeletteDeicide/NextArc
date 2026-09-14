@@ -83,12 +83,9 @@
   "notif_new_episode_body": "▶️ Episode {count} available!",
   "notif_new_chapter_body": "📖 Chapter {count} available!",
 
-  "reco_banner_personalised_anime": "Based on your favorites and AniList ratings",
-  "reco_banner_guest_anime": "Log in for personalised recommendations",
-  "reco_banner_no_data_anime": "Rate anime on AniList to get personalised picks",
-  "reco_banner_personalised_manga": "Based on your rated manga on AniList",
-  "reco_banner_guest_manga": "Log in for personalised manga recommendations",
-  "reco_banner_no_data_manga": "Rate manga on AniList to get personalised picks",
+  "reco_banner_no_data_anime": "Like ❤️ or rate anime to get personalised picks",
+  "reco_banner_no_data_manga": "Like ❤️ or rate manga to get personalised picks",
+  "sheet_favourite_tooltip": "Like",
   "reco_because_you_liked": "Because you liked",
 
   "horizontal_list_empty": "No results available",

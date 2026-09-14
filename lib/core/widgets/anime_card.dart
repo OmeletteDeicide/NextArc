@@ -35,7 +35,7 @@ class AnimeCard extends ConsumerWidget {
     final user =
         ref.watch(authProvider).whenOrNull(data: (a) => a.user);
     final bool isInWatchlist;
-    if (user?.hasAnilist == true) {
+    if (user?.usesAnilistList == true) {
       isInWatchlist = ref.watch(userListEntryProvider(anime.id)) != null;
     } else if (user?.hasFirebase == true) {
       isInWatchlist = ref.watch(firestoreListEntryProvider(anime.id)) != null;

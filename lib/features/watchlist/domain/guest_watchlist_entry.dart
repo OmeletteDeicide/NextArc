@@ -1,6 +1,10 @@
+import 'dart:math' as math;
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 
-/// Entrée de watchlist locale pour le mode invité.
+/// Entrée de watchlist NextArc — modèle partagé entre la liste locale (invité)
+/// et Firestore (compte NextArc).
 class GuestWatchlistEntry {
   const GuestWatchlistEntry({
     required this.animeId,
@@ -11,7 +15,13 @@ class GuestWatchlistEntry {
     this.progress,
     this.episodes,
     this.mediaType = 'ANIME',
+    this.favourite = false,
+    this.updatedAt,
   });
+
+  static const maxTitleLength = 500;
+  static const maxCount = 50000;
+  static const maxUrlLength = 2048;
 
   final int animeId;
   final String title;
@@ -22,7 +32,17 @@ class GuestWatchlistEntry {
   final int? episodes;
   final String mediaType;
 
+  /// ❤️ explicite posé par l'utilisateur (ou favori importé d'AniList).
+  final bool favourite;
+
+  /// Dernière modification : heure serveur pour Firestore, heure locale pour
+  /// l'invité. Sert à départager deux versions lors d'une fusion.
+  final DateTime? updatedAt;
+
   bool get isManga => mediaType == 'MANGA';
+
+  /// Apparaît dans l'onglet Favoris : ❤️ ou note ≥ 8.
+  bool get isFavourite => favourite || (score ?? 0) >= 8;
 
   String? get formattedScore {
     if (score == null || score == 0) return null;
@@ -44,6 +64,8 @@ class GuestWatchlistEntry {
         if (progress != null) 'progress': progress,
         if (episodes != null) 'episodes': episodes,
         'mediaType': mediaType,
+        'favourite': favourite,
+        if (updatedAt != null) 'updatedAt': updatedAt!.millisecondsSinceEpoch,
       };
 
   factory GuestWatchlistEntry.fromJson(Map<String, dynamic> json) {
@@ -57,13 +79,67 @@ class GuestWatchlistEntry {
       progress: json['progress'] as int?,
       episodes: json['episodes'] as int?,
       mediaType: json['mediaType'] as String? ?? 'ANIME',
+      favourite: json['favourite'] == true,
+      updatedAt: _parseDate(json['updatedAt']),
     );
   }
+
+  /// Parse une entrée venant d'une source non fiable (fichier importé, stockage
+  /// local, API). Retourne null si l'entrée est invalide ; les valeurs hors
+  /// limites sont ignorées plutôt que de faire échouer tout l'import.
+  static GuestWatchlistEntry? tryParse(Object? raw) {
+    if (raw is! Map) return null;
+
+    final id = raw['animeId'];
+    final title = raw['title'];
+    final statusRaw = raw['status'];
+    final type = raw['mediaType'] ?? 'ANIME';
+
+    if (id is! int || id <= 0) return null;
+    if (title is! String || title.trim().isEmpty) return null;
+    final status =
+        statusRaw is String ? ListStatus.fromString(statusRaw) : null;
+    if (status == null) return null;
+    if (type != 'ANIME' && type != 'MANGA') return null;
+
+    final trimmed = title.trim();
+    final score = raw['score'];
+    final cover = raw['coverImage'];
+
+    return GuestWatchlistEntry(
+      animeId: id,
+      title: trimmed.substring(0, math.min(trimmed.length, maxTitleLength)),
+      coverImage: cover is String &&
+              cover.startsWith('https://') &&
+              cover.length <= maxUrlLength
+          ? cover
+          : null,
+      status: status,
+      score: score is num && score > 0 && score <= 10 ? score.toDouble() : null,
+      progress: _validCount(raw['progress']),
+      episodes: _validCount(raw['episodes']),
+      mediaType: type as String,
+      favourite: raw['favourite'] == true,
+      updatedAt: _parseDate(raw['updatedAt']),
+    );
+  }
+
+  static int? _validCount(Object? v) =>
+      v is int && v >= 0 && v <= maxCount ? v : null;
+
+  static DateTime? _parseDate(Object? v) => switch (v) {
+        Timestamp t => t.toDate(),
+        int ms => DateTime.fromMillisecondsSinceEpoch(ms),
+        String s => DateTime.tryParse(s),
+        _ => null,
+      };
 
   GuestWatchlistEntry copyWith({
     ListStatus? status,
     double? score,
     int? progress,
+    bool? favourite,
+    DateTime? updatedAt,
   }) =>
       GuestWatchlistEntry(
         animeId: animeId,
@@ -74,5 +150,7 @@ class GuestWatchlistEntry {
         progress: progress ?? this.progress,
         episodes: episodes,
         mediaType: mediaType,
+        favourite: favourite ?? this.favourite,
+        updatedAt: updatedAt ?? this.updatedAt,
       );
 }

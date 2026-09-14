@@ -10,9 +10,9 @@ import 'package:nextarc/features/watchlist/presentation/guest_watchlist_edit_she
 import 'package:nextarc/features/watchlist/presentation/watchlist_edit_sheet.dart';
 
 /// Ouvre le bon sheet selon l'état de connexion :
-/// - AniList (hasAnilist) → sheet AniList
-/// - Firebase sans AniList (hasFirebase) → sheet Firestore
-/// - Invité → sheet local Hive
+/// - AniList sans compte NextArc (usesAnilistList) → sheet AniList
+/// - Compte NextArc (hasFirebase, AniList lié ou non) → sheet Firestore
+/// - Invité → sheet local
 void openWatchlistSheet(
   BuildContext context,
   WidgetRef ref, {
@@ -22,7 +22,7 @@ void openWatchlistSheet(
   HapticFeedback.lightImpact();
   final totalCount = anime.isManga ? anime.chapters : anime.episodes;
 
-  if (user?.hasAnilist == true) {
+  if (user?.usesAnilistList == true) {
     showWatchlistEditSheet(
       context,
       ref,

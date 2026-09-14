@@ -185,7 +185,7 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
         ? widget.anime.chapters
         : widget.anime.episodes;
 
-    if (user?.hasAnilist == true) {
+    if (user?.usesAnilistList == true) {
       final entry = ref.read(userListEntryProvider(widget.anime.id));
       showWatchlistEditSheet(
         context,
@@ -231,12 +231,12 @@ class _DetailContentState extends ConsumerState<_DetailContent> {
     final user = ref.watch(authProvider).whenOrNull<UserModel?>(
           data: (a) => a.user,
         );
-    final userEntry =
-        user?.hasAnilist == true ? ref.watch(userListEntryProvider(anime.id)) : null;
-    final firestoreEntry =
-        user?.hasFirebase == true && user?.hasAnilist != true
-            ? ref.watch(firestoreListEntryProvider(anime.id))
-            : null;
+    final userEntry = user?.usesAnilistList == true
+        ? ref.watch(userListEntryProvider(anime.id))
+        : null;
+    final firestoreEntry = user?.hasFirebase == true
+        ? ref.watch(firestoreListEntryProvider(anime.id))
+        : null;
     final guestEntry =
         user == null ? ref.watch(guestListEntryProvider(anime.id)) : null;
     final hasEntry =

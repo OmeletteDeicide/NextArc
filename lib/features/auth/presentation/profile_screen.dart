@@ -7,7 +7,6 @@ import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/watchlist/data/mutation_repository.dart';
 import 'package:nextarc/features/watchlist/data/watchlist_repository.dart';
-import 'package:nextarc/features/watchlist/domain/firestore_watchlist_providers.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -315,33 +314,11 @@ class ProfileScreen extends ConsumerWidget {
     final authState = ref.read(authProvider).value;
     if (authState == null || !authState.isAuthenticated) return;
 
-    // ── Firebase-only → migration silencieuse vers Firestore ─────────────
-    if (authState.user?.hasFirebase == true &&
-        authState.user?.hasAnilist != true) {
-      final uid = authState.user!.firebaseUid!;
-      final repo = ref.read(firestoreWatchlistRepositoryProvider);
-      for (final entry in guestEntries) {
-        try {
-          await repo.upsertEntry(uid, entry);
-        } catch (_) {}
-      }
-      await ref.read(guestWatchlistRepositoryProvider).clearAll();
-      ref.invalidate(guestWatchlistProvider);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${guestEntries.length} anime(s) synchronisé(s) avec ton compte NextArc ✓',
-            ),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-      return;
-    }
+    // Compte NextArc : la liste invité est fusionnée dans Firestore par
+    // AuthNotifier dès la connexion (voir _syncInBackground).
+    if (authState.user?.hasFirebase == true) return;
 
-    // ── AniList → migration avec confirmation ─────────────────────────────
+    // ── AniList seul → migration avec confirmation ────────────────────────
     if (authState.user?.hasAnilist != true) return;
 
     Set<int> existingIds = {};

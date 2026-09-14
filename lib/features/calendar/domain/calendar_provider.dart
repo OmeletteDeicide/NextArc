@@ -34,7 +34,7 @@ final airingCalendarProvider =
   final cutoff = now.add(const Duration(days: 14));
   final result = <DateTime, List<AiringEntry>>{};
 
-  if (user?.hasAnilist == true) {
+  if (user?.usesAnilistList == true) {
     // ── Chemin AniList ────────────────────────────────────────────────────────
     final groups = await ref.watch(userListProvider.future);
     for (final group in groups) {

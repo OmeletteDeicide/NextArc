@@ -30,6 +30,11 @@ class UserModel {
   bool get hasAnilist => id > 0;
   bool get hasFirebase => firebaseUid != null;
 
+  /// Liste lue directement sur AniList : seulement pour un compte AniList sans
+  /// compte NextArc. Dès qu'un compte NextArc existe, Firestore fait foi et la
+  /// liste AniList y est fusionnée.
+  bool get usesAnilistList => hasAnilist && !hasFirebase;
+
   /// Photo de profil : AniList d'abord, puis Firebase photoURL.
   String? get avatar => avatarLarge ?? avatarMedium;
 

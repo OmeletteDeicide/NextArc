@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nextarc/features/auth/data/auth_repository.dart';
 import 'package:nextarc/features/auth/data/firebase_auth_service.dart';
 import 'package:nextarc/features/auth/data/user_profile_repository.dart';
 import 'package:nextarc/features/auth/domain/user_model.dart';
+import 'package:nextarc/features/watchlist/data/watchlist_sync_service.dart';
+import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 
 /// État d'authentification de l'application.
 enum AuthStatus { loading, authenticated, unauthenticated }
@@ -54,10 +58,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     // 1. Firebase d'abord
     final fbUser = ref.read(firebaseAuthServiceProvider).currentUser;
     if (fbUser != null) {
-      return AuthState(
-        status: AuthStatus.authenticated,
-        user: await _restoreFirebaseUser(fbUser),
-      );
+      final user = await _restoreFirebaseUser(fbUser);
+      _syncInBackground(user);
+      return AuthState(status: AuthStatus.authenticated, user: user);
     }
 
     // 2. Retombe sur AniList si token présent
@@ -83,6 +86,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       );
     });
     _handleError();
+    _syncInBackground(state.value?.user);
   }
 
   Future<void> createAccount(
@@ -100,6 +104,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       );
     });
     _handleError();
+    _syncInBackground(state.value?.user);
   }
 
   // ── Firebase — Google ────────────────────────────────────────────────────
@@ -115,6 +120,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       );
     });
     _handleError();
+    _syncInBackground(state.value?.user);
   }
 
   // ── AniList — OAuth (standalone ou liaison à un compte Firebase) ──────────
@@ -146,6 +152,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         state = AsyncValue.data(
           AuthState(status: AuthStatus.authenticated, user: merged),
         );
+        _syncInBackground(merged);
       } else {
         // Mode standalone AniList (sans Firebase)
         state = AsyncValue.data(
@@ -206,6 +213,28 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         bannerImage: anilist.bannerImage,
         siteUrl: anilist.siteUrl,
       );
+
+  /// Fusionne dans Firestore la liste invité puis la liste AniList, sans
+  /// bloquer l'UI. En cas d'échec (hors ligne…), on réessaiera au prochain
+  /// lancement : la fusion ne supprime rien et peut être rejouée.
+  void _syncInBackground(UserModel? user) {
+    final uid = user?.firebaseUid;
+    if (user == null || uid == null) return;
+    final sync = ref.read(watchlistSyncServiceProvider);
+
+    unawaited(() async {
+      try {
+        if (await sync.mergeGuestIntoFirestore(uid)) {
+          ref.invalidate(guestWatchlistProvider);
+        }
+      } catch (_) {}
+      if (user.hasAnilist) {
+        try {
+          await sync.mergeAnilistIntoFirestore(uid, user.id);
+        } catch (_) {}
+      }
+    }());
+  }
 
   /// Crée ou met à jour le document Firestore et retourne l'UserModel enrichi.
   Future<UserModel> _upsertFirestore(UserModel user) async {
