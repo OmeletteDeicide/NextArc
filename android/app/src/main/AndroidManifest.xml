@@ -17,7 +17,6 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:taskAffinity=""
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
@@ -37,12 +36,13 @@
         </activity>
 
         <!-- Activity dédiée flutter_web_auth_2 — intercepte le callback OAuth
-             AVANT que MainActivity (et go_router) ne le reçoive. -->
+             AVANT que MainActivity (et go_router) ne le reçoive.
+             Pas de taskAffinity (ni ici ni sur MainActivity) : sinon Android
+             referme l'onglet de connexion aussitôt ouvert (flutter_web_auth_2 #113). -->
         <activity
             android:name="com.linusu.flutter_web_auth_2.CallbackActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:taskAffinity=""
             android:excludeFromRecents="true">
             <intent-filter android:label="flutter_web_auth_2">
                 <action android:name="android.intent.action.VIEW"/>
