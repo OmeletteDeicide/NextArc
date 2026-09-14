@@ -16,6 +16,7 @@ class GuestWatchlistEntry {
     this.episodes,
     this.mediaType = 'ANIME',
     this.favourite = false,
+    this.deleted = false,
     this.updatedAt,
   });
 
@@ -34,6 +35,11 @@ class GuestWatchlistEntry {
 
   /// ❤️ explicite posé par l'utilisateur (ou favori importé d'AniList).
   final bool favourite;
+
+  /// Retiré de la liste par l'utilisateur (suppression douce, Firestore) :
+  /// l'entrée est masquée mais conservée pour que la fusion AniList ne la
+  /// fasse pas revenir. `updatedAt` vaut alors la date de suppression.
+  final bool deleted;
 
   /// Dernière modification : heure serveur pour Firestore, heure locale pour
   /// l'invité. Sert à départager deux versions lors d'une fusion.
@@ -65,6 +71,7 @@ class GuestWatchlistEntry {
         if (episodes != null) 'episodes': episodes,
         'mediaType': mediaType,
         'favourite': favourite,
+        if (deleted) 'deleted': true,
         if (updatedAt != null) 'updatedAt': updatedAt!.millisecondsSinceEpoch,
       };
 
@@ -80,6 +87,7 @@ class GuestWatchlistEntry {
       episodes: json['episodes'] as int?,
       mediaType: json['mediaType'] as String? ?? 'ANIME',
       favourite: json['favourite'] == true,
+      deleted: json['deleted'] == true,
       updatedAt: _parseDate(json['updatedAt']),
     );
   }
@@ -120,6 +128,7 @@ class GuestWatchlistEntry {
       episodes: _validCount(raw['episodes']),
       mediaType: type as String,
       favourite: raw['favourite'] == true,
+      deleted: raw['deleted'] == true,
       updatedAt: _parseDate(raw['updatedAt']),
     );
   }
@@ -139,6 +148,7 @@ class GuestWatchlistEntry {
     double? score,
     int? progress,
     bool? favourite,
+    bool? deleted,
     DateTime? updatedAt,
   }) =>
       GuestWatchlistEntry(
@@ -151,6 +161,7 @@ class GuestWatchlistEntry {
         episodes: episodes,
         mediaType: mediaType,
         favourite: favourite ?? this.favourite,
+        deleted: deleted ?? this.deleted,
         updatedAt: updatedAt ?? this.updatedAt,
       );
 }

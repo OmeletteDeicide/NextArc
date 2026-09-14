@@ -17,7 +17,7 @@ class FirestoreWatchlistRepository {
   Map<String, dynamic> _toFirestore(GuestWatchlistEntry entry) =>
       entry.toJson()..['updatedAt'] = FieldValue.serverTimestamp();
 
-  /// Stream temps-réel de la watchlist de l'utilisateur.
+  /// Stream temps-réel de la watchlist affichée (entrées supprimées masquées).
   Stream<List<GuestWatchlistEntry>> watchEntries(String uid) {
     return _watchlistRef(uid)
         .orderBy('updatedAt', descending: true)
@@ -26,11 +26,13 @@ class FirestoreWatchlistRepository {
           (snap) => snap.docs
               .map((doc) => GuestWatchlistEntry.tryParse(doc.data()))
               .whereType<GuestWatchlistEntry>()
+              .where((entry) => !entry.deleted)
               .toList(),
         );
   }
 
-  /// Lecture ponctuelle de toute la watchlist, indexée par id de média.
+  /// Lecture ponctuelle de toute la watchlist, entrées supprimées comprises
+  /// (nécessaires à la fusion), indexée par id de média.
   Future<Map<int, GuestWatchlistEntry>> getEntries(String uid) async {
     final snap = await _watchlistRef(uid).get();
     final entries = snap.docs
@@ -60,8 +62,13 @@ class FirestoreWatchlistRepository {
     }
   }
 
-  /// Supprime une entrée.
+  /// Retire une entrée de la liste (suppression douce) : elle est masquée et
+  /// `updatedAt` garde la date de suppression pour la fusion AniList.
+  /// La ré-ajouter réécrit l'entrée complète, sans le marqueur.
   Future<void> removeEntry(String uid, int mediaId) async {
-    await _watchlistRef(uid).doc(mediaId.toString()).delete();
+    await _watchlistRef(uid).doc(mediaId.toString()).update({
+      'deleted': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 }

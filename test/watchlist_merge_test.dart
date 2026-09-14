@@ -115,6 +115,38 @@ void main() {
     });
   });
 
+  group('suppressions', () {
+    final anilistEntry = entry(1,
+        status: ListStatus.current, score: 8, progress: 4, updatedAt: older);
+    final deletedLater = entry(1,
+        status: ListStatus.completed, score: 9, progress: 12, updatedAt: newer)
+        .copyWith(deleted: true);
+
+    test('une suppression plus récente reste supprimée', () {
+      expect(computeMergeWrites({1: deletedLater}, [anilistEntry]), isEmpty);
+    });
+
+    test('une modification plus récente fait revenir le média', () {
+      final deletedEarlier = deletedLater.copyWith(updatedAt: older);
+      final editedLater = entry(1, status: ListStatus.current, updatedAt: newer);
+
+      final revived =
+          computeMergeWrites({1: deletedEarlier}, [editedLater]).single;
+      expect(revived.deleted, isFalse);
+      expect(revived.status, ListStatus.current);
+      // Les anciennes infos de la version supprimée ne reviennent pas
+      expect(revived.score, isNull);
+      expect(revived.progress, isNull);
+    });
+
+    test('une entrée invité sans date ne ressuscite pas un média supprimé', () {
+      expect(
+        computeMergeWrites({1: deletedLater}, [entry(1, favourite: true)]),
+        isEmpty,
+      );
+    });
+  });
+
   test('tryParse rejette les entrées invalides et borne les valeurs', () {
     expect(GuestWatchlistEntry.tryParse('nope'), isNull);
     expect(GuestWatchlistEntry.tryParse({'animeId': -1}), isNull);

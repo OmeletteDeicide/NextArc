@@ -15,7 +15,10 @@ service cloud.firestore {
       match /watchlist/{mediaId} {
         allow read: if isOwner(uid);
         allow create, update: if isOwner(uid) && isValidWatchlistEntry(mediaId);
-        allow delete: if isOwner(uid);
+        // Retrait = suppression douce (champ `deleted`) pour garder la date de
+        // suppression ; l'effacement réel passe par la Cloud Function de
+        // suppression de compte (Admin SDK).
+        allow delete: if false;
       }
 
       match /reviews/{mediaId} {
@@ -55,7 +58,7 @@ service cloud.firestore {
       let validTypes = ['ANIME', 'MANGA'];
       return data.keys().hasOnly(['animeId', 'title', 'coverImage', 'status', 'score',
                                   'progress', 'episodes', 'mediaType', 'favourite',
-                                  'genres', 'duration', 'updatedAt'])
+                                  'deleted', 'genres', 'duration', 'updatedAt'])
           && data.animeId is int && data.animeId > 0
           && string(data.animeId) == mediaId
           && data.title is string && data.title.size() > 0 && data.title.size() <= 500
@@ -66,6 +69,7 @@ service cloud.firestore {
           && (data.get('progress', null) == null || (data.progress is int && data.progress >= 0 && data.progress <= 50000))
           && (data.get('episodes', null) == null || (data.episodes is int && data.episodes >= 0 && data.episodes <= 50000))
           && (data.get('favourite', null) == null || data.favourite is bool)
+          && (data.get('deleted', null) == null || data.deleted is bool)
           && (data.get('genres', null) == null || (data.genres is list && data.genres.size() <= 20))
           && (data.get('duration', null) == null || (data.duration is int && data.duration >= 0 && data.duration <= 10000))
           && optString(data, 'coverImage', 2048);

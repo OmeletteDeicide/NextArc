@@ -42,10 +42,16 @@ List<GuestWatchlistEntry> computeMergeWrites(
 /// - ❤️ : gardé s'il est présent d'un côté ;
 /// - note / progression : celle de [newer], sinon celle de [older] ;
 /// - statut : celui de [newer], sauf « À voir » si [older] est plus avancé.
+///
+/// Suppressions : une suppression plus récente l'emporte telle quelle ; une
+/// modification plus récente qu'une suppression fait revenir le média, sans
+/// reprendre les anciennes infos de la version supprimée.
 GuestWatchlistEntry mergeEntryFields({
   required GuestWatchlistEntry newer,
   required GuestWatchlistEntry older,
 }) {
+  if (newer.deleted || older.deleted) return newer;
+
   final status =
       newer.status == ListStatus.planning && older.status != ListStatus.planning
           ? older.status
@@ -71,4 +77,5 @@ bool _sameContent(GuestWatchlistEntry a, GuestWatchlistEntry b) =>
     a.progress == b.progress &&
     a.episodes == b.episodes &&
     a.coverImage == b.coverImage &&
-    a.favourite == b.favourite;
+    a.favourite == b.favourite &&
+    a.deleted == b.deleted;
