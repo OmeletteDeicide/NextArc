@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nextarc/core/constants/app_links.dart';
+import 'package:nextarc/features/activity/domain/activity_providers.dart';
+import 'package:nextarc/features/activity/domain/month_activity.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/share/domain/share_providers.dart';
 import 'package:nextarc/features/stats/domain/user_title.dart';
@@ -19,7 +21,11 @@ import 'package:nextarc/features/stats/domain/stats_model.dart';
 import 'package:nextarc/features/stats/domain/stats_provider.dart';
 
 class ShareStatsScreen extends ConsumerWidget {
-  const ShareStatsScreen({super.key});
+  const ShareStatsScreen({super.key, this.openPreviousMonth = false});
+
+  /// Ouvre directement la carte récap du mois précédent (message de début
+  /// de mois).
+  final bool openPreviousMonth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,7 +35,8 @@ class ShareStatsScreen extends ConsumerWidget {
       body: statsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text(e.toString())),
-        data: (stats) => _ShareBody(stats: stats),
+        data: (stats) =>
+            _ShareBody(stats: stats, openPreviousMonth: openPreviousMonth),
       ),
     );
   }
@@ -63,8 +70,9 @@ class _ShareIdentity {
 // ── Corps principal : carrousel de cartes + options ───────────────────────────
 
 class _ShareBody extends ConsumerStatefulWidget {
-  const _ShareBody({required this.stats});
+  const _ShareBody({required this.stats, required this.openPreviousMonth});
   final StatsModel stats;
+  final bool openPreviousMonth;
 
   @override
   ConsumerState<_ShareBody> createState() => _ShareBodyState();
@@ -72,9 +80,11 @@ class _ShareBody extends ConsumerStatefulWidget {
 
 class _ShareBodyState extends ConsumerState<_ShareBody> {
   final _pageController = PageController();
-  final _cardKeys = [GlobalKey(), GlobalKey()];
+  /// Une clé de capture par carte possible (stats, préférés, 2 récaps).
+  final _cardKeys = List.generate(4, (_) => GlobalKey());
   int _page = 0;
   bool _sharing = false;
+  bool _jumpedToPreviousMonth = false;
 
   bool _showTitle = true;
   bool _showPhoto = false; // vie privée : désactivé par défaut
@@ -89,6 +99,7 @@ class _ShareBodyState extends ConsumerState<_ShareBody> {
   Future<void> _share({
     required int page,
     required List<String> imageUrls,
+    required String text,
   }) async {
     if (_sharing) return;
     setState(() => _sharing = true);
@@ -111,8 +122,6 @@ class _ShareBodyState extends ConsumerState<_ShareBody> {
       final file = File('${tempDir.path}/nextarc_share_$page.png');
       await file.writeAsBytes(pngBytes);
 
-      final text =
-          page == 1 ? 'share_favourites_text'.tr() : 'share_stats_text'.tr();
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'image/png')],
         text: '$text\n${AppLinks.playStore}',
@@ -146,21 +155,61 @@ class _ShareBodyState extends ConsumerState<_ShareBody> {
       name: _showPhoto ? user?.displayName : null,
     );
 
-    final cards = <Widget>[
-      _StatsCard(stats: widget.stats, identity: identity),
+    // Récaps : mois en cours, et mois précédent (complet) en début de mois
+    final now = DateTime.now();
+    MonthlyRecap? recapOf(String month) => ref
+        .watch(monthlyRecapProvider(month))
+        .whenOrNull(data: (r) => r.isEmpty ? null : r);
+    final previousRecap = now.day <= 7 || widget.openPreviousMonth
+        ? recapOf(previousMonthKey(now))
+        : null;
+    final currentRecap = recapOf(monthKey(now));
+    final localizations = MaterialLocalizations.of(context);
+
+    _ShareCard recapCard(MonthlyRecap recap, {required bool previous}) {
+      final month = localizations.formatMonthYear(recap.date);
+      return (
+        card: _RecapCard(recap: recap, month: month, identity: identity),
+        images: _recapCovers(recap).map((c) => c.coverUrl).toList(),
+        text: 'share_recap_text'.tr(namedArgs: {'month': month}),
+        isPreviousMonth: previous,
+      );
+    }
+
+    final cards = <_ShareCard>[
+      (
+        card: _StatsCard(stats: widget.stats, identity: identity),
+        images: [
+          ?widget.stats.bestAnime?.media.coverImage,
+          ?widget.stats.bestManga?.media.coverImage,
+        ],
+        text: 'share_stats_text'.tr(),
+        isPreviousMonth: false,
+      ),
       if (collage.isNotEmpty)
-        _FavouritesCard(covers: collage, identity: identity),
+        (
+          card: _FavouritesCard(covers: collage, identity: identity),
+          images: collage.map((c) => c.coverUrl).toList(),
+          text: 'share_favourites_text'.tr(),
+          isPreviousMonth: false,
+        ),
+      if (previousRecap != null) recapCard(previousRecap, previous: true),
+      if (currentRecap != null) recapCard(currentRecap, previous: false),
     ];
     final page = math.min(_page, cards.length - 1);
 
-    final imageUrls = [
-      ?identity.avatarUrl,
-      if (page == 1) ...collage.map((c) => c.coverUrl),
-      if (page == 0) ...[
-        ?widget.stats.bestAnime?.media.coverImage,
-        ?widget.stats.bestManga?.media.coverImage,
-      ],
-    ];
+    // Arrivée depuis le message de début de mois : carte du mois précédent
+    if (widget.openPreviousMonth && !_jumpedToPreviousMonth) {
+      final index = cards.indexWhere((c) => c.isPreviousMonth);
+      if (index > 0) {
+        _jumpedToPreviousMonth = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_pageController.hasClients) _pageController.jumpToPage(index);
+        });
+      }
+    }
+
+    final imageUrls = [?identity.avatarUrl, ...cards[page].images];
 
     final cs = Theme.of(context).colorScheme;
 
@@ -175,7 +224,8 @@ class _ShareBodyState extends ConsumerState<_ShareBody> {
             itemBuilder: (_, i) => Center(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                child: RepaintBoundary(key: _cardKeys[i], child: cards[i]),
+                child:
+                    RepaintBoundary(key: _cardKeys[i], child: cards[i].card),
               ),
             ),
           ),
@@ -231,7 +281,11 @@ class _ShareBodyState extends ConsumerState<_ShareBody> {
             child: FilledButton.icon(
               onPressed: _sharing
                   ? null
-                  : () => _share(page: page, imageUrls: imageUrls),
+                  : () => _share(
+                        page: page,
+                        imageUrls: imageUrls,
+                        text: cards[page].text,
+                      ),
               icon: _sharing
                   ? const SizedBox(
                       width: 18,
@@ -246,6 +300,118 @@ class _ShareBodyState extends ConsumerState<_ShareBody> {
             ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// Une carte du carrousel : widget, images à précharger, texte de partage.
+typedef _ShareCard = ({
+  Widget card,
+  List<String> images,
+  String text,
+  bool isPreviousMonth,
+});
+
+/// Jaquettes mises en avant dans un récap (2 lignes max).
+List<FavouriteCover> _recapCovers(MonthlyRecap recap) => [
+      for (final item in recap.highlights)
+        if (item.coverImage != null)
+          FavouriteCover(
+            coverUrl: item.coverImage!,
+            title: item.title,
+            score: item.score,
+          ),
+    ].take(6).toList();
+
+// ── Carte récap du mois ───────────────────────────────────────────────────────
+
+class _RecapCard extends StatelessWidget {
+  const _RecapCard({
+    required this.recap,
+    required this.month,
+    required this.identity,
+  });
+
+  final MonthlyRecap recap;
+
+  /// Mois affiché, ex : « septembre 2026 ».
+  final String month;
+  final _ShareIdentity identity;
+
+  @override
+  Widget build(BuildContext context) {
+    final covers = _recapCovers(recap);
+
+    return _CardFrame(
+      identity: identity,
+      subtitle: 'share_card_recap'.tr(namedArgs: {'month': month}),
+      content: (w, h) => [
+        Row(
+          children: [
+            Expanded(
+              child: _StatTile(
+                value: '${recap.episodesWatched}',
+                label: 'share_card_episodes'.tr(),
+                icon: Icons.live_tv_outlined,
+                w: w,
+              ),
+            ),
+            SizedBox(width: w * 0.025),
+            Expanded(
+              child: _StatTile(
+                value: recap.watchTimeFormatted,
+                label: 'share_card_time'.tr(),
+                icon: Icons.schedule_outlined,
+                w: w,
+                accent: true,
+              ),
+            ),
+            SizedBox(width: w * 0.025),
+            Expanded(
+              child: _StatTile(
+                value: '${recap.completed}',
+                label: 'share_card_completed'.tr(),
+                icon: Icons.check_circle_outline,
+                w: w,
+              ),
+            ),
+          ],
+        ),
+        if (recap.chaptersRead > 0) ...[
+          SizedBox(height: h * 0.02),
+          Row(
+            children: [
+              Expanded(
+                child: _StatTile(
+                  value: '${recap.chaptersRead}',
+                  label: 'share_card_chapters'.tr(),
+                  icon: Icons.bookmark_outline,
+                  w: w,
+                ),
+              ),
+              SizedBox(width: w * 0.025),
+              Expanded(
+                child: _StatTile(
+                  value: recap.readTimeFormatted,
+                  label: 'share_card_read_time'.tr(),
+                  icon: Icons.auto_stories_outlined,
+                  w: w,
+                ),
+              ),
+            ],
+          ),
+        ],
+        SizedBox(height: h * 0.03),
+        if (recap.topGenres.isNotEmpty) ...[
+          _CardGenreRow(genres: recap.topGenres, w: w),
+          SizedBox(height: h * 0.03),
+        ],
+        if (covers.isNotEmpty)
+          Expanded(child: _CoverCollage(covers: covers, w: w))
+        else
+          const Spacer(),
+        SizedBox(height: h * 0.02),
       ],
     );
   }

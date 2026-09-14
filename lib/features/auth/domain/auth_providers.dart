@@ -228,6 +228,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
           ref.invalidate(guestWatchlistProvider);
         }
       } catch (_) {}
+      try {
+        // Journal du récap mensuel tenu en invité → compte NextArc
+        await sync.activity.mergeGuestIntoFirestore(uid);
+      } catch (_) {}
       if (user.hasAnilist) {
         try {
           await sync.mergeAnilistIntoFirestore(uid, user.id);

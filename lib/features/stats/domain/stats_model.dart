@@ -105,7 +105,7 @@ class StatsModel {
         : scored.reduce((a, b) => a + b) / scored.length;
 
     // ── Genres (fréquence pondérée par score si dispo) ────────────────────────
-    final topGenres = _topGenres(
+    final topGenres = topGenresOf(
       allEntries
           .where((e) => e.status != ListStatus.dropped)
           .map((e) => (genres: e.media.genres, score: e.score)),
@@ -177,7 +177,7 @@ class StatsModel {
       readTimeMinutes: mangaWithProgress.fold(
               0, (s, e) => s + (e.progress ?? 0)) *
           minutesPerChapter,
-      topGenres: _topGenres(
+      topGenres: topGenresOf(
         entries
             .where((e) => e.status != ListStatus.dropped)
             .map((e) => (genres: e.genres, score: e.score)),
@@ -191,7 +191,7 @@ class StatsModel {
   }
 
   /// Top 5 genres, fréquence pondérée par la note quand elle existe.
-  static List<GenreStat> _topGenres(
+  static List<GenreStat> topGenresOf(
     Iterable<({List<String>? genres, double? score})> items,
   ) {
     final genreCount = <String, double>{};

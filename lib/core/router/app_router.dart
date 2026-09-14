@@ -164,8 +164,13 @@ final GoRouter appRouter = GoRouter(
     // Partage de stats — hors shell
     GoRoute(
       path: '/share-stats',
-      pageBuilder: (context, state) =>
-          _slideFade(state: state, child: const ShareStatsScreen()),
+      pageBuilder: (context, state) => _slideFade(
+        state: state,
+        // extra 'previousMonth' : ouverture sur le récap du mois précédent
+        child: ShareStatsScreen(
+          openPreviousMonth: state.extra == 'previousMonth',
+        ),
+      ),
     ),
 
     // Connexion email/password — hors shell

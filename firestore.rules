@@ -21,6 +21,13 @@ service cloud.firestore {
         allow delete: if false;
       }
 
+      // Journal d'activité du récap mensuel : un document par mois (yyyy-MM)
+      match /activity/{month} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) && isValidActivity(month);
+        allow delete: if false;
+      }
+
       match /reviews/{mediaId} {
         allow read: if isOwner(uid);
         allow create, update: if isOwner(uid) && isValidReview();
@@ -73,6 +80,16 @@ service cloud.firestore {
           && (data.get('genres', null) == null || (data.genres is list && data.genres.size() <= 20))
           && (data.get('duration', null) == null || (data.duration is int && data.duration >= 0 && data.duration <= 10000))
           && optString(data, 'coverImage', 2048);
+    }
+
+    function isValidActivity(month) {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['month', 'media', 'updatedAt'])
+          && month.matches('^[0-9]{4}-[0-9]{2}$')
+          && data.month == month
+          && data.media is map
+          && data.media.size() <= 5000
+          && data.updatedAt == request.time;
     }
 
     function isValidReview() {

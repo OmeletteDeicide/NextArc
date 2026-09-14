@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/router/app_router.dart';
+import 'package:nextarc/features/activity/domain/activity_providers.dart';
+import 'package:nextarc/features/activity/domain/month_activity.dart';
 import 'package:nextarc/features/stats/domain/stats_model.dart';
 import 'package:nextarc/features/stats/domain/stats_provider.dart';
 import 'package:nextarc/features/stats/domain/user_title.dart';
@@ -65,6 +67,13 @@ class _StatsBody extends StatelessWidget {
         _SectionHeader(label: 'title_section'.tr()),
         const SizedBox(height: 12),
         _TitleCard(title: stats.title),
+
+        const SizedBox(height: 28),
+
+        // ── Ce mois-ci (journal d'activité) ────────────────────────────────
+        _SectionHeader(label: 'stats_month_section'.tr()),
+        const SizedBox(height: 12),
+        const _CurrentMonthCard(),
 
         const SizedBox(height: 28),
 
@@ -198,6 +207,79 @@ class _StatsBody extends StatelessWidget {
             ),
           const SizedBox(height: 20),
         ],
+      ],
+    );
+  }
+}
+
+// ── Récap du mois en cours ────────────────────────────────────────────────────
+
+class _CurrentMonthCard extends ConsumerWidget {
+  const _CurrentMonthCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
+    final recap = ref
+        .watch(monthlyRecapProvider(monthKey(DateTime.now())))
+        .whenOrNull(data: (r) => r);
+
+    if (recap == null) {
+      return const SizedBox(
+        height: 48,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+    if (recap.isEmpty) {
+      return Text(
+        'stats_month_empty'.tr(),
+        style: TextStyle(
+            fontSize: 13, color: cs.onSurface.withValues(alpha: 0.54)),
+      );
+    }
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _BigStatCard(
+                value: '${recap.episodesWatched}',
+                label: 'stats_episodes_watched'.tr(),
+                icon: Icons.live_tv_outlined,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _BigStatCard(
+                value: recap.watchTimeFormatted,
+                label: 'stats_watch_time'.tr(),
+                icon: Icons.schedule_outlined,
+                accent: true,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _BigStatCard(
+                value: '${recap.completed}',
+                label: 'stats_month_completed'.tr(),
+                icon: Icons.check_circle_outline,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _BigStatCard(
+                value: '${recap.chaptersRead}',
+                label: 'stats_chapters_read'.tr(),
+                icon: Icons.bookmark_outline,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }

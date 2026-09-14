@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nextarc/core/services/notification_prefs_repository.dart';
+import 'package:nextarc/features/activity/domain/activity_providers.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/watchlist/data/firestore_watchlist_repository.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
@@ -26,9 +27,22 @@ class FirestoreWatchlistNotifier
   Future<void> upsert(GuestWatchlistEntry entry) async {
     final uid = _uid;
     if (uid == null) return;
+    final before =
+        state.value?.where((e) => e.animeId == entry.animeId).firstOrNull;
     await ref
         .read(firestoreWatchlistRepositoryProvider)
         .upsertEntry(uid, entry);
+    await _recordActivity(() => ref
+        .read(activityRepositoryProvider)
+        .record(uid: uid, before: before, after: entry));
+  }
+
+  /// Le journal d'activité ne doit jamais faire échouer une modification.
+  Future<void> _recordActivity(Future<void> Function() action) async {
+    try {
+      await action();
+      ref.invalidate(monthlyRecapProvider);
+    } catch (_) {}
   }
 
   Future<void> remove(int mediaId) async {
@@ -39,6 +53,10 @@ class FirestoreWatchlistNotifier
         .removeEntry(uid, mediaId);
     // Plus dans la liste → plus de notifications d'épisodes pour ce média
     await NotificationPrefsRepository.instance.disable(mediaId);
+    // Un média supprimé n'apparaît pas dans le récap du mois
+    await _recordActivity(() => ref
+        .read(activityRepositoryProvider)
+        .removeFromCurrentMonth(uid: uid, mediaId: mediaId));
   }
 }
 

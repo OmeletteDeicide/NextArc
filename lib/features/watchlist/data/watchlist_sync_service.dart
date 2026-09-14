@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:nextarc/core/config/anilist_client.dart';
+import 'package:nextarc/features/activity/data/activity_repository.dart';
+import 'package:nextarc/features/activity/domain/month_activity.dart';
 import 'package:nextarc/features/discover/domain/media_model.dart';
 import 'package:nextarc/features/watchlist/data/firestore_watchlist_repository.dart';
 import 'package:nextarc/features/watchlist/data/guest_watchlist_repository.dart';
@@ -14,6 +16,7 @@ final watchlistSyncServiceProvider = Provider(
   (_) => WatchlistSyncService(
     firestore: FirestoreWatchlistRepository(),
     guest: GuestWatchlistRepository(),
+    activity: ActivityRepository(),
   ),
 );
 
@@ -21,10 +24,15 @@ final watchlistSyncServiceProvider = Provider(
 /// qui est la référence pour un compte NextArc. Rien n'est jamais supprimé
 /// (voir [computeMergeWrites]) et rien n'est écrit sur AniList.
 class WatchlistSyncService {
-  WatchlistSyncService({required this.firestore, required this.guest});
+  WatchlistSyncService({
+    required this.firestore,
+    required this.guest,
+    required this.activity,
+  });
 
   final FirestoreWatchlistRepository firestore;
   final GuestWatchlistRepository guest;
+  final ActivityRepository activity;
 
   static const _storage = FlutterSecureStorage();
 
@@ -94,6 +102,28 @@ class WatchlistSyncService {
       final writes = computeMergeWrites(current, changed);
       await firestore.upsertMany(uid, writes);
       written = writes.length;
+
+      // Les changements AniList comptent dans le récap du mois, sauf la
+      // toute première synchro (import de toute la bibliothèque).
+      if (lastSync != null && writes.isNotEmpty) {
+        try {
+          final inLibraryPhase = await activity.isInLibraryPhase(uid);
+          await activity.recordItems(
+            uid: uid,
+            month: monthKey(startedAt),
+            items: [
+              for (final entry in writes)
+                ?computeActivity(
+                  before: current[entry.animeId],
+                  after: entry,
+                  inLibraryPhase: inLibraryPhase,
+                ),
+            ],
+          );
+        } catch (_) {
+          // Le récap ne doit pas faire échouer la synchro
+        }
+      }
     }
 
     await _storage.write(

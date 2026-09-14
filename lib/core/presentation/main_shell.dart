@@ -1,12 +1,79 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/router/app_router.dart';
+import 'package:nextarc/features/activity/domain/activity_providers.dart';
+import 'package:nextarc/features/activity/domain/month_activity.dart';
 
-class MainShell extends StatelessWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key, required this.child});
 
   final Widget child;
+
+  @override
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  static const _storage = FlutterSecureStorage();
+
+  /// Le récap du mois précédent est proposé pendant les premiers jours du mois.
+  static const _recapPromptLastDay = 7;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _maybeShowRecapPrompt());
+  }
+
+  /// Début de mois : propose une seule fois le récap complet du mois précédent,
+  /// s'il y a eu de l'activité.
+  Future<void> _maybeShowRecapPrompt() async {
+    final now = DateTime.now();
+    if (now.day > _recapPromptLastDay) return;
+
+    final month = previousMonthKey(now);
+    final shownKey = 'recap_prompt_$month';
+    try {
+      if (await _storage.read(key: shownKey) != null) return;
+      final recap = await ref.read(monthlyRecapProvider(month).future);
+      if (recap.isEmpty || !mounted) return;
+      await _storage.write(key: shownKey, value: 'shown');
+      if (!mounted) return;
+
+      final monthLabel =
+          MaterialLocalizations.of(context).formatMonthYear(recap.date);
+      final open = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text('recap_prompt_title'.tr(namedArgs: {'month': monthLabel})),
+          content: Text('recap_prompt_body'.tr(namedArgs: {
+            'episodes': '${recap.episodesWatched}',
+            'time': recap.watchTimeFormatted,
+            'completed': '${recap.completed}',
+          })),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('recap_prompt_later'.tr()),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text('recap_prompt_show'.tr()),
+            ),
+          ],
+        ),
+      );
+      if (open == true && mounted) {
+        context.push(AppRoutes.shareStats, extra: 'previousMonth');
+      }
+    } catch (_) {
+      // Le message est un bonus : jamais bloquant
+    }
+  }
 
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
@@ -19,7 +86,7 @@ class MainShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: child,
+      body: widget.child,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex(context),
         onTap: (index) {
