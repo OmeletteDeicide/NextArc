@@ -220,16 +220,19 @@ class _CurrentMonthCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
-    final recap = ref
-        .watch(monthlyRecapProvider(monthKey(DateTime.now())))
-        .whenOrNull(data: (r) => r);
+    final month = monthKey(DateTime.now());
+    final recapAsync = ref.watch(monthlyRecapProvider(month));
 
-    if (recap == null) {
+    if (recapAsync.isLoading && !recapAsync.hasValue) {
       return const SizedBox(
         height: 48,
         child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
       );
     }
+    // Erreur (hors ligne, règles Firestore non publiées…) : affiché comme un
+    // mois sans activité plutôt qu'un chargement infini
+    final recap =
+        recapAsync.valueOrNull ?? MonthlyRecap.fromItems(month, const []);
     if (recap.isEmpty) {
       return Text(
         'stats_month_empty'.tr(),

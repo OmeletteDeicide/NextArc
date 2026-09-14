@@ -196,11 +196,13 @@ class AnimeRepository {
 
     if (params.genres.isNotEmpty) variables['genre_in'] = params.genres;
     if (params.formats.isNotEmpty) variables['format_in'] = params.formats;
+    // AniList n'a pas de seasonYear_greater/lesser : on filtre sur la date de
+    // début (FuzzyDateInt AAAAMMJJ). 20200000 < 20200101 → inclut toute 2020.
     if (params.yearFrom != null) {
-      variables['seasonYear_greater'] = params.yearFrom! - 1;
+      variables['startDate_greater'] = params.yearFrom! * 10000;
     }
     if (params.yearTo != null) {
-      variables['seasonYear_lesser'] = params.yearTo! + 1;
+      variables['startDate_lesser'] = (params.yearTo! + 1) * 10000;
     }
     if (params.minScore != null) {
       variables['averageScore_greater'] = params.minScore! * 10 - 1;
