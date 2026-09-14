@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nextarc/core/services/notification_prefs_repository.dart';
 import 'package:nextarc/features/watchlist/data/guest_watchlist_repository.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
 
@@ -19,6 +20,8 @@ class GuestWatchlistNotifier
 
   Future<void> remove(int animeId) async {
     await ref.read(guestWatchlistRepositoryProvider).removeEntry(animeId);
+    // Plus dans la liste → plus de notifications d'épisodes pour ce média
+    await NotificationPrefsRepository.instance.disable(animeId);
     ref.invalidateSelf();
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nextarc/core/services/notification_prefs_repository.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/watchlist/data/firestore_watchlist_repository.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
@@ -36,6 +37,8 @@ class FirestoreWatchlistNotifier
     await ref
         .read(firestoreWatchlistRepositoryProvider)
         .removeEntry(uid, mediaId);
+    // Plus dans la liste → plus de notifications d'épisodes pour ce média
+    await NotificationPrefsRepository.instance.disable(mediaId);
   }
 }
 

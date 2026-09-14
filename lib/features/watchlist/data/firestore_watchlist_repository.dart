@@ -62,12 +62,22 @@ class FirestoreWatchlistRepository {
     }
   }
 
-  /// Retire une entrée de la liste (suppression douce) : elle est masquée et
-  /// `updatedAt` garde la date de suppression pour la fusion AniList.
+  /// Retire une entrée de la liste (suppression douce) : les infos de
+  /// l'utilisateur sont effacées, seuls restent les champs exigés par les
+  /// règles, le marqueur `deleted` et `updatedAt` (date de suppression, pour
+  /// que la fusion AniList ne fasse pas revenir le média).
   /// La ré-ajouter réécrit l'entrée complète, sans le marqueur.
   Future<void> removeEntry(String uid, int mediaId) async {
     await _watchlistRef(uid).doc(mediaId.toString()).update({
       'deleted': true,
+      'status': 'PLANNING',
+      'score': FieldValue.delete(),
+      'progress': FieldValue.delete(),
+      'favourite': FieldValue.delete(),
+      'episodes': FieldValue.delete(),
+      'coverImage': FieldValue.delete(),
+      'genres': FieldValue.delete(),
+      'duration': FieldValue.delete(),
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
