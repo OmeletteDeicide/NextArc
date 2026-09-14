@@ -36,8 +36,12 @@ class StatsModel {
   });
 
   /// Temps de visionnage formaté lisible (ex: "4j 12h" ou "3h 20min").
-  String get watchTimeFormatted {
-    final totalMinutes = watchTimeMinutes;
+  String get watchTimeFormatted => formatDuration(watchTimeMinutes);
+
+  /// Temps de lecture estimé, même format.
+  String get readTimeFormatted => formatDuration(readTimeMinutes);
+
+  static String formatDuration(int totalMinutes) {
     final days = totalMinutes ~/ (60 * 24);
     final hours = (totalMinutes % (60 * 24)) ~/ 60;
     final minutes = totalMinutes % 60;

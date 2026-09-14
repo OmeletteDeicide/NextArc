@@ -137,11 +137,25 @@ class _StatsBody extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        _BigStatCard(
-          value: stats.chaptersRead.toString(),
-          label: 'stats_chapters_read'.tr(),
-          icon: Icons.bookmark_outline,
-          fullWidth: true,
+        Row(
+          children: [
+            Expanded(
+              child: _BigStatCard(
+                value: stats.chaptersRead.toString(),
+                label: 'stats_chapters_read'.tr(),
+                icon: Icons.bookmark_outline,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _BigStatCard(
+                value: stats.readTimeFormatted,
+                label: 'stats_read_time'.tr(),
+                icon: Icons.auto_stories_outlined,
+                accent: true,
+              ),
+            ),
+          ],
         ),
 
         const SizedBox(height: 28),
@@ -279,14 +293,12 @@ class _BigStatCard extends StatelessWidget {
     required this.label,
     required this.icon,
     this.accent = false,
-    this.fullWidth = false,
   });
 
   final String value;
   final String label;
   final IconData icon;
   final bool accent;
-  final bool fullWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -296,7 +308,6 @@ class _BigStatCard extends StatelessWidget {
         : cs.surfaceContainerLowest;
 
     return Container(
-      width: fullWidth ? double.infinity : null,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: accent ? cs.primary.withValues(alpha: 0.12) : cardBg,
