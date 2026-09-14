@@ -39,6 +39,16 @@ void main() {
     expect(t.isArcer, isFalse);
   });
 
+  test('paliers suivants', () {
+    final t = title(anime: 140, watchHours: 350);
+    expect(t.nextRank, (10, 'title_rank_achiever'));
+    expect(t.hoursToNextQualifier, 50);
+
+    final max = title(anime: 1000, watchHours: 10000);
+    expect(max.nextRank, isNull);
+    expect(max.hoursToNextQualifier, isNull);
+  });
+
   test('Arcer cumule anime + manga et visionnage + lecture', () {
     expect(
       title(anime: 1000, manga: 500, watchHours: 9000, readHours: 3000).isArcer,

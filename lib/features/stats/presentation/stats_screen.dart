@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/features/stats/domain/stats_model.dart';
 import 'package:nextarc/features/stats/domain/stats_provider.dart';
+import 'package:nextarc/features/stats/domain/user_title.dart';
+import 'package:nextarc/features/stats/presentation/user_title_badge.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 
 class StatsScreen extends ConsumerWidget {
@@ -59,6 +61,13 @@ class _StatsBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       children: [
+        // ── Titre ──────────────────────────────────────────────────────────
+        _SectionHeader(label: 'title_section'.tr()),
+        const SizedBox(height: 12),
+        _TitleCard(title: stats.title),
+
+        const SizedBox(height: 28),
+
         // ── Section Anime ──────────────────────────────────────────────────
         _SectionHeader(label: 'stats_section_anime'.tr()),
         const SizedBox(height: 12),
@@ -176,6 +185,67 @@ class _StatsBody extends StatelessWidget {
           const SizedBox(height: 20),
         ],
       ],
+    );
+  }
+}
+
+// ── Carte titre ───────────────────────────────────────────────────────────────
+
+class _TitleCard extends StatelessWidget {
+  const _TitleCard({required this.title});
+  final UserTitle title;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final hintStyle =
+        TextStyle(fontSize: 12, color: cs.onSurface.withValues(alpha: 0.6));
+    final nextRank = title.nextRank;
+    final hoursToNext = title.hoursToNextQualifier;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          UserTitleBadge(title: title, fontSize: 18),
+          const SizedBox(height: 12),
+          if (title.isArcer)
+            Text('title_arcer_reached'.tr(), style: hintStyle)
+          else ...[
+            if (nextRank != null)
+              Text(
+                'title_next_rank'.tr(namedArgs: {
+                  'count': '${nextRank.$1}',
+                  'title': nextRank.$2.tr(),
+                }),
+                style: hintStyle,
+              ),
+            if (hoursToNext != null)
+              Text(
+                'title_next_qualifier'.tr(namedArgs: {'hours': '$hoursToNext'}),
+                style: hintStyle,
+              ),
+            const SizedBox(height: 4),
+            Text(
+              'title_arcer_progress'.tr(namedArgs: {
+                'completed': '${title.totalCompleted}',
+                'maxCompleted': '${UserTitle.arcerMinCompleted}',
+                'hours': '${title.totalHours}',
+                'maxHours': '${UserTitle.arcerMinHours}',
+              }),
+              style: hintStyle.copyWith(
+                  color: cs.onSurface.withValues(alpha: 0.4)),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -11,6 +11,10 @@ class UserTitle {
     required this.rankKey,
     required this.qualifierKey,
     required this.isArcer,
+    required this.animeCompleted,
+    required this.watchHours,
+    required this.totalCompleted,
+    required this.totalHours,
   });
 
   /// Anime + manga terminés nécessaires pour Arcer.
@@ -51,19 +55,32 @@ class UserTitle {
   final String? qualifierKey;
   final bool isArcer;
 
+  final int animeCompleted;
+  final int watchHours;
+
+  /// Cumuls anime + manga utilisés pour Arcer.
+  final int totalCompleted;
+  final int totalHours;
+
   factory UserTitle.from({
     required int animeCompleted,
     required int mangaCompleted,
     required int watchMinutes,
     required int readMinutes,
   }) {
-    final isArcer = animeCompleted + mangaCompleted >= arcerMinCompleted &&
-        (watchMinutes + readMinutes) ~/ 60 >= arcerMinHours;
+    final watchHours = watchMinutes ~/ 60;
+    final totalCompleted = animeCompleted + mangaCompleted;
+    final totalHours = (watchMinutes + readMinutes) ~/ 60;
 
     return UserTitle._(
       rankKey: _highest(ranks, animeCompleted),
-      qualifierKey: _highest(qualifiers, watchMinutes ~/ 60),
-      isArcer: isArcer,
+      qualifierKey: _highest(qualifiers, watchHours),
+      isArcer: totalCompleted >= arcerMinCompleted &&
+          totalHours >= arcerMinHours,
+      animeCompleted: animeCompleted,
+      watchHours: watchHours,
+      totalCompleted: totalCompleted,
+      totalHours: totalHours,
     );
   }
 
@@ -73,6 +90,23 @@ class UserTitle {
       if (value >= min) result = key;
     }
     return result;
+  }
+
+  /// Prochain nom : (anime terminés manquants, clé du nom), null si Légende.
+  (int, String)? get nextRank {
+    for (final (min, key) in ranks) {
+      if (animeCompleted < min) return (min - animeCompleted, key);
+    }
+    return null;
+  }
+
+  /// Heures de visionnage manquantes pour le prochain qualificatif,
+  /// null si Divin.
+  int? get hoursToNextQualifier {
+    for (final (min, _) in qualifiers) {
+      if (watchHours < min) return min - watchHours;
+    }
+    return null;
   }
 
   /// Titre affiché, ex : « Grand Acheveur », « Légende Divin », « Arcer ».

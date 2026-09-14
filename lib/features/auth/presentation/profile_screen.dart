@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/stats/domain/stats_provider.dart';
+import 'package:nextarc/features/stats/presentation/user_title_badge.dart';
 import 'package:nextarc/features/watchlist/data/mutation_repository.dart';
 import 'package:nextarc/features/watchlist/data/watchlist_repository.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
@@ -42,6 +44,9 @@ class ProfileScreen extends ConsumerWidget {
 
   Widget _buildProfile(BuildContext context, WidgetRef ref, AuthState auth) {
     final user = auth.user!;
+    final title =
+        ref.watch(statsProvider).whenOrNull(data: (stats) => stats.title);
+    final isArcer = title?.isArcer ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -101,6 +106,13 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ),
               ),
+              // Couronne des Arcer, en haut à droite de la photo
+              if (isArcer)
+                const Positioned(
+                  bottom: 30,
+                  left: 74,
+                  child: ArcerCrown(size: 30),
+                ),
             ],
           ),
 
@@ -118,6 +130,10 @@ class ProfileScreen extends ConsumerWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (title != null) ...[
+                  const SizedBox(height: 6),
+                  UserTitleBadge(title: title),
+                ],
                 const SizedBox(height: 4),
                 if (user.hasAnilist)
                   Text(
