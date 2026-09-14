@@ -30,8 +30,8 @@ class FirestoreUserProfile {
 
   // ── Sérialisation ─────────────────────────────────────────────────────────
 
+  /// L'uid n'est pas écrit : c'est l'id du document (règles Firestore).
   Map<String, dynamic> toMap() => {
-        'uid': uid,
         'displayName': displayName,
         'email': email,
         if (photoUrl != null) 'photoUrl': photoUrl,
@@ -42,9 +42,9 @@ class FirestoreUserProfile {
         'updatedAt': Timestamp.fromDate(updatedAt),
       };
 
-  factory FirestoreUserProfile.fromMap(Map<String, dynamic> map) {
+  factory FirestoreUserProfile.fromMap(String uid, Map<String, dynamic> map) {
     return FirestoreUserProfile(
-      uid: map['uid'] as String,
+      uid: uid,
       displayName: map['displayName'] as String? ?? '',
       email: map['email'] as String? ?? '',
       photoUrl: map['photoUrl'] as String?,
@@ -57,7 +57,8 @@ class FirestoreUserProfile {
   }
 
   factory FirestoreUserProfile.fromDocument(DocumentSnapshot doc) {
-    return FirestoreUserProfile.fromMap(doc.data() as Map<String, dynamic>);
+    return FirestoreUserProfile.fromMap(
+        doc.id, doc.data() as Map<String, dynamic>);
   }
 
   // ── Conversion vers/depuis UserModel ──────────────────────────────────────

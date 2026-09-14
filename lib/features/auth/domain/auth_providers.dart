@@ -56,7 +56,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     if (fbUser != null) {
       return AuthState(
         status: AuthStatus.authenticated,
-        user: UserModel.fromFirebase(fbUser),
+        user: await _restoreFirebaseUser(fbUser),
       );
     }
 
@@ -131,8 +131,8 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final anilistUser = await repo.login();
 
       if (firebaseUid != null) {
-        // Mode liaison : on garde le UID Firebase et on fusionne les données AniList
-        final merged = anilistUser.copyWith(firebaseUid: firebaseUid);
+        // Mode liaison : on garde le compte Firebase (uid, email) et on ajoute AniList
+        final merged = _withAnilist(previousState!.user!, anilistUser);
         try {
           await ref.read(userProfileRepositoryProvider).linkAnilist(
                 uid: firebaseUid,
@@ -180,6 +180,32 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       AuthState(status: AuthStatus.unauthenticated),
     );
   }
+
+  /// Reconstruit l'utilisateur au démarrage : Firebase + profil Firestore
+  /// (liaison AniList persistée) + session AniList si le token est encore là.
+  Future<UserModel> _restoreFirebaseUser(fb.User fbUser) async {
+    var user = UserModel.fromFirebase(fbUser);
+    try {
+      final profile =
+          await ref.read(userProfileRepositoryProvider).getProfile(fbUser.uid);
+      if (profile != null) user = profile.toUserModel();
+    } catch (_) {
+      // Firestore hors ligne → on garde les infos Firebase Auth
+    }
+
+    final anilistUser = await ref.read(authRepositoryProvider).restoreSession();
+    if (anilistUser != null) user = _withAnilist(user, anilistUser);
+    return user;
+  }
+
+  UserModel _withAnilist(UserModel base, UserModel anilist) => base.copyWith(
+        id: anilist.id,
+        name: anilist.name,
+        avatarLarge: anilist.avatarLarge,
+        avatarMedium: anilist.avatarMedium,
+        bannerImage: anilist.bannerImage,
+        siteUrl: anilist.siteUrl,
+      );
 
   /// Crée ou met à jour le document Firestore et retourne l'UserModel enrichi.
   Future<UserModel> _upsertFirestore(UserModel user) async {
