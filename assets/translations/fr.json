@@ -111,6 +111,11 @@
   "title_next_qualifier": "Encore {hours} h de visionnage pour le qualificatif suivant",
   "title_arcer_progress": "Arcer : {completed}/{maxCompleted} terminés · {hours}/{maxHours} h (anime + manga)",
   "title_arcer_reached": "Titre ultime atteint. Bienvenue parmi les Arcers 👑",
+  "share_card_favourites": "Mes préférés",
+  "share_favourites_text": "Mes animes préférés sur NextArc 🎌",
+  "share_option_title": "Afficher mon titre",
+  "share_option_photo": "Afficher ma photo et mon pseudo",
+  "share_option_crown": "Afficher la couronne",
   "reco_because_you_liked": "Parce que tu as aimé",
 
   "horizontal_list_empty": "Aucun résultat disponible",

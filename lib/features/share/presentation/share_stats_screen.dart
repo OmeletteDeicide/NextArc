@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -7,6 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nextarc/core/constants/app_links.dart';
+import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/share/domain/share_providers.dart';
+import 'package:nextarc/features/stats/domain/user_title.dart';
+import 'package:nextarc/features/stats/presentation/user_title_badge.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -30,43 +35,87 @@ class ShareStatsScreen extends ConsumerWidget {
   }
 }
 
-// ── Corps principal ───────────────────────────────────────────────────────────
+// ── Identité affichée sur les cartes (selon les interrupteurs) ────────────────
 
-class _ShareBody extends StatefulWidget {
+class _ShareIdentity {
+  const _ShareIdentity({
+    required this.title,
+    required this.showTitle,
+    required this.showCrown,
+    this.avatarUrl,
+    this.name,
+  });
+
+  final UserTitle title;
+  final bool showTitle;
+
+  /// Couronne affichée (Arcer uniquement) : sur la photo si elle est visible,
+  /// sinon dans la pastille du titre.
+  final bool showCrown;
+
+  /// Photo et pseudo, uniquement si l'utilisateur les a activés.
+  final String? avatarUrl;
+  final String? name;
+
+  bool get isVisible => showTitle || avatarUrl != null;
+}
+
+// ── Corps principal : carrousel de cartes + options ───────────────────────────
+
+class _ShareBody extends ConsumerStatefulWidget {
   const _ShareBody({required this.stats});
   final StatsModel stats;
 
   @override
-  State<_ShareBody> createState() => _ShareBodyState();
+  ConsumerState<_ShareBody> createState() => _ShareBodyState();
 }
 
-class _ShareBodyState extends State<_ShareBody> {
-  final _cardKey = GlobalKey();
+class _ShareBodyState extends ConsumerState<_ShareBody> {
+  final _pageController = PageController();
+  final _cardKeys = [GlobalKey(), GlobalKey()];
+  int _page = 0;
   bool _sharing = false;
 
-  Future<void> _share() async {
+  bool _showTitle = true;
+  bool _showPhoto = false; // vie privée : désactivé par défaut
+  bool _showCrown = true;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _share({
+    required int page,
+    required List<String> imageUrls,
+  }) async {
     if (_sharing) return;
     setState(() => _sharing = true);
 
     try {
-      final boundary = _cardKey.currentContext!.findRenderObject()
-          as RenderRepaintBoundary;
-
-      // Attendre que les images réseau soient bien peintes
+      // Les images réseau doivent être chargées avant la capture
+      await Future.wait(imageUrls.map(
+        (url) => precacheImage(CachedNetworkImageProvider(url), context),
+      ));
       await Future.delayed(const Duration(milliseconds: 150));
 
+      final boundary = _cardKeys[page].currentContext!.findRenderObject()
+          as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData =
           await image.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = byteData!.buffer.asUint8List();
 
       final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/nextarc_stats.png');
+      final file = File('${tempDir.path}/nextarc_share_$page.png');
       await file.writeAsBytes(pngBytes);
 
+      final text =
+          page == 1 ? 'share_favourites_text'.tr() : 'share_stats_text'.tr();
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'image/png')],
-        text: '${'share_stats_text'.tr()}\n${AppLinks.playStore}',
+        text: '$text\n${AppLinks.playStore}',
       );
     } catch (e) {
       if (mounted) {
@@ -81,27 +130,108 @@ class _ShareBodyState extends State<_ShareBody> {
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(authProvider).whenOrNull(data: (a) => a.user);
+    final favourites =
+        ref.watch(shareFavouritesProvider).whenOrNull(data: (f) => f) ??
+            const <FavouriteCover>[];
+    final collage = favourites.take(collageSize(favourites.length)).toList();
+
+    final title = widget.stats.title;
+    final avatarUrl = user?.avatar;
+    final identity = _ShareIdentity(
+      title: title,
+      showTitle: _showTitle,
+      showCrown: title.isArcer && _showCrown,
+      avatarUrl: _showPhoto ? avatarUrl : null,
+      name: _showPhoto ? user?.displayName : null,
+    );
+
+    final cards = <Widget>[
+      _StatsCard(stats: widget.stats, identity: identity),
+      if (collage.isNotEmpty)
+        _FavouritesCard(covers: collage, identity: identity),
+    ];
+    final page = math.min(_page, cards.length - 1);
+
+    final imageUrls = [
+      ?identity.avatarUrl,
+      if (page == 1) ...collage.map((c) => c.coverUrl),
+      if (page == 0) ...[
+        ?widget.stats.bestAnime?.media.coverImage,
+        ?widget.stats.bestManga?.media.coverImage,
+      ],
+    ];
+
+    final cs = Theme.of(context).colorScheme;
+
     return Column(
       children: [
-        // ── Aperçu de la carte ────────────────────────────────────────────
+        // ── Aperçu des cartes ─────────────────────────────────────────────
         Expanded(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: RepaintBoundary(
-                key: _cardKey,
-                child: _StatsCard(stats: widget.stats),
+          child: PageView.builder(
+            controller: _pageController,
+            itemCount: cards.length,
+            onPageChanged: (i) => setState(() => _page = i),
+            itemBuilder: (_, i) => Center(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                child: RepaintBoundary(key: _cardKeys[i], child: cards[i]),
               ),
             ),
           ),
         ),
 
+        if (cards.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var i = 0; i < cards.length; i++)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: i == page ? 18 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: i == page
+                          ? cs.primary
+                          : cs.onSurface.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+        // ── Options ───────────────────────────────────────────────────────
+        _OptionSwitch(
+          label: 'share_option_title'.tr(),
+          value: _showTitle,
+          onChanged: (v) => setState(() => _showTitle = v),
+        ),
+        if (avatarUrl != null)
+          _OptionSwitch(
+            label: 'share_option_photo'.tr(),
+            value: _showPhoto,
+            onChanged: (v) => setState(() => _showPhoto = v),
+          ),
+        if (title.isArcer)
+          _OptionSwitch(
+            label: 'share_option_crown'.tr(),
+            value: _showCrown,
+            onChanged: (v) => setState(() => _showCrown = v),
+          ),
+
         // ── Bouton partager ───────────────────────────────────────────────
         SafeArea(
+          top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
             child: FilledButton.icon(
-              onPressed: _sharing ? null : _share,
+              onPressed: _sharing
+                  ? null
+                  : () => _share(page: page, imageUrls: imageUrls),
               icon: _sharing
                   ? const SizedBox(
                       width: 18,
@@ -121,11 +251,264 @@ class _ShareBodyState extends State<_ShareBody> {
   }
 }
 
+class _OptionSwitch extends StatelessWidget {
+  const _OptionSwitch({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+      title: Text(label),
+      value: value,
+      onChanged: onChanged,
+    );
+  }
+}
+
 // ── Carte à partager ──────────────────────────────────────────────────────────
 
 class _StatsCard extends StatelessWidget {
-  const _StatsCard({required this.stats});
+  const _StatsCard({required this.stats, required this.identity});
   final StatsModel stats;
+  final _ShareIdentity identity;
+
+  @override
+  Widget build(BuildContext context) {
+    return _CardFrame(
+      identity: identity,
+      subtitle: 'share_card_subtitle'.tr(),
+      content: (w, h) => [
+        // Stats clés
+        _CardStatRow(stats: stats, w: w),
+
+        SizedBox(height: h * 0.04),
+
+        // Genres
+        if (stats.topGenres.isNotEmpty) ...[
+          _CardGenreRow(genres: stats.topGenres, w: w),
+          SizedBox(height: h * 0.04),
+        ],
+
+        // Jaquettes meilleurs anime/manga
+        if (stats.bestAnime != null || stats.bestManga != null)
+          _CardCovers(stats: stats, h: h * 0.25),
+
+        const Spacer(),
+      ],
+    );
+  }
+}
+
+// ── Carte « Mes préférés » ─────────────────────────────────────────────────────
+
+class _FavouritesCard extends StatelessWidget {
+  const _FavouritesCard({required this.covers, required this.identity});
+  final List<FavouriteCover> covers;
+  final _ShareIdentity identity;
+
+  @override
+  Widget build(BuildContext context) {
+    return _CardFrame(
+      identity: identity,
+      subtitle: 'share_card_favourites'.tr(),
+      content: (w, h) => [
+        Expanded(child: _CoverCollage(covers: covers, w: w)),
+        SizedBox(height: h * 0.03),
+      ],
+    );
+  }
+}
+
+/// Mosaïque de jaquettes (lignes de 3), dimensionnée pour tenir dans la carte.
+class _CoverCollage extends StatelessWidget {
+  const _CoverCollage({required this.covers, required this.w});
+  final List<FavouriteCover> covers;
+  final double w;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const columns = 3;
+        const coverRatio = 1.5; // hauteur / largeur d'une jaquette
+        final rows = (covers.length / columns).ceil();
+        final gap = w * 0.025;
+
+        final maxCellWidth =
+            (constraints.maxWidth - gap * (columns - 1)) / columns;
+        final maxCellHeight =
+            (constraints.maxHeight - gap * (rows - 1)) / rows;
+        final cellHeight = math.min(maxCellWidth * coverRatio, maxCellHeight);
+        final cellWidth = cellHeight / coverRatio;
+
+        return Center(
+          child: Wrap(
+            spacing: gap,
+            runSpacing: gap,
+            alignment: WrapAlignment.center,
+            children: [
+              for (final cover in covers)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: SizedBox(
+                    width: cellWidth,
+                    height: cellHeight,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CachedNetworkImage(
+                          imageUrl: cover.coverUrl,
+                          fit: BoxFit.cover,
+                        ),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.8),
+                              ],
+                              stops: const [0.55, 1.0],
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: 5,
+                          right: 5,
+                          bottom: 5,
+                          child: Text(
+                            cover.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: w * 0.024,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        if ((cover.score ?? 0) > 0)
+                          Positioned(
+                            top: 5,
+                            right: 5,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '★ ${cover.score!.toStringAsFixed(cover.score! % 1 == 0 ? 0 : 1)}',
+                                style: TextStyle(
+                                  color: const Color(0xFFFFC107),
+                                  fontSize: w * 0.024,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Identité : photo (+ couronne), pseudo, titre ──────────────────────────────
+
+class _CardIdentity extends StatelessWidget {
+  const _CardIdentity({required this.identity, required this.w});
+  final _ShareIdentity identity;
+  final double w;
+
+  @override
+  Widget build(BuildContext context) {
+    final avatarUrl = identity.avatarUrl;
+    return Row(
+      children: [
+        if (avatarUrl != null) ...[
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CircleAvatar(
+                radius: w * 0.06,
+                backgroundImage: CachedNetworkImageProvider(avatarUrl),
+              ),
+              if (identity.showCrown)
+                Positioned(
+                  top: -w * 0.045,
+                  right: -w * 0.035,
+                  child: ArcerCrown(size: w * 0.065),
+                ),
+            ],
+          ),
+          SizedBox(width: w * 0.035),
+        ],
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (identity.name != null)
+                Text(
+                  identity.name!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: w * 0.042,
+                  ),
+                ),
+              if (identity.showTitle) ...[
+                if (identity.name != null) SizedBox(height: w * 0.012),
+                UserTitleBadge(
+                  title: identity.title,
+                  // Sans photo, la couronne se place dans la pastille
+                  showCrown: identity.showCrown && avatarUrl == null,
+                  fontSize: w * 0.034,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Cadre commun des cartes (fond, en-tête, identité, pied) ───────────────────
+
+class _CardFrame extends StatelessWidget {
+  const _CardFrame({
+    required this.identity,
+    required this.subtitle,
+    required this.content,
+  });
+
+  final _ShareIdentity identity;
+  final String subtitle;
+
+  /// Contenu entre l'en-tête et le pied ; doit contenir un élément flexible
+  /// (Spacer / Expanded) pour occuper la hauteur restante.
+  final List<Widget> Function(double w, double h) content;
 
   @override
   Widget build(BuildContext context) {
@@ -204,26 +587,16 @@ class _StatsCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Logo + app name
-                      _CardHeader(w: w),
+                      _CardHeader(w: w, subtitle: subtitle),
 
-                      SizedBox(height: h * 0.05),
-
-                      // Stats clés
-                      _CardStatRow(stats: stats, w: w),
-
-                      SizedBox(height: h * 0.045),
-
-                      // Genres
-                      if (stats.topGenres.isNotEmpty) ...[
-                        _CardGenreRow(genres: stats.topGenres, w: w),
-                        SizedBox(height: h * 0.045),
+                      if (identity.isVisible) ...[
+                        SizedBox(height: h * 0.03),
+                        _CardIdentity(identity: identity, w: w),
                       ],
 
-                      // Jaquettes meilleurs anime/manga
-                      if (stats.bestAnime != null || stats.bestManga != null)
-                        _CardCovers(stats: stats, h: h * 0.3),
+                      SizedBox(height: h * 0.04),
 
-                      const Spacer(),
+                      ...content(w, h),
 
                       // Tagline bas
                       _CardFooter(w: w),
@@ -242,8 +615,9 @@ class _StatsCard extends StatelessWidget {
 // ── En-tête : logo + titre ────────────────────────────────────────────────────
 
 class _CardHeader extends StatelessWidget {
-  const _CardHeader({required this.w});
+  const _CardHeader({required this.w, required this.subtitle});
   final double w;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -272,7 +646,7 @@ class _CardHeader extends StatelessWidget {
               ),
             ),
             Text(
-              'share_card_subtitle'.tr(),
+              subtitle,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.5),
                 fontSize: w * 0.03,
