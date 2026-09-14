@@ -3,7 +3,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 /// Stocke les 10 dernières recherches en local (Hive).
 class SearchHistoryService {
   static const _boxName = 'search_history';
-  static const _key = 'history';
   static const _maxItems = 10;
 
   static SearchHistoryService? _instance;

@@ -297,7 +297,7 @@ class _ActiveFiltersBar extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               itemCount: chips.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              separatorBuilder: (_, _) => const SizedBox(width: 6),
               itemBuilder: (_, i) => Chip(
                 label: Text(chips[i],
                     style: const TextStyle(fontSize: 11)),

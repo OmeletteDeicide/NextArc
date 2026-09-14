@@ -600,7 +600,7 @@ class _PersonalNoteCard extends ConsumerWidget {
 
     return noteAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
       data: (note) {
         final hasNote = note != null && note.isNotEmpty;
         return GestureDetector(
@@ -633,7 +633,7 @@ class _PersonalNoteCard extends ConsumerWidget {
                 Expanded(
                   child: hasNote
                       ? Text(
-                          note!,
+                          note,
                           style: TextStyle(
                             fontSize: 13,
                             color: cs.onSurface.withValues(alpha: 0.8),

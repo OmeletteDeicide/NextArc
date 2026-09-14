@@ -55,9 +55,9 @@ class _ShareMediaSheetState extends State<_ShareMediaSheet> {
 
       final type = widget.media.isManga ? 'manga' : 'anime';
       final url = 'https://anilist.co/$type/${widget.media.id}';
-      final text =
-          'share_media_text'.tr(namedArgs: {'title': widget.media.displayTitle}) +
-              '\n$url';
+      final title =
+          'share_media_text'.tr(namedArgs: {'title': widget.media.displayTitle});
+      final text = '$title\n$url';
 
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'image/png')],
