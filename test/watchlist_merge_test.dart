@@ -6,6 +6,7 @@ import 'package:nextarc/features/watchlist/domain/watchlist_merge.dart';
 GuestWatchlistEntry entry(
   int id, {
   ListStatus status = ListStatus.planning,
+  double? score,
   int? progress,
   bool favourite = false,
   DateTime? updatedAt,
@@ -14,6 +15,7 @@ GuestWatchlistEntry entry(
       animeId: id,
       title: 'Media $id',
       status: status,
+      score: score,
       progress: progress,
       favourite: favourite,
       updatedAt: updatedAt,
@@ -66,6 +68,51 @@ void main() {
     );
     expect(addsIncomingLike.single.favourite, isTrue);
     expect(addsIncomingLike.single.progress, 8);
+  });
+
+  group('fusion champ par champ (Cyberpunk Edgerunners)', () {
+    final seenAll = entry(1,
+        status: ListStatus.completed, score: 9, progress: 10, updatedAt: older);
+    final nineEpisodes = entry(1,
+        status: ListStatus.current, score: 10, progress: 9, updatedAt: newer);
+
+    test('deux versions complètes : la plus récente gagne', () {
+      final writes = computeMergeWrites({1: seenAll}, [nineEpisodes]);
+      expect(writes.single.score, 10);
+      expect(writes.single.progress, 9);
+      expect(writes.single.status, ListStatus.current);
+    });
+
+    test('❤️ seul plus récent : on garde le ❤️ et on récupère les infos', () {
+      final likedOnly = entry(1, favourite: true, updatedAt: newer);
+      final withInfos = entry(1,
+          status: ListStatus.completed, score: 9, progress: 12, updatedAt: older);
+
+      for (final (current, incoming) in [
+        (withInfos, likedOnly),
+        (likedOnly, withInfos),
+      ]) {
+        final merged =
+            computeMergeWrites({1: current}, [incoming]).single;
+        expect(merged.favourite, isTrue);
+        expect(merged.status, ListStatus.completed);
+        expect(merged.score, 9);
+        expect(merged.progress, 12);
+      }
+    });
+
+    test('une entrée plus ancienne sans date complète seulement les vides', () {
+      final current = {
+        1: entry(1, status: ListStatus.current, progress: 4, updatedAt: newer),
+      };
+      final merged = computeMergeWrites(
+        current,
+        [entry(1, status: ListStatus.completed, score: 8, progress: 12)],
+      ).single;
+      expect(merged.status, ListStatus.current);
+      expect(merged.progress, 4);
+      expect(merged.score, 8);
+    });
   });
 
   test('tryParse rejette les entrées invalides et borne les valeurs', () {

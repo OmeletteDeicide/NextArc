@@ -1,12 +1,14 @@
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
+import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 
 /// Calcule les entrées à écrire pour fusionner [incoming] dans [current].
 ///
 /// Règles (on ne supprime jamais rien) :
 /// - média absent de [current] → ajouté ;
-/// - média présent des deux côtés → la version la plus récente (`updatedAt`)
-///   gagne ; une entrée entrante sans date ne remplace jamais l'existante ;
-/// - un ❤️ n'est jamais perdu, quelle que soit la version retenue.
+/// - média présent des deux côtés → la version la plus récente (`updatedAt`,
+///   une entrée sans date étant considérée comme la plus ancienne) sert de
+///   base, et ses champs vides sont complétés par l'autre version
+///   (voir [mergeEntryFields]).
 List<GuestWatchlistEntry> computeMergeWrites(
   Map<int, GuestWatchlistEntry> current,
   Iterable<GuestWatchlistEntry> incoming,
@@ -25,14 +27,48 @@ List<GuestWatchlistEntry> computeMergeWrites(
     final incomingIsNewer = entry.updatedAt != null &&
         (existing.updatedAt == null ||
             entry.updatedAt!.isAfter(existing.updatedAt!));
-    final favourite = entry.favourite || existing.favourite;
+    final merged = incomingIsNewer
+        ? mergeEntryFields(newer: entry, older: existing)
+        : mergeEntryFields(newer: existing, older: entry);
 
-    if (incomingIsNewer) {
-      writes[id] = entry.copyWith(favourite: favourite);
-    } else if (favourite && !existing.favourite) {
-      writes[id] = existing.copyWith(favourite: true);
-    }
+    if (!_sameContent(merged, existing)) writes[id] = merged;
   }
 
   return writes.values.toList();
 }
+
+/// Fusion champ par champ : la version [newer] fait foi, mais un champ vide
+/// n'efface jamais une info présente dans [older].
+/// - ❤️ : gardé s'il est présent d'un côté ;
+/// - note / progression : celle de [newer], sinon celle de [older] ;
+/// - statut : celui de [newer], sauf « À voir » si [older] est plus avancé.
+GuestWatchlistEntry mergeEntryFields({
+  required GuestWatchlistEntry newer,
+  required GuestWatchlistEntry older,
+}) {
+  final status =
+      newer.status == ListStatus.planning && older.status != ListStatus.planning
+          ? older.status
+          : newer.status;
+
+  return GuestWatchlistEntry(
+    animeId: newer.animeId,
+    title: newer.title,
+    coverImage: newer.coverImage ?? older.coverImage,
+    status: status,
+    score: (newer.score ?? 0) > 0 ? newer.score : older.score,
+    progress: (newer.progress ?? 0) > 0 ? newer.progress : older.progress,
+    episodes: newer.episodes ?? older.episodes,
+    mediaType: newer.mediaType,
+    favourite: newer.favourite || older.favourite,
+    updatedAt: newer.updatedAt,
+  );
+}
+
+bool _sameContent(GuestWatchlistEntry a, GuestWatchlistEntry b) =>
+    a.status == b.status &&
+    a.score == b.score &&
+    a.progress == b.progress &&
+    a.episodes == b.episodes &&
+    a.coverImage == b.coverImage &&
+    a.favourite == b.favourite;
