@@ -58,8 +58,12 @@ class GuestWatchlistEntry {
 
   bool get isManga => mediaType == 'MANGA';
 
-  /// Apparaît dans l'onglet Favoris : ❤️ ou note ≥ 8.
-  bool get isFavourite => favourite || (score ?? 0) >= 8;
+  /// Apparaît dans l'onglet Favoris : uniquement le ❤️ (une note ≥ 8 le coche
+  /// automatiquement dans la fiche, mais l'utilisateur peut le retirer).
+  bool get isFavourite => favourite;
+
+  /// Note à partir de laquelle le ❤️ est coché automatiquement.
+  static const autoFavouriteScore = 8.0;
 
   String? get formattedScore {
     if (score == null || score == 0) return null;

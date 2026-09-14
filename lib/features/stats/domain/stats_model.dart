@@ -1,4 +1,5 @@
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
+import 'package:nextarc/features/stats/domain/user_title.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 
 /// Stats cumulées calculées à partir des listes AniList de l'utilisateur.
@@ -11,6 +12,7 @@ class StatsModel {
   final int mangaRead;           // Total manga avec progress > 0
   final int mangaCompleted;      // Manga avec status = completed
   final int chaptersRead;        // Somme de progress pour les manga
+  final int readTimeMinutes;     // Temps de lecture estimé (chapitres × 5 min)
 
   final double? meanScore;       // Moyenne des scores utilisateur (non-zéro)
   final List<GenreStat> topGenres; // Top genres toutes catégories confondues
@@ -26,6 +28,7 @@ class StatsModel {
     required this.mangaRead,
     required this.mangaCompleted,
     required this.chaptersRead,
+    required this.readTimeMinutes,
     required this.topGenres,
     this.meanScore,
     this.bestAnime,
@@ -43,6 +46,17 @@ class StatsModel {
     if (hours > 0) return '${hours}h ${minutes}min';
     return '${minutes}min';
   }
+
+  /// Estimation du temps de lecture d'un chapitre de manga.
+  static const minutesPerChapter = 5;
+
+  /// Titre de profil calculé sur le cumul total.
+  UserTitle get title => UserTitle.from(
+        animeCompleted: animeCompleted,
+        mangaCompleted: mangaCompleted,
+        watchMinutes: watchTimeMinutes,
+        readMinutes: readTimeMinutes,
+      );
 
   /// Calcule les stats depuis les deux listes (anime + manga).
   static StatsModel compute({
@@ -119,6 +133,7 @@ class StatsModel {
       mangaRead: mangaWithProgress.length,
       mangaCompleted: mangaCompleted,
       chaptersRead: chaptersRead,
+      readTimeMinutes: chaptersRead * minutesPerChapter,
       meanScore: meanScore,
       topGenres: topGenres,
       bestAnime: bestAnime,
@@ -155,6 +170,9 @@ class StatsModel {
           mangaEntries.where((e) => e.status == ListStatus.completed).length,
       chaptersRead:
           mangaWithProgress.fold(0, (s, e) => s + (e.progress ?? 0)),
+      readTimeMinutes: mangaWithProgress.fold(
+              0, (s, e) => s + (e.progress ?? 0)) *
+          minutesPerChapter,
       topGenres: _topGenres(
         entries
             .where((e) => e.status != ListStatus.dropped)

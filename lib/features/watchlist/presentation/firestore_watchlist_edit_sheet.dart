@@ -74,6 +74,9 @@ class _FirestoreEditSheetState extends ConsumerState<_FirestoreEditSheet> {
   late int _progress;
   late bool _notifEnabled;
   late bool _favourite;
+
+  /// L'utilisateur a choisi lui-même le ❤️ : la note ne le modifie plus.
+  bool _favouriteTouched = false;
   bool _isSaving = false;
   bool _isDeleting = false;
 
@@ -154,7 +157,10 @@ class _FirestoreEditSheetState extends ConsumerState<_FirestoreEditSheet> {
               ),
               FavouriteButton(
                 value: _favourite,
-                onChanged: (v) => setState(() => _favourite = v),
+                onChanged: (v) => setState(() {
+                  _favourite = v;
+                  _favouriteTouched = true;
+                }),
               ),
             ],
           ),
@@ -292,7 +298,15 @@ class _FirestoreEditSheetState extends ConsumerState<_FirestoreEditSheet> {
                 min: 0,
                 max: 10,
                 divisions: 20,
-                onChanged: (v) => setState(() => _score = v),
+                onChanged: (v) => setState(() {
+                  // Note ≥ 8 → ❤️ coché automatiquement, sauf si
+                  // l'utilisateur a déjà choisi lui-même dans cette fiche
+                  const threshold = GuestWatchlistEntry.autoFavouriteScore;
+                  if (!_favouriteTouched && _score < threshold && v >= threshold) {
+                    _favourite = true;
+                  }
+                  _score = v;
+                }),
               ),
             ),
           ],

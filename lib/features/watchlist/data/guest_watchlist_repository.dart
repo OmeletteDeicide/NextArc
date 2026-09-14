@@ -7,6 +7,7 @@ import 'package:nextarc/features/watchlist/domain/watchlist_merge.dart';
 class GuestWatchlistRepository {
   static const _storage = FlutterSecureStorage();
   static const _key = 'guest_watchlist';
+  static const _favouriteMigrationKey = 'guest_favourite_migration_v1';
 
   /// Plafond d'entrées accepté à l'import d'un fichier.
   static const maxImportEntries = 5000;
@@ -48,6 +49,24 @@ class GuestWatchlistRepository {
     entries.removeWhere((e) => e.animeId == animeId);
     await saveEntries(entries);
   }
+
+  /// Migration unique : avant, une note ≥ 8 suffisait pour être en favori.
+  /// Les entrées concernées reçoivent un ❤️ explicite pour ne rien perdre.
+  Future<void> migrateFavouritesFromScores() async {
+    if (await _storage.read(key: _favouriteMigrationKey) != null) return;
+    final entries = await getEntries();
+    if (entries.any(_needsFavouriteMigration)) {
+      await saveEntries([
+        for (final e in entries)
+          _needsFavouriteMigration(e) ? e.copyWith(favourite: true) : e,
+      ]);
+    }
+    await _storage.write(key: _favouriteMigrationKey, value: 'done');
+  }
+
+  static bool _needsFavouriteMigration(GuestWatchlistEntry e) =>
+      !e.favourite &&
+      (e.score ?? 0) >= GuestWatchlistEntry.autoFavouriteScore;
 
   Future<void> clearAll() async {
     await _storage.delete(key: _key);

@@ -9,8 +9,10 @@ final guestWatchlistRepositoryProvider =
 class GuestWatchlistNotifier
     extends AsyncNotifier<List<GuestWatchlistEntry>> {
   @override
-  Future<List<GuestWatchlistEntry>> build() {
-    return ref.read(guestWatchlistRepositoryProvider).getEntries();
+  Future<List<GuestWatchlistEntry>> build() async {
+    final repo = ref.read(guestWatchlistRepositoryProvider);
+    await repo.migrateFavouritesFromScores();
+    return repo.getEntries();
   }
 
   Future<void> upsert(GuestWatchlistEntry entry) async {

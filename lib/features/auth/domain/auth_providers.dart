@@ -233,6 +233,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
           await sync.mergeAnilistIntoFirestore(uid, user.id);
         } catch (_) {}
       }
+      try {
+        await sync.migrateFavouritesFromScores(uid);
+      } catch (_) {}
     }());
   }
 

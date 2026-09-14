@@ -32,6 +32,26 @@ class WatchlistSyncService {
   static const _clockSkew = Duration(minutes: 10);
 
   static String _lastSyncKey(String uid) => 'anilist_last_sync_$uid';
+  static String _favouriteMigrationKey(String uid) =>
+      'favourite_migration_v1_$uid';
+
+  /// Migration unique par compte : avant, une note ≥ 8 suffisait pour être
+  /// en favori. Les entrées concernées reçoivent un ❤️ explicite.
+  Future<void> migrateFavouritesFromScores(String uid) async {
+    final key = _favouriteMigrationKey(uid);
+    if (await _storage.read(key: key) != null) return;
+
+    final current = await firestore.getEntries(uid);
+    final writes = current.values
+        .where((e) =>
+            !e.deleted &&
+            !e.favourite &&
+            (e.score ?? 0) >= GuestWatchlistEntry.autoFavouriteScore)
+        .map((e) => e.copyWith(favourite: true))
+        .toList();
+    await firestore.upsertMany(uid, writes);
+    await _storage.write(key: key, value: 'done');
+  }
 
   /// Verse la liste invité dans Firestore puis la vide.
   /// Retourne false s'il n'y avait rien à migrer.
