@@ -15,6 +15,8 @@ class AnilistQueries {
       large
       medium
     }
+    bannerImage
+    nextAiringEpisode { airingAt episode }
     description(asHtml: false)
     averageScore
     genres

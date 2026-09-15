@@ -37,6 +37,7 @@ class ZigzagBackground extends StatelessWidget {
     this.color,
     this.opacity,
     this.alwaysVisible = false,
+    this.showInLight = true,
   });
 
   final Widget child;
@@ -51,10 +52,15 @@ class ZigzagBackground extends StatelessWidget {
   /// toujours sombres quel que soit le thème de l'app.
   final bool alwaysVisible;
 
+  /// `false` : motif masqué en thème clair pour cet écran (le design ne le met
+  /// en clair que sur les fonds accentués).
+  final bool showInLight;
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (!isDark && !ZigzagConfig.enabledInLight && !alwaysVisible) {
+    final hiddenInLight = !ZigzagConfig.enabledInLight || !showInLight;
+    if (!isDark && hiddenInLight && !alwaysVisible) {
       return child;
     }
 

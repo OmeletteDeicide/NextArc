@@ -89,7 +89,14 @@
 - Note : les composants ne sont pas encore branchés dans les écrans (lot 3).
 
 ### Lot 3 — Écrans retenus
-- [ ] Découvrir (hero « Épisode du jour », grille 2 colonnes, rails, numérotation)
+- [x] Découvrir → `discover_screen.dart` : en-tête logo + boutons ronds, hero
+      (`discover_hero.dart` : média de la liste diffusé sous 7 j > épisode le plus
+      proche > n°1 tendances ; étiquette « Épisode du jour / Prochain épisode /
+      Tendance n°1 »), rails à ~2 cartes visibles avec `MediaCard`, rang sur les
+      tendances, « Tout voir » → Explorer pré-filtré (écrase le filtre mémorisé),
+      zigzag en fond (sombre uniquement). Requêtes : `bannerImage` +
+      `nextAiringEpisode` ajoutés. `HorizontalAnimeList` supprimé ; `AnimeCard`
+      gardé pour la Recherche (en attente de maquette).
 - [ ] Fiche anime (hero ≤ 38 %, pastilles sur icônes, carte « Dans ma liste »,
       synopsis replié 3 lignes, prochain épisode + Rappel)
 - [ ] Fiche d'édition (reprise visuelle, note en 10 segments)
@@ -138,3 +145,6 @@
 - 15/09 — Lot 2 (composants) codé : analyse OK, 39 tests OK (dont
   `test/ds_components_test.dart`). Prochaine étape : lot 3, écrans retenus,
   en commençant par Découvrir.
+- 15/09 — Lot 3 : Découvrir refait (analyse OK, 45 tests OK dont
+  `test/discover_hero_test.dart`). À valider sur téléphone (hero, zigzag).
+  Prochain écran : fiche anime.

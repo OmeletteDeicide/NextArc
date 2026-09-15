@@ -6,6 +6,7 @@ class MediaModel {
     this.titleEnglish,
     this.coverImageLarge,
     this.coverImageMedium,
+    this.bannerImage,
     this.description,
     this.averageScore,
     this.genres,
@@ -35,6 +36,9 @@ class MediaModel {
 
   /// URL de la jaquette en résolution moyenne (fallback).
   final String? coverImageMedium;
+
+  /// Visuel large 16:9 (bannière AniList), absent pour certains médias.
+  final String? bannerImage;
 
   /// Synopsis — AniList renvoie du HTML, à nettoyer avant affichage.
   final String? description;
@@ -104,6 +108,7 @@ class MediaModel {
       titleEnglish: title?['english'] as String?,
       coverImageLarge: coverImage?['large'] as String?,
       coverImageMedium: coverImage?['medium'] as String?,
+      bannerImage: json['bannerImage'] as String?,
       description: json['description'] as String?,
       averageScore: json['averageScore'] as int?,
       genres: (json['genres'] as List<dynamic>?)
