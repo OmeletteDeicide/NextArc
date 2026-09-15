@@ -99,7 +99,7 @@
       gardé pour la Recherche (en attente de maquette).
 - [x] Fiche anime (hero ≤ 38 %, pastilles sur icônes, carte « Dans ma liste »,
       synopsis replié 3 lignes, prochain épisode + Rappel)
-- [ ] Fiche d'édition (reprise visuelle, note en 10 segments)
+- [x] Fiche d'édition (reprise visuelle, note en 10 segments)
 - [ ] Ma liste (segmenté Anime/Manga + un seul niveau d'onglets, bouton +1,
       carte « sorties cette semaine »)
 - [ ] Profil (en-tête zigzag + halo, badge de titre centré, carte « Route vers
@@ -153,3 +153,10 @@
   épisode + Rappel ; requête détail + `nextAiringEpisode`). Analyse OK,
   49 tests OK dont `test/synopsis_test.dart`. À valider sur téléphone.
   Prochain écran : fiche d'édition.
+- 15/09 — Lot 3 : fiches d'édition (AniList, NextArc, invité) refaites sur
+  des briques communes `edit_sheet_parts.dart` : statuts en pastilles,
+  −/+ 44 px + barre glissable, note en 10 segments (toucher la note l'efface,
+  glisser possible), carte notifications, Retirer / Mettre à jour. Logique
+  d'enregistrement inchangée. Analyse OK, 56 tests OK dont
+  `test/edit_sheet_parts_test.dart`. À valider sur téléphone.
+  Prochain écran : Ma liste.
