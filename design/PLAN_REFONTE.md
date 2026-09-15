@@ -105,7 +105,7 @@
 - [x] Profil (en-tête zigzag + halo, badge de titre centré, carte « Route vers
       Arcer », menus)
 - [x] Stats (récap narratif « Ton mois », tuiles, genres)
-- [ ] Écran « Mon titre » (2 jauges + Arcer doré + échelle des noms)
+- [x] Écran « Mon titre » (2 jauges + Arcer doré + échelle des noms)
 - [ ] Cartes de partage (3 cartes, sombres, zone de sécurité 9:16)
 - [ ] Moment du palier (carte plein écran au passage de titre → Partager)
 
@@ -194,3 +194,15 @@
   7 lectures `activity/{mois}` par ouverture. Analyse OK, 79 tests OK dont
   `test/month_story_test.dart`. À valider sur téléphone.
   Prochain : écran « Mon titre ».
+- 15/09 — Lot 3 : écran « Mon titre » (`/my-title`, ouvert depuis la carte
+  « Route vers Arcer » du Profil et la section titre des Stats) : en-tête
+  « Mon titre actuel » (dégradé + zigzag + halo, pastilles « Petit · 9 h » /
+  « Curieux · 2 »), jauge du nom (« Prochain : Spectateur 2/10 », « Encore 8
+  anime terminés »), jauge du qualificatif (« 9/100 h », « Encore 91 h : tu
+  perds le « Petit » et deviens Curieux »), carte Arcer dorée séparée (2
+  jauges), échelle des noms repliée (atteint ✓, prochain pointillé, suivant,
+  « N paliers jusqu'à Légende » dépliable). Getters purs ajoutés à
+  `UserTitle` (rankIndex, nextRankThreshold, qualifierIndex,
+  nextQualifierDropsWord…). Mots de qualificatif en/es à relire (Little,
+  Pequeño…). Analyse OK, 85 tests OK dont `test/my_title_gauges_test.dart`.
+  À valider sur téléphone. Prochain : cartes de partage.

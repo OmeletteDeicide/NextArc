@@ -109,6 +109,55 @@ class UserTitle {
     return null;
   }
 
+  // ── Jauges de l'écran « Mon titre » ──────────────────────────────────────
+
+  /// Position du nom actuel dans [ranks].
+  int get rankIndex => _indexOf(ranks, animeCompleted);
+
+  /// Anime terminés requis pour le nom suivant, null si Légende.
+  int? get nextRankThreshold =>
+      rankIndex + 1 < ranks.length ? ranks[rankIndex + 1].$1 : null;
+
+  /// Avancée vers le nom suivant (0 → 1), 1 si Légende.
+  double get rankProgress {
+    final next = nextRankThreshold;
+    return next == null ? 1 : (animeCompleted / next).clamp(0.0, 1.0);
+  }
+
+  /// Position du qualificatif actuel dans [qualifiers].
+  int get qualifierIndex => _indexOf(qualifiers, watchHours);
+
+  /// Heures requises pour le qualificatif suivant, null si Divin.
+  int? get nextQualifierThreshold => qualifierIndex + 1 < qualifiers.length
+      ? qualifiers[qualifierIndex + 1].$1
+      : null;
+
+  /// Clé du qualificatif suivant (null = palier « sans qualificatif »).
+  String? get nextQualifierKey => qualifierIndex + 1 < qualifiers.length
+      ? qualifiers[qualifierIndex + 1].$2
+      : null;
+
+  /// Le prochain palier fait perdre le mot actuel (« Petit Curieux » →
+  /// « Curieux ») : à annoncer, sinon l'utilisateur croit à une régression.
+  bool get nextQualifierDropsWord =>
+      nextQualifierThreshold != null &&
+      nextQualifierKey == null &&
+      qualifierKey != null;
+
+  /// Avancée vers le qualificatif suivant (0 → 1), 1 si Divin.
+  double get qualifierProgress {
+    final next = nextQualifierThreshold;
+    return next == null ? 1 : (watchHours / next).clamp(0.0, 1.0);
+  }
+
+  static int _indexOf<T>(List<(int, T)> tiers, int value) {
+    var index = 0;
+    for (var i = 0; i < tiers.length; i++) {
+      if (value >= tiers[i].$1) index = i;
+    }
+    return index;
+  }
+
   // ── Route vers Arcer ─────────────────────────────────────────────────────
 
   /// Avancée vers le seuil Arcer des titres terminés (0 → 1).

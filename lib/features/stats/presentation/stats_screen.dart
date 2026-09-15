@@ -227,9 +227,16 @@ class _StatsBodyState extends State<_StatsBody> {
 
         // ── Titre ─────────────────────────────────────────────────────────
         const SizedBox(height: AppSpacing.lg),
-        SectionHeader(title: 'title_section'.tr()),
+        SectionHeader(
+          title: 'title_section'.tr(),
+          actionLabel: 'my_title_open'.tr(),
+          onAction: () => context.push(AppRoutes.myTitle),
+        ),
         const SizedBox(height: AppSpacing.sm),
-        _TitleCard(title: stats.title),
+        GestureDetector(
+          onTap: () => context.push(AppRoutes.myTitle),
+          child: _TitleCard(title: stats.title),
+        ),
       ],
     );
   }

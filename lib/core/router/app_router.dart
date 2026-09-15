@@ -13,6 +13,7 @@ import 'package:nextarc/features/settings/presentation/settings_screen.dart';
 import 'package:nextarc/features/browse/presentation/browse_screen.dart';
 import 'package:nextarc/features/share/presentation/share_stats_screen.dart';
 import 'package:nextarc/features/calendar/presentation/calendar_screen.dart';
+import 'package:nextarc/features/stats/presentation/my_title_screen.dart';
 import 'package:nextarc/features/stats/presentation/stats_screen.dart';
 import 'package:nextarc/features/watchlist/presentation/watchlist_screen.dart';
 
@@ -77,6 +78,7 @@ class AppRoutes {
   static const String shareStats = '/share-stats';
   static const String login = '/login';
   static const String profileEdit = '/profile-edit';
+  static const String myTitle = '/my-title';
 }
 
 final GoRouter appRouter = GoRouter(
@@ -145,6 +147,13 @@ final GoRouter appRouter = GoRouter(
       path: '/stats',
       pageBuilder: (context, state) =>
           _slideFade(state: state, child: const StatsScreen()),
+    ),
+
+    // Mon titre — hors shell
+    GoRoute(
+      path: AppRoutes.myTitle,
+      pageBuilder: (context, state) =>
+          _slideFade(state: state, child: const MyTitleScreen()),
     ),
 
     // Calendrier de diffusion — hors shell

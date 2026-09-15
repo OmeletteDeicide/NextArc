@@ -76,7 +76,7 @@ class ProfileScreen extends ConsumerWidget {
                 if (title != null) ...[
                   _ArcerRoadCard(
                     title: title,
-                    onTap: () => context.push(AppRoutes.stats),
+                    onTap: () => context.push(AppRoutes.myTitle),
                   ),
                   const SizedBox(height: 11),
                 ],
