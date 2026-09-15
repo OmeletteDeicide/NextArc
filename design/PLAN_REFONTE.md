@@ -97,7 +97,7 @@
       zigzag en fond (sombre uniquement). Requêtes : `bannerImage` +
       `nextAiringEpisode` ajoutés. `HorizontalAnimeList` supprimé ; `AnimeCard`
       gardé pour la Recherche (en attente de maquette).
-- [ ] Fiche anime (hero ≤ 38 %, pastilles sur icônes, carte « Dans ma liste »,
+- [x] Fiche anime (hero ≤ 38 %, pastilles sur icônes, carte « Dans ma liste »,
       synopsis replié 3 lignes, prochain épisode + Rappel)
 - [ ] Fiche d'édition (reprise visuelle, note en 10 segments)
 - [ ] Ma liste (segmenté Anime/Manga + un seul niveau d'onglets, bouton +1,
@@ -148,3 +148,8 @@
 - 15/09 — Lot 3 : Découvrir refait (analyse OK, 45 tests OK dont
   `test/discover_hero_test.dart`). À valider sur téléphone (hero, zigzag).
   Prochain écran : fiche anime.
+- 15/09 — Lot 3 : fiche anime refaite (bannière + jaquette 84 px, FAB retiré,
+  carte « Dans ma liste », synopsis nettoyé/replié, note perso, prochain
+  épisode + Rappel ; requête détail + `nextAiringEpisode`). Analyse OK,
+  49 tests OK dont `test/synopsis_test.dart`. À valider sur téléphone.
+  Prochain écran : fiche d'édition.
