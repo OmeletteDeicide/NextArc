@@ -7,18 +7,26 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/constants/app_links.dart';
+import 'package:nextarc/core/theme/app_tokens.dart';
+import 'package:nextarc/core/theme/app_typography.dart';
+import 'package:nextarc/core/theme/zigzag_background.dart';
+import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/features/activity/domain/activity_providers.dart';
 import 'package:nextarc/features/activity/domain/month_activity.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/share/domain/share_card_data.dart';
 import 'package:nextarc/features/share/domain/share_providers.dart';
+import 'package:nextarc/features/stats/domain/month_story.dart';
+import 'package:nextarc/features/stats/domain/stats_model.dart';
+import 'package:nextarc/features/stats/domain/stats_provider.dart';
 import 'package:nextarc/features/stats/domain/user_title.dart';
-import 'package:nextarc/features/stats/presentation/user_title_badge.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-import 'package:nextarc/features/stats/domain/stats_model.dart';
-import 'package:nextarc/features/stats/domain/stats_provider.dart';
+/// Les cartes de partage sont toujours sombres, quel que soit le thème.
+const AppColors _card = AppColors.dark;
 
 class ShareStatsScreen extends ConsumerWidget {
   const ShareStatsScreen({super.key, this.openPreviousMonth = false});
@@ -30,13 +38,75 @@ class ShareStatsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final statsAsync = ref.watch(statsProvider);
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+
     return Scaffold(
-      appBar: AppBar(title: Text('share_stats_title'.tr())),
-      body: statsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text(e.toString())),
-        data: (stats) =>
-            _ShareBody(stats: stats, openPreviousMonth: openPreviousMonth),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screen - 4, AppSpacing.xs, AppSpacing.screen, 0),
+              child: Row(
+                children: [
+                  Tooltip(
+                    message:
+                        MaterialLocalizations.of(context).backButtonTooltip,
+                    child: InkResponse(
+                      radius: 24,
+                      onTap: () => context.canPop()
+                          ? context.pop()
+                          : context.go('/profile'),
+                      child: SizedBox(
+                        width: AppSpacing.minTouch,
+                        height: AppSpacing.minTouch,
+                        child: Center(
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                                color: c.surface2, shape: BoxShape.circle),
+                            child: Icon(Icons.arrow_back_rounded,
+                                size: 18, color: c.text2),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'share_stats_title'.tr(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.headlineSmall
+                          ?.copyWith(fontSize: 19, color: c.text1),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: statsAsync.when(
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Text(e.toString(),
+                        textAlign: TextAlign.center,
+                        style: text.bodyMedium?.copyWith(color: c.text2)),
+                  ),
+                ),
+                data: (stats) => _ShareBody(
+                    stats: stats, openPreviousMonth: openPreviousMonth),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -56,8 +126,7 @@ class _ShareIdentity {
   final UserTitle title;
   final bool showTitle;
 
-  /// Couronne affichée (Arcer uniquement) : sur la photo si elle est visible,
-  /// sinon dans la pastille du titre.
+  /// Couronne affichée (Arcer uniquement).
   final bool showCrown;
 
   /// Photo et pseudo, uniquement si l'utilisateur les a activés.
@@ -80,6 +149,7 @@ class _ShareBody extends ConsumerStatefulWidget {
 
 class _ShareBodyState extends ConsumerState<_ShareBody> {
   final _pageController = PageController();
+
   /// Une clé de capture par carte possible (stats, préférés, 2 récaps).
   final _cardKeys = List.generate(4, (_) => GlobalKey());
   int _page = 0;
@@ -114,8 +184,7 @@ class _ShareBodyState extends ConsumerState<_ShareBody> {
       final boundary = _cardKeys[page].currentContext!.findRenderObject()
           as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       final pngBytes = byteData!.buffer.asUint8List();
 
       final tempDir = await getTemporaryDirectory();
@@ -139,6 +208,7 @@ class _ShareBodyState extends ConsumerState<_ShareBody> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final user = ref.watch(authProvider).whenOrNull(data: (a) => a.user);
     final favourites =
         ref.watch(shareFavouritesProvider).whenOrNull(data: (f) => f) ??
@@ -169,7 +239,7 @@ class _ShareBodyState extends ConsumerState<_ShareBody> {
     _ShareCard recapCard(MonthlyRecap recap, {required bool previous}) {
       final month = localizations.formatMonthYear(recap.date);
       return (
-        card: _RecapCard(recap: recap, month: month, identity: identity),
+        card: _RecapCard(recap: recap, identity: identity),
         images: _recapCovers(recap).map((c) => c.coverUrl).toList(),
         text: 'share_recap_text'.tr(namedArgs: {'month': month}),
         isPreviousMonth: previous,
@@ -188,7 +258,8 @@ class _ShareBodyState extends ConsumerState<_ShareBody> {
       ),
       if (collage.isNotEmpty)
         (
-          card: _FavouritesCard(covers: collage, identity: identity),
+          card: _FavouritesCard(
+              covers: collage, total: favourites.length, identity: identity),
           images: collage.map((c) => c.coverUrl).toList(),
           text: 'share_favourites_text'.tr(),
           isPreviousMonth: false,
@@ -211,8 +282,6 @@ class _ShareBodyState extends ConsumerState<_ShareBody> {
 
     final imageUrls = [?identity.avatarUrl, ...cards[page].images];
 
-    final cs = Theme.of(context).colorScheme;
-
     return Column(
       children: [
         // ── Aperçu des cartes ─────────────────────────────────────────────
@@ -223,7 +292,7 @@ class _ShareBodyState extends ConsumerState<_ShareBody> {
             onPageChanged: (i) => setState(() => _page = i),
             itemBuilder: (_, i) => Center(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 8),
                 child:
                     RepaintBoundary(key: _cardKeys[i], child: cards[i].card),
               ),
@@ -239,15 +308,13 @@ class _ShareBodyState extends ConsumerState<_ShareBody> {
               children: [
                 for (var i = 0; i < cards.length; i++)
                   AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: AppMotion.transition,
                     margin: const EdgeInsets.symmetric(horizontal: 3),
                     width: i == page ? 18 : 6,
                     height: 6,
                     decoration: BoxDecoration(
-                      color: i == page
-                          ? cs.primary
-                          : cs.onSurface.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(3),
+                      color: i == page ? c.accentText : c.text3,
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
                   ),
               ],
@@ -277,26 +344,18 @@ class _ShareBodyState extends ConsumerState<_ShareBody> {
         SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-            child: FilledButton.icon(
-              onPressed: _sharing
-                  ? null
-                  : () => _share(
-                        page: page,
-                        imageUrls: imageUrls,
-                        text: cards[page].text,
-                      ),
-              icon: _sharing
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.ios_share_rounded),
-              label: Text('share_stats_button'.tr()),
-              style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(52)),
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screen, AppSpacing.xs, AppSpacing.screen, 16),
+            child: AppButton(
+              label: 'share_stats_button'.tr(),
+              icon: Icons.ios_share_rounded,
+              expand: true,
+              loading: _sharing,
+              onPressed: () => _share(
+                page: page,
+                imageUrls: imageUrls,
+                text: cards[page].text,
+              ),
             ),
           ),
         ),
@@ -313,7 +372,7 @@ typedef _ShareCard = ({
   bool isPreviousMonth,
 });
 
-/// Jaquettes mises en avant dans un récap (2 lignes max).
+/// Jaquettes mises en avant dans un récap.
 List<FavouriteCover> _recapCovers(MonthlyRecap recap) => [
       for (final item in recap.highlights)
         if (item.coverImage != null)
@@ -322,100 +381,7 @@ List<FavouriteCover> _recapCovers(MonthlyRecap recap) => [
             title: item.title,
             score: item.score,
           ),
-    ].take(6).toList();
-
-// ── Carte récap du mois ───────────────────────────────────────────────────────
-
-class _RecapCard extends StatelessWidget {
-  const _RecapCard({
-    required this.recap,
-    required this.month,
-    required this.identity,
-  });
-
-  final MonthlyRecap recap;
-
-  /// Mois affiché, ex : « septembre 2026 ».
-  final String month;
-  final _ShareIdentity identity;
-
-  @override
-  Widget build(BuildContext context) {
-    final covers = _recapCovers(recap);
-
-    return _CardFrame(
-      identity: identity,
-      subtitle: 'share_card_recap'.tr(namedArgs: {'month': month}),
-      content: (w, h) => [
-        Row(
-          children: [
-            Expanded(
-              child: _StatTile(
-                value: '${recap.episodesWatched}',
-                label: 'share_card_episodes'.tr(),
-                icon: Icons.live_tv_outlined,
-                w: w,
-              ),
-            ),
-            SizedBox(width: w * 0.025),
-            Expanded(
-              child: _StatTile(
-                value: recap.watchTimeFormatted,
-                label: 'share_card_time'.tr(),
-                icon: Icons.schedule_outlined,
-                w: w,
-                accent: true,
-              ),
-            ),
-            SizedBox(width: w * 0.025),
-            Expanded(
-              child: _StatTile(
-                value: '${recap.completed}',
-                label: 'share_card_completed'.tr(),
-                icon: Icons.check_circle_outline,
-                w: w,
-              ),
-            ),
-          ],
-        ),
-        if (recap.chaptersRead > 0) ...[
-          SizedBox(height: h * 0.02),
-          Row(
-            children: [
-              Expanded(
-                child: _StatTile(
-                  value: '${recap.chaptersRead}',
-                  label: 'share_card_chapters'.tr(),
-                  icon: Icons.bookmark_outline,
-                  w: w,
-                ),
-              ),
-              SizedBox(width: w * 0.025),
-              Expanded(
-                child: _StatTile(
-                  value: recap.readTimeFormatted,
-                  label: 'share_card_read_time'.tr(),
-                  icon: Icons.auto_stories_outlined,
-                  w: w,
-                ),
-              ),
-            ],
-          ),
-        ],
-        SizedBox(height: h * 0.03),
-        if (recap.topGenres.isNotEmpty) ...[
-          _CardGenreRow(genres: recap.topGenres, w: w),
-          SizedBox(height: h * 0.03),
-        ],
-        if (covers.isNotEmpty)
-          Expanded(child: _CoverCollage(covers: covers, w: w))
-        else
-          const Spacer(),
-        SizedBox(height: h * 0.02),
-      ],
-    );
-  }
-}
+    ].take(3).toList();
 
 class _OptionSwitch extends StatelessWidget {
   const _OptionSwitch({
@@ -430,46 +396,165 @@ class _OptionSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return SwitchListTile(
       dense: true,
       visualDensity: VisualDensity.compact,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-      title: Text(label),
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: AppSpacing.screen + 4),
+      title: Text(
+        label,
+        style: Theme.of(context)
+            .textTheme
+            .bodyMedium
+            ?.copyWith(color: c.text1),
+      ),
       value: value,
       onChanged: onChanged,
     );
   }
 }
 
-// ── Carte à partager ──────────────────────────────────────────────────────────
+// ── Carte récap du mois ───────────────────────────────────────────────────────
+
+class _RecapCard extends StatelessWidget {
+  const _RecapCard({required this.recap, required this.identity});
+
+  final MonthlyRecap recap;
+  final _ShareIdentity identity;
+
+  @override
+  Widget build(BuildContext context) {
+    final locale = context.locale.toString();
+    final covers = _recapCovers(recap);
+    final showChapters = recap.episodesWatched == 0 && recap.chaptersRead > 0;
+
+    return _CardFrame(
+      identity: identity,
+      stamp: DateFormat.yMMM(locale).format(recap.date).toUpperCase(),
+      content: (w, h) => [
+        _CardOverline(
+          'share_overline_month'.tr(namedArgs: {
+            'month': DateFormat.MMMM(locale).format(recap.date),
+          }),
+          w: w,
+        ),
+        SizedBox(height: w * 0.025),
+        _CardHero(
+          '${heroDuration(recap.watchTimeMinutes + recap.readTimeMinutes)}\n'
+          '${'share_hero_tail'.tr()}',
+          w: w,
+        ),
+        SizedBox(height: h * 0.028),
+        _CardStatsRow(
+          w: w,
+          items: [
+            (
+              value: '${showChapters ? recap.chaptersRead : recap.episodesWatched}',
+              label: showChapters
+                  ? 'share_card_chapters'.tr()
+                  : 'share_card_episodes'.tr(),
+              color: null,
+            ),
+            (
+              value: formatCardScore(
+                meanScoreOf(recap.highlights.map((i) => i.score)),
+                languageCode: context.locale.languageCode,
+              ),
+              label: 'share_stat_mean'.tr(),
+              color: _card.star,
+            ),
+            (
+              value: '${recap.completed}',
+              label: 'share_card_completed'.tr(),
+              color: null,
+            ),
+          ],
+        ),
+        if (covers.isNotEmpty) ...[
+          SizedBox(height: h * 0.028),
+          _CardOverline('share_top_month'.tr(), w: w),
+          SizedBox(height: w * 0.025),
+          Expanded(child: _RankedCovers(covers: covers, w: w)),
+        ] else
+          const Spacer(),
+      ],
+    );
+  }
+}
+
+// ── Carte stats (cumul total) ─────────────────────────────────────────────────
 
 class _StatsCard extends StatelessWidget {
   const _StatsCard({required this.stats, required this.identity});
+
   final StatsModel stats;
   final _ShareIdentity identity;
 
   @override
   Widget build(BuildContext context) {
+    final numbers = NumberFormat.decimalPattern(context.locale.toString());
+    final best = [
+      if (stats.bestAnime?.media.coverImage != null)
+        FavouriteCover(
+          coverUrl: stats.bestAnime!.media.coverImage!,
+          title: stats.bestAnime!.media.displayTitle,
+          score: stats.bestAnime!.score,
+        ),
+      if (stats.bestManga?.media.coverImage != null)
+        FavouriteCover(
+          coverUrl: stats.bestManga!.media.coverImage!,
+          title: stats.bestManga!.media.displayTitle,
+          score: stats.bestManga!.score,
+        ),
+    ];
+
     return _CardFrame(
       identity: identity,
-      subtitle: 'share_card_subtitle'.tr(),
+      stamp: 'share_stamp_total'.tr().toUpperCase(),
       content: (w, h) => [
-        // Stats clés
-        _CardStatRow(stats: stats, w: w),
-
-        SizedBox(height: h * 0.04),
-
-        // Genres
-        if (stats.topGenres.isNotEmpty) ...[
-          _CardGenreRow(genres: stats.topGenres, w: w),
-          SizedBox(height: h * 0.04),
-        ],
-
-        // Jaquettes meilleurs anime/manga
-        if (stats.bestAnime != null || stats.bestManga != null)
-          _CardCovers(stats: stats, h: h * 0.25),
-
-        const Spacer(),
+        _CardOverline('share_overline_stats'.tr(), w: w),
+        SizedBox(height: w * 0.025),
+        _CardHero(
+          '${heroDuration(stats.watchTimeMinutes + stats.readTimeMinutes)}\n'
+          '${'share_hero_tail'.tr()}',
+          w: w,
+        ),
+        SizedBox(height: h * 0.028),
+        _CardStatsRow(
+          w: w,
+          items: [
+            (
+              value: numbers.format(stats.episodesWatched),
+              label: 'share_card_episodes'.tr(),
+              color: null,
+            ),
+            (
+              value: formatCardScore(stats.meanScore,
+                  languageCode: context.locale.languageCode),
+              label: 'share_stat_mean'.tr(),
+              color: _card.star,
+            ),
+            (
+              value: numbers.format(stats.animeCompleted + stats.mangaCompleted),
+              label: 'share_card_completed'.tr(),
+              color: null,
+            ),
+          ],
+        ),
+        if (best.isNotEmpty) ...[
+          SizedBox(height: h * 0.028),
+          _CardOverline('share_best_scores'.tr(), w: w),
+          SizedBox(height: w * 0.025),
+          Expanded(child: _RankedCovers(covers: best, w: w, slots: 3)),
+        ] else if (stats.topGenres.isNotEmpty) ...[
+          SizedBox(height: h * 0.028),
+          _CardOverline('share_card_genres'.tr(), w: w),
+          SizedBox(height: w * 0.025),
+          _CardGenres(genres: stats.topGenres, w: w),
+          const Spacer(),
+        ] else
+          const Spacer(),
       ],
     );
   }
@@ -478,19 +563,359 @@ class _StatsCard extends StatelessWidget {
 // ── Carte « Mes préférés » ─────────────────────────────────────────────────────
 
 class _FavouritesCard extends StatelessWidget {
-  const _FavouritesCard({required this.covers, required this.identity});
+  const _FavouritesCard({
+    required this.covers,
+    required this.total,
+    required this.identity,
+  });
+
   final List<FavouriteCover> covers;
+  final int total;
   final _ShareIdentity identity;
 
   @override
   Widget build(BuildContext context) {
     return _CardFrame(
       identity: identity,
-      subtitle: 'share_card_favourites'.tr(),
+      stamp: DateFormat.yMMM(context.locale.toString())
+          .format(DateTime.now())
+          .toUpperCase(),
       content: (w, h) => [
-        Expanded(child: _CoverCollage(covers: covers, w: w)),
+        _CardOverline('share_card_favourites'.tr(), w: w),
+        SizedBox(height: w * 0.025),
+        _CardHero(
+          total == 1
+              ? 'share_fav_count_one'.tr()
+              : 'share_fav_count'.tr(namedArgs: {'count': '$total'}),
+          w: w,
+        ),
         SizedBox(height: h * 0.03),
+        Expanded(child: _CoverCollage(covers: covers, w: w)),
       ],
+    );
+  }
+}
+
+// ── Cadre commun des cartes (fond, en-tête, identité, pied) ───────────────────
+
+class _CardFrame extends StatelessWidget {
+  const _CardFrame({
+    required this.identity,
+    required this.stamp,
+    required this.content,
+  });
+
+  final _ShareIdentity identity;
+
+  /// Repère en haut à droite (« SEPT. 2026 », « TOTAL »).
+  final String stamp;
+
+  /// Contenu entre l'en-tête et le pied ; doit contenir un élément flexible
+  /// (Spacer / Expanded) pour occuper la hauteur restante.
+  final List<Widget> Function(double w, double h) content;
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 9 / 16,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final w = constraints.maxWidth;
+          final h = constraints.maxHeight;
+
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(w * 0.05),
+            child: Stack(
+              children: [
+                const Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment(-0.17, -1),
+                        end: Alignment(0.17, 1),
+                        colors: [
+                          Color(0xFF141A38),
+                          Color(0xFF0A0F22),
+                          Color(0xFF060A15),
+                        ],
+                        stops: [0, 0.45, 1],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: ZigzagBackground(
+                    color: _card.violet,
+                    opacity: 0.38,
+                    alwaysVisible: true,
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+                Positioned(
+                  right: -w * 0.17,
+                  top: -w * 0.15,
+                  child: Container(
+                    width: w * 0.72,
+                    height: w * 0.72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          _card.violet.withValues(alpha: 0.5),
+                          _card.violet.withValues(alpha: 0),
+                        ],
+                        stops: const [0, 0.68],
+                      ),
+                    ),
+                  ),
+                ),
+                // Zone de sécurité 9:16 : rien à moins de ~180 px (sur 1920)
+                // des bords haut et bas, où Instagram pose son interface
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                      w * 0.07, h * 0.094, w * 0.07, h * 0.094),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _CardHeader(stamp: stamp, w: w),
+                      SizedBox(height: h * 0.03),
+                      ...content(w, h),
+                      SizedBox(height: h * 0.022),
+                      _CardFooter(identity: identity, w: w),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CardHeader extends StatelessWidget {
+  const _CardHeader({required this.stamp, required this.w});
+
+  final String stamp;
+  final double w;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(w * 0.022),
+          child: Image.asset(
+            'assets/images/logo.png',
+            width: w * 0.079,
+            height: w * 0.079,
+            fit: BoxFit.cover,
+          ),
+        ),
+        SizedBox(width: w * 0.025),
+        Text(
+          'NextArc',
+          style: TextStyle(
+            fontFamily: AppTypography.bodyFamily,
+            color: const Color(0xFFC3CDEA),
+            fontWeight: FontWeight.w700,
+            fontSize: w * 0.032,
+            letterSpacing: w * 0.0006,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          stamp,
+          style: AppTypography.overline(const Color(0xFF7B88AE))
+              .copyWith(fontSize: w * 0.026, letterSpacing: 0),
+        ),
+      ],
+    );
+  }
+}
+
+class _CardOverline extends StatelessWidget {
+  const _CardOverline(this.text, {required this.w});
+
+  final String text;
+  final double w;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text.toUpperCase(),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: AppTypography.overline(const Color(0xFF8B9AC6))
+          .copyWith(fontSize: w * 0.027, letterSpacing: w * 0.0043),
+    );
+  }
+}
+
+/// Grand texte en Archivo Black (« 9 H 36 / DE VIE / EN PLUS. »).
+class _CardHero extends StatelessWidget {
+  const _CardHero(this.text, {required this.w});
+
+  final String text;
+  final double w;
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.centerLeft,
+      child: Text(
+        text.toUpperCase(),
+        style: Theme.of(context).textTheme.displayLarge?.copyWith(
+              fontSize: w * 0.128,
+              height: 0.92,
+              letterSpacing: -w * 0.0044,
+              color: const Color(0xFFF7F9FF),
+            ),
+      ),
+    );
+  }
+}
+
+typedef _CardStat = ({String value, String label, Color? color});
+
+class _CardStatsRow extends StatelessWidget {
+  const _CardStatsRow({required this.items, required this.w});
+
+  final List<_CardStat> items;
+  final double w;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return IntrinsicHeight(
+      child: Row(
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0)
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: w * 0.035),
+                child: Container(
+                  width: 1,
+                  color: Colors.white.withValues(alpha: 0.14),
+                ),
+              ),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      items[i].value,
+                      maxLines: 1,
+                      style: text.titleLarge?.copyWith(
+                        fontSize: w * 0.064,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -w * 0.0022,
+                        color: items[i].color ?? const Color(0xFFF7F9FF),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: w * 0.005),
+                  Text(
+                    items[i].label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: AppTypography.bodyFamily,
+                      fontSize: w * 0.026,
+                      fontWeight: FontWeight.w600,
+                      color: _card.text2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Jaquettes numérotées « 01 · 02 · 03 », dimensionnées à la place restante.
+class _RankedCovers extends StatelessWidget {
+  const _RankedCovers({required this.covers, required this.w, this.slots = 3});
+
+  final List<FavouriteCover> covers;
+  final double w;
+
+  /// Nombre de colonnes réservées (garde la taille des jaquettes stable).
+  final int slots;
+
+  @override
+  Widget build(BuildContext context) {
+    final rankStyle = Theme.of(context).textTheme.displayLarge?.copyWith(
+      fontSize: w * 0.042,
+      height: 1,
+      color: Colors.white,
+      shadows: const [Shadow(color: Color(0x99000000), blurRadius: 6)],
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final gap = w * 0.027;
+        final cellWidth = math.min(
+          (constraints.maxWidth - gap * (slots - 1)) / slots,
+          constraints.maxHeight / 1.5,
+        );
+        final cellHeight = cellWidth * 1.5;
+
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < covers.length; i++) ...[
+                if (i > 0) SizedBox(width: gap),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(w * 0.03),
+                  child: SizedBox(
+                    width: cellWidth,
+                    height: cellHeight,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CachedNetworkImage(
+                          imageUrl: covers[i].coverUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (_, _) =>
+                              ColoredBox(color: _card.surface2),
+                          errorWidget: (_, _, _) =>
+                              ColoredBox(color: _card.surface2),
+                        ),
+                        const DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Color(0x66000000), Color(0x00000000)],
+                              stops: [0, 0.35],
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: w * 0.02,
+                          top: w * 0.02,
+                          child: Text(coverRank(i), style: rankStyle),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -498,6 +923,7 @@ class _FavouritesCard extends StatelessWidget {
 /// Mosaïque de jaquettes (lignes de 3), dimensionnée pour tenir dans la carte.
 class _CoverCollage extends StatelessWidget {
   const _CoverCollage({required this.covers, required this.w});
+
   final List<FavouriteCover> covers;
   final double w;
 
@@ -517,7 +943,8 @@ class _CoverCollage extends StatelessWidget {
         final cellHeight = math.min(maxCellWidth * coverRatio, maxCellHeight);
         final cellWidth = cellHeight / coverRatio;
 
-        return Center(
+        return Align(
+          alignment: Alignment.topCenter,
           child: Wrap(
             spacing: gap,
             runSpacing: gap,
@@ -525,67 +952,16 @@ class _CoverCollage extends StatelessWidget {
             children: [
               for (final cover in covers)
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(w * 0.025),
                   child: SizedBox(
                     width: cellWidth,
                     height: cellHeight,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        CachedNetworkImage(
-                          imageUrl: cover.coverUrl,
-                          fit: BoxFit.cover,
-                        ),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.8),
-                              ],
-                              stops: const [0.55, 1.0],
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          left: 5,
-                          right: 5,
-                          bottom: 5,
-                          child: Text(
-                            cover.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: w * 0.024,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        if ((cover.score ?? 0) > 0)
-                          Positioned(
-                            top: 5,
-                            right: 5,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 5, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.6),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                '★ ${cover.score!.toStringAsFixed(cover.score! % 1 == 0 ? 0 : 1)}',
-                                style: TextStyle(
-                                  color: const Color(0xFFFFC107),
-                                  fontSize: w * 0.024,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
+                    child: CachedNetworkImage(
+                      imageUrl: cover.coverUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (_, _) => ColoredBox(color: _card.surface2),
+                      errorWidget: (_, _, _) =>
+                          ColoredBox(color: _card.surface2),
                     ),
                   ),
                 ),
@@ -597,544 +973,171 @@ class _CoverCollage extends StatelessWidget {
   }
 }
 
-// ── Identité : photo (+ couronne), pseudo, titre ──────────────────────────────
+class _CardGenres extends StatelessWidget {
+  const _CardGenres({required this.genres, required this.w});
 
-class _CardIdentity extends StatelessWidget {
-  const _CardIdentity({required this.identity, required this.w});
+  final List<GenreStat> genres;
+  final double w;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: w * 0.02,
+      runSpacing: w * 0.018,
+      children: [
+        for (final g in genres.take(4))
+          Container(
+            padding: EdgeInsets.symmetric(
+                horizontal: w * 0.035, vertical: w * 0.018),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(w * 0.02),
+            ),
+            child: Text(
+              g.name,
+              style: TextStyle(
+                fontFamily: AppTypography.bodyFamily,
+                color: _card.text1,
+                fontSize: w * 0.032,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// ── Pied : identité + « Dispo sur Google Play » ───────────────────────────────
+
+class _CardFooter extends StatelessWidget {
+  const _CardFooter({required this.identity, required this.w});
+
   final _ShareIdentity identity;
   final double w;
 
   @override
   Widget build(BuildContext context) {
     final avatarUrl = identity.avatarUrl;
-    return Row(
-      children: [
-        if (avatarUrl != null) ...[
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              CircleAvatar(
-                radius: w * 0.06,
-                backgroundImage: CachedNetworkImageProvider(avatarUrl),
-              ),
-              if (identity.showCrown)
-                Positioned(
-                  top: -w * 0.045,
-                  right: -w * 0.035,
-                  child: ArcerCrown(size: w * 0.065),
-                ),
-            ],
-          ),
-          SizedBox(width: w * 0.035),
-        ],
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (identity.name != null)
-                Text(
-                  identity.name!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: w * 0.042,
-                  ),
-                ),
-              if (identity.showTitle) ...[
-                if (identity.name != null) SizedBox(height: w * 0.012),
-                UserTitleBadge(
-                  title: identity.title,
-                  // Sans photo, la couronne se place dans la pastille
-                  showCrown: identity.showCrown && avatarUrl == null,
-                  fontSize: w * 0.034,
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
+    final title = identity.title;
+    final titleColor = title.isArcer ? _card.star : const Color(0xFFB9A0FF);
 
-// ── Cadre commun des cartes (fond, en-tête, identité, pied) ───────────────────
-
-class _CardFrame extends StatelessWidget {
-  const _CardFrame({
-    required this.identity,
-    required this.subtitle,
-    required this.content,
-  });
-
-  final _ShareIdentity identity;
-  final String subtitle;
-
-  /// Contenu entre l'en-tête et le pied ; doit contenir un élément flexible
-  /// (Spacer / Expanded) pour occuper la hauteur restante.
-  final List<Widget> Function(double w, double h) content;
-
-  @override
-  Widget build(BuildContext context) {
-    // Ratio 9:16 (story/reel)
-    return AspectRatio(
-      aspectRatio: 9 / 16,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final w = constraints.maxWidth;
-          final h = constraints.maxHeight;
-
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Stack(
+    final Widget left;
+    if (!identity.isVisible) {
+      left = Text(
+        'NextArc',
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontSize: w * 0.042,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFFF7F9FF),
+            ),
+      );
+    } else {
+      left = Row(
+        children: [
+          if (avatarUrl != null) ...[
+            Stack(
+              clipBehavior: Clip.none,
               children: [
-                // ── Fond gradient ─────────────────────────────────────────
-                Container(
-                  width: w,
-                  height: h,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF0A0F1E),
-                        Color(0xFF0F1C3F),
-                        Color(0xFF0D1530),
-                        Color(0xFF050810),
-                      ],
-                      stops: [0.0, 0.3, 0.65, 1.0],
+                CircleAvatar(
+                  radius: w * 0.054,
+                  backgroundColor: _card.surface2,
+                  backgroundImage: CachedNetworkImageProvider(avatarUrl),
+                ),
+                if (identity.showCrown)
+                  Positioned(
+                    top: -w * 0.03,
+                    right: -w * 0.025,
+                    child: Transform.rotate(
+                      angle: 0.35,
+                      child: Text('👑',
+                          style: TextStyle(fontSize: w * 0.045, height: 1)),
                     ),
                   ),
-                ),
-
-                // ── Décoration : cercles lumineux ─────────────────────────
-                Positioned(
-                  top: -w * 0.15,
-                  right: -w * 0.15,
-                  child: Container(
-                    width: w * 0.7,
-                    height: w * 0.7,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          const Color(0xFF4F6EF5).withValues(alpha: 0.25),
-                          Colors.transparent,
-                        ],
-                      ),
+              ],
+            ),
+            SizedBox(width: w * 0.03),
+          ],
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (identity.name != null)
+                  Text(
+                    identity.name!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: AppTypography.bodyFamily,
+                      color: const Color(0xFFF7F9FF),
+                      fontWeight: FontWeight.w800,
+                      fontSize: w * 0.035,
                     ),
                   ),
-                ),
-                Positioned(
-                  bottom: h * 0.1,
-                  left: -w * 0.2,
-                  child: Container(
-                    width: w * 0.6,
-                    height: w * 0.6,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          const Color(0xFF7C4DFF).withValues(alpha: 0.18),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // ── Contenu ───────────────────────────────────────────────
-                Padding(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: w * 0.07, vertical: h * 0.05),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                if (identity.showTitle) ...[
+                  if (identity.name != null) SizedBox(height: w * 0.01),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Logo + app name
-                      _CardHeader(w: w, subtitle: subtitle),
-
-                      if (identity.isVisible) ...[
-                        SizedBox(height: h * 0.03),
-                        _CardIdentity(identity: identity, w: w),
+                      // Sans photo, la couronne accompagne le titre
+                      if (identity.showCrown && avatarUrl == null) ...[
+                        Text('👑', style: TextStyle(fontSize: w * 0.028)),
+                        SizedBox(width: w * 0.012),
                       ],
-
-                      SizedBox(height: h * 0.04),
-
-                      ...content(w, h),
-
-                      // Tagline bas
-                      _CardFooter(w: w),
+                      Flexible(
+                        child: Text(
+                          title.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: AppTypography.bodyFamily,
+                            color: titleColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: w * 0.029,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                ),
+                ],
               ],
             ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// ── En-tête : logo + titre ────────────────────────────────────────────────────
-
-class _CardHeader extends StatelessWidget {
-  const _CardHeader({required this.w, required this.subtitle});
-  final double w;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: Image.asset(
-            'assets/images/logo.png',
-            width: w * 0.1,
-            height: w * 0.1,
-            fit: BoxFit.cover,
           ),
-        ),
-        SizedBox(width: w * 0.035),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'NextArc',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: w * 0.065,
-                letterSpacing: -0.5,
-              ),
-            ),
-            Text(
-              subtitle,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: w * 0.03,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
+        ],
+      );
+    }
 
-// ── Stats : 3 tuiles ──────────────────────────────────────────────────────────
-
-class _CardStatRow extends StatelessWidget {
-  const _CardStatRow({required this.stats, required this.w});
-  final StatsModel stats;
-  final double w;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatTile(
-            value: stats.episodesWatched.toString(),
-            label: 'share_card_episodes'.tr(),
-            icon: Icons.live_tv_outlined,
-            w: w,
-          ),
-        ),
-        SizedBox(width: w * 0.025),
-        Expanded(
-          child: _StatTile(
-            value: stats.watchTimeFormatted,
-            label: 'share_card_time'.tr(),
-            icon: Icons.schedule_outlined,
-            w: w,
-            accent: true,
-          ),
-        ),
-        SizedBox(width: w * 0.025),
-        Expanded(
-          child: _StatTile(
-            value: stats.meanScore != null
-                ? stats.meanScore!.toStringAsFixed(1)
-                : '—',
-            label: 'share_card_score'.tr(),
-            icon: Icons.star_outlined,
-            w: w,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatTile extends StatelessWidget {
-  const _StatTile({
-    required this.value,
-    required this.label,
-    required this.icon,
-    required this.w,
-    this.accent = false,
-  });
-  final String value;
-  final String label;
-  final IconData icon;
-  final double w;
-  final bool accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = accent ? const Color(0xFF4F6EF5) : Colors.white;
     return Container(
-      padding: EdgeInsets.symmetric(
-          vertical: w * 0.035, horizontal: w * 0.025),
+      padding: EdgeInsets.only(top: w * 0.04),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: accent
-              ? const Color(0xFF4F6EF5).withValues(alpha: 0.5)
-              : Colors.white.withValues(alpha: 0.1),
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Icon(icon, color: color.withValues(alpha: 0.7), size: w * 0.045),
-          SizedBox(height: w * 0.02),
-          // Réduit la taille plutôt que de couper (ex : « 41j 16h », « 9h 36min »)
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
+          Expanded(child: left),
+          SizedBox(width: w * 0.02),
+          Container(
+            padding: EdgeInsets.symmetric(
+                horizontal: w * 0.035, vertical: w * 0.025),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF7F9FF),
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
             child: Text(
-              value,
+              'share_card_store'.tr(),
               style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: w * 0.055,
+                fontFamily: AppTypography.bodyFamily,
+                color: const Color(0xFF0A0F22),
+                fontWeight: FontWeight.w800,
+                fontSize: w * 0.027,
               ),
-              maxLines: 1,
             ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
-              fontSize: w * 0.028,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
-    );
-  }
-}
-
-// ── Genres : chips ────────────────────────────────────────────────────────────
-
-class _CardGenreRow extends StatelessWidget {
-  const _CardGenreRow({required this.genres, required this.w});
-  final List<GenreStat> genres;
-  final double w;
-
-  @override
-  Widget build(BuildContext context) {
-    final shown = genres.take(4).toList();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'share_card_genres'.tr().toUpperCase(),
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.4),
-            fontSize: w * 0.028,
-            letterSpacing: 1.2,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        SizedBox(height: w * 0.025),
-        Wrap(
-          spacing: w * 0.02,
-          runSpacing: w * 0.018,
-          children: shown.map((g) {
-            return Container(
-              padding: EdgeInsets.symmetric(
-                  horizontal: w * 0.035, vertical: w * 0.018),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF4F6EF5).withValues(alpha: 0.35),
-                    const Color(0xFF7C4DFF).withValues(alpha: 0.25),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                    color:
-                        const Color(0xFF4F6EF5).withValues(alpha: 0.5)),
-              ),
-              child: Text(
-                g.name,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  fontSize: w * 0.032,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Jaquettes meilleurs titres ────────────────────────────────────────────────
-
-class _CardCovers extends StatelessWidget {
-  const _CardCovers({required this.stats, required this.h});
-  final StatsModel stats;
-  final double h;
-
-  @override
-  Widget build(BuildContext context) {
-    final covers = [
-      if (stats.bestAnime?.media.coverImage != null)
-        (
-          url: stats.bestAnime!.media.coverImage!,
-          title: stats.bestAnime!.media.displayTitle,
-          score: stats.bestAnime!.formattedScore ?? '',
-        ),
-      if (stats.bestManga?.media.coverImage != null)
-        (
-          url: stats.bestManga!.media.coverImage!,
-          title: stats.bestManga!.media.displayTitle,
-          score: stats.bestManga!.formattedScore ?? '',
-        ),
-    ];
-
-    if (covers.isEmpty) return const SizedBox.shrink();
-
-    return Row(
-      children: covers.map((c) {
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-                right: c == covers.last ? 0 : 8),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Stack(
-                children: [
-                  SizedBox(
-                    height: h,
-                    child: CachedNetworkImage(
-                      imageUrl: c.url,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                    ),
-                  ),
-                  // Gradient + titre
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.85),
-                          ],
-                          stops: const [0.5, 1.0],
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 8,
-                    left: 8,
-                    right: 8,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (c.score.isNotEmpty)
-                          Row(
-                            children: [
-                              const Icon(Icons.star_rounded,
-                                  size: 10, color: Color(0xFFFFC107)),
-                              const SizedBox(width: 2),
-                              Text(
-                                c.score,
-                                style: const TextStyle(
-                                  color: Color(0xFFFFC107),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        Text(
-                          c.title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-}
-
-// ── Pied de carte ─────────────────────────────────────────────────────────────
-
-class _CardFooter extends StatelessWidget {
-  const _CardFooter({required this.w});
-  final double w;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            'share_card_tagline'.tr(),
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.35),
-              fontSize: w * 0.028,
-            ),
-          ),
-        ),
-        Container(
-          padding: EdgeInsets.symmetric(
-              horizontal: w * 0.03, vertical: w * 0.015),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF4F6EF5), Color(0xFF7C4DFF)],
-            ),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            'share_card_store'.tr(),
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: w * 0.028,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

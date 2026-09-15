@@ -106,7 +106,7 @@
       Arcer », menus)
 - [x] Stats (récap narratif « Ton mois », tuiles, genres)
 - [x] Écran « Mon titre » (2 jauges + Arcer doré + échelle des noms)
-- [ ] Cartes de partage (3 cartes, sombres, zone de sécurité 9:16)
+- [x] Cartes de partage (3 cartes, sombres, zone de sécurité 9:16)
 - [ ] Moment du palier (carte plein écran au passage de titre → Partager)
 
 ### Lot 4 — Comptes
@@ -206,3 +206,16 @@
   nextQualifierDropsWord…). Mots de qualificatif en/es à relire (Little,
   Pequeño…). Analyse OK, 85 tests OK dont `test/my_title_gauges_test.dart`.
   À valider sur téléphone. Prochain : cartes de partage.
+- 15/09 — Lot 3 : cartes de partage refaites (toujours sombres, `AppColors.dark`
+  même en thème clair) : fond dégradé + zigzag violet + halo, en-tête logo ·
+  NextArc · repère (« SEPT. 2026 » / « TOTAL »), contenu dans la zone de
+  sécurité 9:16 (9,4 % haut/bas ≈ 180 px sur 1920), pied avec identité selon
+  les interrupteurs (photo + pseudo, titre violet ou doré Arcer, couronne
+  Arcer seulement) et pastille blanche « Dispo sur Google Play » (aucun
+  domaine). Récap : « MON SEPTEMBRE / 9 H 36 DE VIE EN PLUS. », épisodes ·
+  note moy. · terminés, top 3 du mois numéroté. Stats : même gabarit en cumul,
+  meilleures notes (ou genres). Préférés : « N COUPS DE CŒUR. » + mosaïque.
+  Écran : retour + titre, points, interrupteurs, `AppButton`. Textes en/es des
+  accroches à relire. Analyse OK, 89 tests OK dont
+  `test/share_card_data_test.dart`. À valider sur téléphone (capture PNG).
+  Prochain : moment du palier.
