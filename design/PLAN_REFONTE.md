@@ -104,7 +104,7 @@
       carte « sorties cette semaine »)
 - [x] Profil (en-tête zigzag + halo, badge de titre centré, carte « Route vers
       Arcer », menus)
-- [ ] Stats (récap narratif « Ton mois », tuiles, genres)
+- [x] Stats (récap narratif « Ton mois », tuiles, genres)
 - [ ] Écran « Mon titre » (2 jauges + Arcer doré + échelle des noms)
 - [ ] Cartes de partage (3 cartes, sombres, zone de sécurité 9:16)
 - [ ] Moment du palier (carte plein écran au passage de titre → Partager)
@@ -182,3 +182,15 @@
   Connexion, migration invité et dialogue de déconnexion inchangés (Lot 4).
   Analyse OK, 70 tests OK dont `test/arcer_road_test.dart`. À valider sur
   téléphone. Prochain écran : Stats.
+- 15/09 — Lot 3 : Stats refaites : en-tête retour + « Partager » ; carte
+  « Ton mois » (zigzag, temps visionnage + lecture en grand, phrase
+  « N épisodes et N chapitres, surtout des **genre**. Soit **+X %** par
+  rapport à <mois> », barres des 7 derniers mois). Règle de comparaison
+  (`month_story.dart`) : masquée si mois précédent < 3 h, % si hausse ou
+  baisse ≤ 10 %, « autant » à 0 %, sinon « un mois plus calme ». Carte du mois
+  masquée pour AniList seul (pas de journal). Tuiles cumul (épisodes, note
+  moyenne, anime terminés, « Voir le détail » qui déplie manga/chapitres/
+  temps/meilleures notes), genres en dégradé estompé, carte titre restylée.
+  7 lectures `activity/{mois}` par ouverture. Analyse OK, 79 tests OK dont
+  `test/month_story_test.dart`. À valider sur téléphone.
+  Prochain : écran « Mon titre ».
