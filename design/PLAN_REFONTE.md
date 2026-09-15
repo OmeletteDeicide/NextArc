@@ -107,7 +107,7 @@
 - [x] Stats (récap narratif « Ton mois », tuiles, genres)
 - [x] Écran « Mon titre » (2 jauges + Arcer doré + échelle des noms)
 - [x] Cartes de partage (3 cartes, sombres, zone de sécurité 9:16)
-- [ ] Moment du palier (carte plein écran au passage de titre → Partager)
+- [x] Moment du palier (carte plein écran au passage de titre → Partager)
 
 ### Lot 4 — Comptes
 - [ ] Connexion : Google principal, e-mail secondaire, « Continuer en invité »
@@ -219,3 +219,14 @@
   accroches à relire. Analyse OK, 89 tests OK dont
   `test/share_card_data_test.dart`. À valider sur téléphone (capture PNG).
   Prochain : moment du palier.
+- 15/09 — Lot 3 : moment du palier. `MainShell` écoute `statsProvider` et
+  compare l'ancien et le nouveau titre (`title_promotion.dart`, pur) : Arcer >
+  nouveau nom > nouveau qualificatif ; jamais sur une baisse, jamais une fois
+  Arcer, jamais au démarrage ni lors d'un changement de compte (propriétaire
+  du titre mémorisé). Carte plein écran toujours sombre (zigzag + halo, doré
+  pour Arcer avec 👑), « Nouveau titre », phrase selon le palier, un seul CTA
+  « Partager » → carrousel, bouton fermer. Non repris : pulsation du badge du
+  profil (le profil n'est pas affiché à ce moment-là). Un palier franchi
+  pendant que l'app est fermée (synchro AniList) n'est pas célébré. Analyse
+  OK, 95 tests OK dont `test/title_promotion_test.dart`.
+  **Lot 3 terminé** — tout reste à valider sur téléphone avant le Lot 4.

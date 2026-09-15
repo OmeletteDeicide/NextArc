@@ -6,6 +6,11 @@ import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/features/activity/domain/activity_providers.dart';
 import 'package:nextarc/features/activity/domain/month_activity.dart';
+import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/stats/domain/stats_model.dart';
+import 'package:nextarc/features/stats/domain/stats_provider.dart';
+import 'package:nextarc/features/stats/domain/title_promotion.dart';
+import 'package:nextarc/features/stats/presentation/title_promotion_card.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key, required this.child});
@@ -75,6 +80,33 @@ class _MainShellState extends ConsumerState<MainShell> {
     }
   }
 
+  /// Compte auquel appartient le dernier titre connu : un changement de compte
+  /// (connexion, déconnexion) n'est pas un passage de palier.
+  String? _titleOwner;
+
+  /// Le moment du palier : quand un seuil tombe après une mise à jour de la
+  /// liste (y compris depuis la fiche, le shell reste monté en dessous).
+  void _listenTitlePromotion() {
+    ref.listen<AsyncValue<StatsModel>>(statsProvider, (previous, next) {
+      final after = next.value?.title;
+      if (after == null) return;
+
+      final user = ref.read(authProvider).value?.user;
+      final owner = user == null
+          ? 'guest'
+          : user.firebaseUid ?? 'anilist_${user.id}';
+      final sameOwner = owner == _titleOwner;
+      _titleOwner = owner;
+
+      final before = previous?.value?.title;
+      if (!sameOwner || before == null) return;
+
+      final kind = titlePromotion(before: before, after: after);
+      if (kind == null || !mounted) return;
+      showTitlePromotion(context, title: after, kind: kind);
+    });
+  }
+
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
     if (location.startsWith(AppRoutes.recommendations)) return 1;
@@ -85,6 +117,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    _listenTitlePromotion();
     return Scaffold(
       body: widget.child,
       bottomNavigationBar: BottomNavigationBar(
