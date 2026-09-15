@@ -230,3 +230,7 @@
   pendant que l'app est fermée (synchro AniList) n'est pas célébré. Analyse
   OK, 95 tests OK dont `test/title_promotion_test.dart`.
   **Lot 3 terminé** — tout reste à valider sur téléphone avant le Lot 4.
+- 15/09 — Correctif : écran rouge sur Stats (`permission-denied` sur
+  `activity/{mois}`). `AsyncValue.value` relance l'erreur en Riverpod 2 →
+  toujours `valueOrNull` dans le nouveau code. Cause côté serveur : règle
+  `activity` de `firestore.rules` pas encore publiée.

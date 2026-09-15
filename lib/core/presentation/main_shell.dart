@@ -88,7 +88,7 @@ class _MainShellState extends ConsumerState<MainShell> {
   /// liste (y compris depuis la fiche, le shell reste monté en dessous).
   void _listenTitlePromotion() {
     ref.listen<AsyncValue<StatsModel>>(statsProvider, (previous, next) {
-      final after = next.value?.title;
+      final after = next.valueOrNull?.title;
       if (after == null) return;
 
       final user = ref.read(authProvider).value?.user;
@@ -98,7 +98,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       final sameOwner = owner == _titleOwner;
       _titleOwner = owner;
 
-      final before = previous?.value?.title;
+      final before = previous?.valueOrNull?.title;
       if (!sameOwner || before == null) return;
 
       final kind = titlePromotion(before: before, after: after);

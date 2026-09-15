@@ -50,7 +50,7 @@ class ProfileScreen extends ConsumerWidget {
 
   Widget _buildProfile(BuildContext context, WidgetRef ref, AuthState auth) {
     final user = auth.user!;
-    final stats = ref.watch(statsProvider).value;
+    final stats = ref.watch(statsProvider).valueOrNull;
     final title = stats?.title;
     final c = AppColors.of(context);
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;

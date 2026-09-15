@@ -77,7 +77,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     final text = Theme.of(context).textTheme;
 
     String segmentLabel(String name, AsyncValue<List<ListItem>> async) {
-      final count = async.value?.length;
+      final count = async.valueOrNull?.length;
       return count == null ? name : '$name · $count';
     }
 
@@ -279,7 +279,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   }
 
   int _releasesThisWeek() {
-    final calendar = ref.watch(airingCalendarProvider).value;
+    final calendar = ref.watch(airingCalendarProvider).valueOrNull;
     if (calendar == null) return 0;
     return countReleasesWithin(
       calendar.values.expand((day) => day).map((e) => e.airingAt),

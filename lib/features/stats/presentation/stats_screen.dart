@@ -403,7 +403,7 @@ class _MonthStoryCard extends ConsumerWidget {
     // chargement infini
     final recaps = [
       for (final m in months)
-        ref.watch(monthlyRecapProvider(monthKey(m))).value ??
+        ref.watch(monthlyRecapProvider(monthKey(m))).valueOrNull ??
             MonthlyRecap.fromItems(monthKey(m), const []),
     ];
     final isLoading =
