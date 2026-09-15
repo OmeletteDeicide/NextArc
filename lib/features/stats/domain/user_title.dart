@@ -109,6 +109,29 @@ class UserTitle {
     return null;
   }
 
+  // ── Route vers Arcer ─────────────────────────────────────────────────────
+
+  /// Avancée vers le seuil Arcer des titres terminés (0 → 1).
+  double get arcerCompletedProgress =>
+      (totalCompleted / arcerMinCompleted).clamp(0.0, 1.0);
+
+  /// Avancée vers le seuil Arcer des heures de visionnage + lecture (0 → 1).
+  double get arcerHoursProgress =>
+      (totalHours / arcerMinHours).clamp(0.0, 1.0);
+
+  /// Nombre de paliers affichés sur la route (un par qualificatif).
+  static int get tierCount => qualifiers.length;
+
+  /// Palier atteint, de 1 à [tierCount] (le dernier pour un Arcer).
+  int get tier {
+    if (isArcer) return tierCount;
+    var reached = 1;
+    for (var i = 0; i < qualifiers.length; i++) {
+      if (watchHours >= qualifiers[i].$1) reached = i + 1;
+    }
+    return reached;
+  }
+
   /// Titre affiché, ex : « Grand Acheveur », « Légende Divin », « Arcer ».
   String get label {
     if (isArcer) return 'title_arcer'.tr();

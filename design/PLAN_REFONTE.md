@@ -102,7 +102,7 @@
 - [x] Fiche d'édition (reprise visuelle, note en 10 segments)
 - [x] Ma liste (segmenté Anime/Manga + un seul niveau d'onglets, bouton +1,
       carte « sorties cette semaine »)
-- [ ] Profil (en-tête zigzag + halo, badge de titre centré, carte « Route vers
+- [x] Profil (en-tête zigzag + halo, badge de titre centré, carte « Route vers
       Arcer », menus)
 - [ ] Stats (récap narratif « Ton mois », tuiles, genres)
 - [ ] Écran « Mon titre » (2 jauges + Arcer doré + échelle des noms)
@@ -171,3 +171,14 @@
   (pas de fonction derrière). Analyse OK, 66 tests OK dont
   `test/list_items_test.dart`. À valider sur téléphone.
   Prochain écran : Profil.
+- 15/09 — Lot 3 : Profil connecté refait : en-tête dégradé + zigzag (violet
+  en sombre avec halo, blanc en clair), boutons ronds modifier/déconnexion,
+  avatar 84 px (photo ou initiale), nom, e-mail (ou ID AniList), badge de
+  titre centré (`UserTitleBadge(onAccent:)` en clair), couronne Arcer seulement.
+  Carte « Route vers Arcer » : titres terminés /1 500 et heures visionnage +
+  lecture /12 000, « Palier n/7 » = qualificatif atteint (7/7 pour Arcer),
+  tap → Stats (en attendant l'écran « Mon titre »). Menus : stats (résumé
+  total), AniList connecté / « Lier », paramètres, Soutenir (doré), À propos.
+  Connexion, migration invité et dialogue de déconnexion inchangés (Lot 4).
+  Analyse OK, 70 tests OK dont `test/arcer_road_test.dart`. À valider sur
+  téléphone. Prochain écran : Stats.

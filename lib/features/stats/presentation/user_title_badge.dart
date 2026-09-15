@@ -25,6 +25,7 @@ class UserTitleBadge extends StatelessWidget {
     required this.title,
     this.showCrown = true,
     this.fontSize = 13,
+    this.onAccent = false,
   });
 
   final UserTitle title;
@@ -33,25 +34,46 @@ class UserTitleBadge extends StatelessWidget {
   final bool showCrown;
   final double fontSize;
 
+  /// Posée sur un fond déjà en dégradé accent (en-tête clair du profil) :
+  /// pastille blanche au texte accent, ou sombre et dorée pour un Arcer.
+  final bool onAccent;
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final arcer = title.isArcer;
-    final textColor = arcer ? c.star : Colors.white;
+
+    final Color textColor;
+    final BoxDecoration decoration;
+    if (arcer) {
+      textColor = c.star;
+      decoration = BoxDecoration(
+        color: onAccent
+            ? const Color(0x59060A15)
+            : c.star.withValues(alpha: 0.16),
+        border: Border.all(color: c.star.withValues(alpha: 0.4)),
+        borderRadius: BorderRadius.circular(AppRadius.full),
+      );
+    } else if (onAccent) {
+      textColor = c.accent;
+      decoration = BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+      );
+    } else {
+      textColor = Colors.white;
+      decoration = BoxDecoration(
+        gradient: c.accentGradient,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+      );
+    }
 
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: fontSize * 1.15,
         vertical: fontSize * 0.6,
       ),
-      decoration: BoxDecoration(
-        gradient: arcer ? null : c.accentGradient,
-        color: arcer ? c.star.withValues(alpha: 0.16) : null,
-        border: arcer
-            ? Border.all(color: c.star.withValues(alpha: 0.4))
-            : null,
-        borderRadius: BorderRadius.circular(AppRadius.full),
-      ),
+      decoration: decoration,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
