@@ -100,7 +100,7 @@
 - [x] Fiche anime (hero ≤ 38 %, pastilles sur icônes, carte « Dans ma liste »,
       synopsis replié 3 lignes, prochain épisode + Rappel)
 - [x] Fiche d'édition (reprise visuelle, note en 10 segments)
-- [ ] Ma liste (segmenté Anime/Manga + un seul niveau d'onglets, bouton +1,
+- [x] Ma liste (segmenté Anime/Manga + un seul niveau d'onglets, bouton +1,
       carte « sorties cette semaine »)
 - [ ] Profil (en-tête zigzag + halo, badge de titre centré, carte « Route vers
       Arcer », menus)
@@ -160,3 +160,14 @@
   d'enregistrement inchangée. Analyse OK, 56 tests OK dont
   `test/edit_sheet_parts_test.dart`. À valider sur téléphone.
   Prochain écran : Ma liste.
+- 15/09 — Lot 3 : Ma liste refaite pour les 3 sources (AniList, NextArc,
+  invité) via `ListItem` (`list_items.dart`) : titre + calendrier, segmenté
+  Anime · N / Manga · N, un seul niveau d'onglets (En cours, Prévu, Favoris,
+  En pause, Terminé, Abandonné ; vides masqués sauf Favoris), cartes avec
+  +1 (atteindre le total → Terminé) ou « Démarrer », carte « sorties cette
+  semaine » (réutilise `airingCalendarProvider`), bandeau invité discret.
+  Glisser : retirer avec confirmation (NextArc/invité) ou modifier (AniList) ;
+  appui long → fiche d'édition. Boutons grille/tri de la maquette non repris
+  (pas de fonction derrière). Analyse OK, 66 tests OK dont
+  `test/list_items_test.dart`. À valider sur téléphone.
+  Prochain écran : Profil.
