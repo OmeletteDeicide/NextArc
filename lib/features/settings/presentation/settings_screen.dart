@@ -170,21 +170,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _SectionHeader(label: 'settings_section_language'.tr()),
 
           _LanguageOption(
-            flag: '🇫🇷',
+            flag: 'FR',
             label: 'Français',
             locale: const Locale('fr'),
             selected: context.locale.languageCode == 'fr',
             onTap: () => context.setLocale(const Locale('fr')),
           ),
           _LanguageOption(
-            flag: '🇬🇧',
+            flag: 'EN',
             label: 'English',
             locale: const Locale('en'),
             selected: context.locale.languageCode == 'en',
             onTap: () => context.setLocale(const Locale('en')),
           ),
           _LanguageOption(
-            flag: '🇪🇸',
+            flag: 'ES',
             label: 'Español',
             locale: const Locale('es'),
             selected: context.locale.languageCode == 'es',
@@ -271,7 +271,26 @@ class _LanguageOption extends StatelessWidget {
       child: ListTile(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         onTap: onTap,
-        leading: Text(flag, style: const TextStyle(fontSize: 22)),
+        // Code langue (FR / EN / ES) plutôt qu'un drapeau émoji
+        leading: Container(
+          width: 40,
+          height: 28,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected
+                ? cs.primary.withValues(alpha: 0.16)
+                : cs.onSurface.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            flag,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: selected ? cs.primary : cs.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+        ),
         title: Text(
           label,
           style: TextStyle(

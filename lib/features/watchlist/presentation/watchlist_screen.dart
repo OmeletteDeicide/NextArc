@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:nextarc/core/router/app_router.dart';
+import 'package:nextarc/core/widgets/ds/icon_tab.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/auth/domain/user_model.dart';
 import 'package:nextarc/features/watchlist/domain/firestore_watchlist_providers.dart';
@@ -161,8 +162,8 @@ class _LocalWatchlistViewState extends ConsumerState<_LocalWatchlistView>
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: '🎬 Anime'),
-            Tab(text: '📖 Manga'),
+            IconTab(icon: Icons.movie_outlined, label: 'Anime'),
+            IconTab(icon: Icons.menu_book_outlined, label: 'Manga'),
           ],
         ),
       ),
@@ -219,7 +220,7 @@ class _LocalMediaTab extends StatelessWidget {
         return (b.score ?? 0).compareTo(a.score ?? 0);
       });
 
-    final tabs = <Tab>[];
+    final tabs = <Widget>[];
     final views = <Widget>[];
 
     void addStatus(ListStatus status) {
@@ -232,7 +233,10 @@ class _LocalMediaTab extends StatelessWidget {
     addStatus(ListStatus.current);
     addStatus(ListStatus.planning);
 
-    tabs.add(Tab(text: '❤️ Favoris (${favourites.length})'));
+    tabs.add(IconTab(
+        icon: Icons.favorite_rounded,
+        label: 'Favoris (${favourites.length})',
+      ));
     views.add(favourites.isEmpty
         ? Center(
             child: Text(
@@ -323,8 +327,8 @@ class _AuthenticatedWatchlistViewState
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: '🎬 Anime'),
-            Tab(text: '📖 Manga'),
+            IconTab(icon: Icons.movie_outlined, label: 'Anime'),
+            IconTab(icon: Icons.menu_book_outlined, label: 'Manga'),
           ],
         ),
       ),
@@ -414,7 +418,7 @@ class _AnimeListTab extends ConsumerWidget {
         .toList()
       ..sort((a, b) => (b.score ?? 0).compareTo(a.score ?? 0));
 
-    final tabs = <Tab>[];
+    final tabs = <Widget>[];
     final views = <Widget>[];
 
     for (final s in [ListStatus.current, ListStatus.planning]) {
@@ -428,7 +432,10 @@ class _AnimeListTab extends ConsumerWidget {
       }
     }
 
-    tabs.add(Tab(text: '❤️ Favoris (${favourites.length})'));
+    tabs.add(IconTab(
+        icon: Icons.favorite_rounded,
+        label: 'Favoris (${favourites.length})',
+      ));
     views.add(_TopRatedTab(entries: favourites));
 
     for (final s in [ListStatus.paused, ListStatus.completed, ListStatus.dropped]) {
@@ -531,7 +538,7 @@ class _MangaListTab extends ConsumerWidget {
         .toList()
       ..sort((a, b) => (b.score ?? 0).compareTo(a.score ?? 0));
 
-    final tabs = <Tab>[];
+    final tabs = <Widget>[];
     final views = <Widget>[];
 
     for (final s in [ListStatus.current, ListStatus.planning]) {
@@ -545,7 +552,10 @@ class _MangaListTab extends ConsumerWidget {
       }
     }
 
-    tabs.add(Tab(text: '❤️ Favoris (${favourites.length})'));
+    tabs.add(IconTab(
+        icon: Icons.favorite_rounded,
+        label: 'Favoris (${favourites.length})',
+      ));
     views.add(_TopRatedTab(entries: favourites));
 
     for (final s in [ListStatus.paused, ListStatus.completed, ListStatus.dropped]) {

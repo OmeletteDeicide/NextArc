@@ -75,14 +75,18 @@
       (`ZigzagBackground`, réglages dans `ZigzagConfig`)
 - [x] `ThemeData` sombre et clair branchés sur les tokens → `app_theme.dart`
 
-### Lot 2 — Composants
-- [ ] Carte média (jaquette 2:3, titre 2 lignes, note)
-- [ ] Chips de statut (En cours / Terminé / Prévu / En pause / Abandonné)
-- [ ] Boutons primaire / secondaire / destructif
-- [ ] Onglets soulignés + segmenté (Anime/Manga)
-- [ ] Tuile de stat
-- [ ] Badge de titre (dégradé ; doré pour Arcer)
-- [ ] Remplacer les émojis d'onglets par des icônes, drapeaux par FR/EN/ES
+### Lot 2 — Composants ✅ (dans `lib/core/widgets/ds/`, import `ds.dart`)
+- [x] Carte média → `MediaCover` / `MediaCard` (jaquette 2:3, n° de classement,
+      titre 2 lignes, note, bouton d'action 44 px)
+- [x] Chips de statut → `StatusChip` (badge coloré ou sélectionnable)
+- [x] Boutons → `AppButton` (primaire dégradé / secondaire / destructif, loading)
+- [x] Onglets : soulignés via `TabBarThemeData` + `SegmentedControl` + `IconTab`
+- [x] Tuile de stat → `StatTile`
+- [x] Badge de titre → `UserTitleBadge` repris (dégradé ; doré pour Arcer ;
+      couronne réservée aux Arcer)
+- [x] Barre de progression → `GradientProgressBar` · en-tête → `SectionHeader`
+- [x] Émojis d'onglets → icônes (Pour toi, Ma liste) ; drapeaux → FR/EN/ES
+- Note : les composants ne sont pas encore branchés dans les écrans (lot 3).
 
 ### Lot 3 — Écrans retenus
 - [ ] Découvrir (hero « Épisode du jour », grille 2 colonnes, rails, numérotation)
@@ -131,3 +135,6 @@
   (400 sur faux code au lieu de « billing disabled »).
 - 15/09 — Lot 1 (fondations) codé : analyse OK, 29 tests OK. Toute l'app prend
   les nouvelles couleurs/polices ; les écrans sont repris aux lots 2–4.
+- 15/09 — Lot 2 (composants) codé : analyse OK, 39 tests OK (dont
+  `test/ds_components_test.dart`). Prochaine étape : lot 3, écrans retenus,
+  en commençant par Découvrir.

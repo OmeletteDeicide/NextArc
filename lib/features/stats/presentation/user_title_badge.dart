@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nextarc/core/theme/app_tokens.dart';
 import 'package:nextarc/features/stats/domain/user_title.dart';
 
 /// Couronne des Arcer, posée sur une photo de profil ou à côté d'un titre.
@@ -16,7 +17,8 @@ class ArcerCrown extends StatelessWidget {
   }
 }
 
-/// Pastille du titre de profil (dorée pour un Arcer).
+/// Pastille du titre de profil : dégradé accent, dorée pour un Arcer.
+/// La couronne n'apparaît que pour les Arcer.
 class UserTitleBadge extends StatelessWidget {
   const UserTitleBadge({
     super.key,
@@ -27,38 +29,46 @@ class UserTitleBadge extends StatelessWidget {
 
   final UserTitle title;
 
-  /// Affiche 👑 devant le titre d'un Arcer.
+  /// Affiche 👑 devant le titre (uniquement si Arcer).
   final bool showCrown;
   final double fontSize;
 
-  static const _arcerGradient = [Color(0xFFFFC107), Color(0xFFFF8F00)];
-  static const _defaultGradient = [Color(0xFF4F6EF5), Color(0xFF7C4DFF)];
-
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     final arcer = title.isArcer;
+    final textColor = arcer ? c.star : Colors.white;
+
     return Container(
       padding: EdgeInsets.symmetric(
-          horizontal: fontSize * 0.8, vertical: fontSize * 0.3),
+        horizontal: fontSize * 1.15,
+        vertical: fontSize * 0.6,
+      ),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: arcer ? _arcerGradient : _defaultGradient,
-        ),
-        borderRadius: BorderRadius.circular(fontSize * 1.5),
+        gradient: arcer ? null : c.accentGradient,
+        color: arcer ? c.star.withValues(alpha: 0.16) : null,
+        border: arcer
+            ? Border.all(color: c.star.withValues(alpha: 0.4))
+            : null,
+        borderRadius: BorderRadius.circular(AppRadius.full),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (arcer && showCrown) ...[
             Text('👑', style: TextStyle(fontSize: fontSize, height: 1.2)),
-            SizedBox(width: fontSize * 0.35),
+            SizedBox(width: fontSize * 0.45),
           ],
-          Text(
-            title.label,
-            style: TextStyle(
-              color: arcer ? const Color(0xFF3E2723) : Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: fontSize,
+          Flexible(
+            child: Text(
+              title.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: textColor,
+                    fontWeight: FontWeight.w800,
+                    fontSize: fontSize,
+                  ),
             ),
           ),
         ],
