@@ -147,7 +147,7 @@ nouvelle couleur de la maquette.
       nomme le filtre
 - [x] Calendrier : liste groupée par semaine, jours avec sorties seulement,
       pastille date 44 px, cloche 2 états, états vides
-- [ ] Recherche : tendances à l'ouverture, lignes d'historique 44 px, résultats
+- [x] Recherche : tendances à l'ouverture, lignes d'historique 44 px, résultats
       en liste (terme surligné, « dans ta liste »), aucun résultat / hors ligne
 - [ ] Pour toi en rails : reco mise en avant, rails par source (≤ 2 par
       source, rotation quotidienne, ordre ❤️ > 10 > ≥ 8), rail « Dans tes
@@ -365,3 +365,11 @@ nouvelle couleur de la maquette.
   pastille date 44 px et **cloche accent de la fiche d'édition** (pleine =
   rappel actif). États vides / hors ligne avec actions (anime en cours →
   Explorer, Ma liste). Analyse OK, 124 tests.
+- 16/09 — Lot 6 (4) : Recherche refaite. Champ arrondi 44 px dans l'en-tête,
+  ouverture = recherches récentes (lignes 44 px, × dédié) + « Recherchés en ce
+  moment » (tendances anime/manga déjà chargées par Découvrir, aucune requête
+  en plus), résultats en **liste** (30, segmenté Anime · N / Manga · N,
+  terme surligné via `search_highlight.dart`, « Dans ma liste · statut » via
+  `watchlistPlacementProvider`, ❤️ ou bouton + / modifier), états « Aucun
+  titre trouvé » et « Pas de connexion ». `AnimeCard` supprimé (plus utilisé).
+  Analyse OK, 127 tests.

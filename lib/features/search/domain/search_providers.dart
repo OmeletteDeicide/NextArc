@@ -13,5 +13,5 @@ final searchResultsProvider = FutureProvider<PaginatedResult?>((ref) async {
   if (query.trim().isEmpty) return null;
 
   final repo = ref.watch(animeRepositoryProvider);
-  return repo.searchAnime(query: query, perPage: 20);
+  return repo.searchAnime(query: query, perPage: 30);
 });
