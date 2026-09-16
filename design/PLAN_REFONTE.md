@@ -128,7 +128,7 @@
 
 - [ ] **Changer sa bannière de profil** (la photo et le pseudo sont déjà
       modifiables) — pas de bannière choisie = bannière AniList si liée
-- [ ] **Republier ** : champs  / 
+- [ ] **Republier `firestore.rules`** : champs `customName` / `customPhoto`
       ajoutés le 16/09 (sinon l'édition du profil est refusée)
 - [ ] **Connexion Apple** (quand le compte Apple Developer à 99 €/an sera créé)
 - [x] **Facturation Firebase** : forfait Blaze réactivé le 15/09 (Cloud Function
