@@ -67,4 +67,60 @@ void main() {
         _title(anime: 1100, manga: 500, watchHours: 10000, readHours: 3000);
     expect(titlePromotion(before: arcer, after: more), isNull);
   });
+
+  group('evaluateTitleLevel (palier mémorisé par compte)', () {
+    TitleLevel level(UserTitle t) => TitleLevel.of(t);
+
+    test('nouveau compte au tout premier palier → rien, palier mémorisé', () {
+      final r = evaluateTitleLevel(stored: null, current: level(_title()));
+      expect(r.celebrate, isNull);
+      expect(r.store.isLowest, isTrue);
+    });
+
+    test('utilisateur existant sans palier mémorisé → une seule carte', () {
+      final current = level(_title(anime: 120, watchHours: 1200));
+      final r = evaluateTitleLevel(stored: null, current: current);
+      expect(r.celebrate, TitlePromotionKind.rank);
+      expect(r.store.encode(), current.encode());
+
+      // Relancé ensuite avec le même titre : plus rien
+      final again = evaluateTitleLevel(stored: r.store, current: current);
+      expect(again.celebrate, isNull);
+    });
+
+    test('reconnexion : liste vide le temps du chargement puis complète', () {
+      final stored = level(_title(anime: 30));
+      final empty =
+          evaluateTitleLevel(stored: stored, current: level(_title()));
+      expect(empty.celebrate, isNull);
+      // La baisse passagère n'efface pas le palier mémorisé
+      expect(empty.store.encode(), stored.encode());
+
+      final full =
+          evaluateTitleLevel(stored: empty.store, current: stored);
+      expect(full.celebrate, isNull);
+    });
+
+    test('vrai nouveau palier → célébré une fois', () {
+      final stored = level(_title(anime: 9));
+      final r = evaluateTitleLevel(
+          stored: stored, current: level(_title(anime: 10)));
+      expect(r.celebrate, TitlePromotionKind.rank);
+      expect(
+        evaluateTitleLevel(stored: r.store, current: level(_title(anime: 10)))
+            .celebrate,
+        isNull,
+      );
+    });
+
+    test('encode / decode', () {
+      const l = TitleLevel(rank: 3, qualifier: 2, arcer: true);
+      final back = TitleLevel.decode(l.encode())!;
+      expect(back.rank, 3);
+      expect(back.qualifier, 2);
+      expect(back.arcer, isTrue);
+      expect(TitleLevel.decode('abc'), isNull);
+      expect(TitleLevel.decode(null), isNull);
+    });
+  });
 }

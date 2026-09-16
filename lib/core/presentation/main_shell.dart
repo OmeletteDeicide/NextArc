@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -111,31 +113,58 @@ class _MainShellState extends ConsumerState<MainShell> {
     }
   }
 
-  /// Compte auquel appartient le dernier titre connu : un changement de compte
-  /// (connexion, déconnexion) n'est pas un passage de palier.
-  String? _titleOwner;
+  /// Laisse la liste finir de charger / se synchroniser avant de comparer :
+  /// à la connexion, les stats passent par des valeurs intermédiaires.
+  static const _titleSettleDelay = Duration(seconds: 3);
+  Timer? _titleTimer;
+  bool _titleCheckRunning = false;
+
+  @override
+  void dispose() {
+    _titleTimer?.cancel();
+    super.dispose();
+  }
 
   /// Le moment du palier : quand un seuil tombe après une mise à jour de la
   /// liste (y compris depuis la fiche, le shell reste monté en dessous).
   void _listenTitlePromotion() {
-    ref.listen<AsyncValue<StatsModel>>(statsProvider, (previous, next) {
-      final after = next.valueOrNull?.title;
-      if (after == null) return;
+    ref.listen<AsyncValue<StatsModel>>(statsProvider, (_, next) {
+      if (next.isLoading || next.valueOrNull == null) return;
+      _titleTimer?.cancel();
+      _titleTimer = Timer(_titleSettleDelay, _checkTitlePromotion);
+    });
+  }
 
-      final user = ref.read(authProvider).value?.user;
+  /// Compare le titre au palier mémorisé pour ce compte : chaque titre n'est
+  /// célébré qu'une fois, même après une reconnexion ou un redémarrage.
+  Future<void> _checkTitlePromotion() async {
+    if (_titleCheckRunning || !mounted) return;
+    final stats = ref.read(statsProvider).valueOrNull;
+    if (stats == null) return;
+    _titleCheckRunning = true;
+    try {
+      final user = ref.read(authProvider).valueOrNull?.user;
       final owner = user == null
           ? 'guest'
           : user.firebaseUid ?? 'anilist_${user.id}';
-      final sameOwner = owner == _titleOwner;
-      _titleOwner = owner;
+      final key = 'title_level_$owner';
 
-      final before = previous?.valueOrNull?.title;
-      if (!sameOwner || before == null) return;
+      final current = TitleLevel.of(stats.title);
+      final stored = TitleLevel.decode(await _storage.read(key: key));
+      final result = evaluateTitleLevel(stored: stored, current: current);
+      if (stored?.encode() != result.store.encode()) {
+        await _storage.write(key: key, value: result.store.encode());
+      }
 
-      final kind = titlePromotion(before: before, after: after);
-      if (kind == null || !mounted) return;
-      showTitlePromotion(context, title: after, kind: kind);
-    });
+      final kind = result.celebrate;
+      if (kind != null && mounted) {
+        await showTitlePromotion(context, title: stats.title, kind: kind);
+      }
+    } catch (_) {
+      // Célébration = bonus : jamais bloquant
+    } finally {
+      _titleCheckRunning = false;
+    }
   }
 
   int _currentIndex(BuildContext context) {
