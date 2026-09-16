@@ -1,19 +1,19 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nextarc/core/widgets/ds/icon_tab.dart';
+import 'package:nextarc/core/router/app_router.dart';
+import 'package:nextarc/core/theme/app_tokens.dart';
+import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/auth/domain/user_model.dart';
-import 'package:nextarc/features/detail/domain/detail_providers.dart';
-import 'package:nextarc/features/watchlist/domain/firestore_watchlist_providers.dart';
 import 'package:nextarc/features/discover/domain/discover_providers.dart';
-import 'package:nextarc/features/discover/domain/media_model.dart';
 import 'package:nextarc/features/recommendations/domain/reco_providers.dart';
 import 'package:nextarc/features/recommendations/domain/recommendation_model.dart';
+import 'package:nextarc/features/watchlist/domain/in_watchlist_provider.dart';
 import 'package:nextarc/features/watchlist/presentation/watchlist_sheet_helper.dart';
 
+/// Écran « Pour toi » : recommandations anime / manga.
 class RecommendationsScreen extends ConsumerStatefulWidget {
   const RecommendationsScreen({super.key});
 
@@ -22,110 +22,101 @@ class RecommendationsScreen extends ConsumerStatefulWidget {
       _RecommendationsScreenState();
 }
 
-class _RecommendationsScreenState extends ConsumerState<RecommendationsScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    final preference = ref.read(contentPreferenceProvider);
-    _tabController = TabController(
-      length: 2,
-      vsync: this,
-      initialIndex: preference == 'MANGA' ? 1 : 0,
-    );
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+class _RecommendationsScreenState extends ConsumerState<RecommendationsScreen> {
+  late bool _isManga = ref.read(contentPreferenceProvider) == 'MANGA';
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+
     return Scaffold(
-      appBar: AppBar(
-        title: Image.asset('assets/images/logo.png', height: 40),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => context.push('/search'),
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            IconTab(icon: Icons.movie_outlined, label: 'Anime'),
-            IconTab(icon: Icons.menu_book_outlined, label: 'Manga'),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── En-tête (même gabarit que Ma liste) ─────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screen, AppSpacing.xs, AppSpacing.screen - 4, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('nav_for_you'.tr(),
+                        style: text.headlineMedium?.copyWith(color: c.text1)),
+                  ),
+                  RoundIconButton(
+                    icon: Icons.search_rounded,
+                    tooltip: 'search_hint'.tr(),
+                    onTap: () => context.push(AppRoutes.search),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+              child: SegmentedControl<bool>(
+                segments: const [
+                  (value: false, label: 'Anime'),
+                  (value: true, label: 'Manga'),
+                ],
+                selected: _isManga,
+                onChanged: (v) => setState(() => _isManga = v),
+              ),
+            ),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: AppMotion.transition,
+                child: _isManga
+                    ? const _RecoTab(key: ValueKey('manga'), isManga: true)
+                    : const _RecoTab(key: ValueKey('anime'), isManga: false),
+              ),
+            ),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          _AnimeRecoTab(),
-          _MangaRecoTab(),
-        ],
-      ),
     );
   }
 }
 
-// ── Onglet recommandations Anime ──────────────────────────────────────────────
+// ── Onglet ────────────────────────────────────────────────────────────────────
 
-class _AnimeRecoTab extends ConsumerWidget {
-  const _AnimeRecoTab();
+class _RecoTab extends ConsumerWidget {
+  const _RecoTab({super.key, required this.isManga});
+
+  final bool isManga;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final recoAsync = ref.watch(recommendationsProvider);
+    final provider =
+        isManga ? mangaRecommendationsProvider : recommendationsProvider;
+    final recoAsync = ref.watch(provider);
     final user = ref.watch(authProvider).whenOrNull<UserModel?>(
           data: (a) => a.user,
         );
 
     return recoAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _buildError(context, ref, e,
-          onRetry: () => ref.invalidate(recommendationsProvider)),
+      error: (e, _) => _RecoError(
+        message: e.toString(),
+        onRetry: () => ref.invalidate(provider),
+      ),
       data: (feed) => _RecoList(
         feed: feed,
         user: user,
-        onRetry: () => ref.invalidate(recommendationsProvider),
-        hintText: 'reco_banner_no_data_anime'.tr(),
+        onRetry: () => ref.invalidate(provider),
+        hintText: isManga
+            ? 'reco_banner_no_data_manga'.tr()
+            : 'reco_banner_no_data_anime'.tr(),
       ),
     );
   }
 }
 
-// ── Onglet recommandations Manga ──────────────────────────────────────────────
-
-class _MangaRecoTab extends ConsumerWidget {
-  const _MangaRecoTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final recoAsync = ref.watch(mangaRecommendationsProvider);
-    final user = ref.watch(authProvider).whenOrNull<UserModel?>(
-          data: (a) => a.user,
-        );
-
-    return recoAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => _buildError(context, ref, e,
-          onRetry: () => ref.invalidate(mangaRecommendationsProvider)),
-      data: (feed) => _RecoList(
-        feed: feed,
-        user: user,
-        onRetry: () => ref.invalidate(mangaRecommendationsProvider),
-        hintText: 'reco_banner_no_data_manga'.tr(),
-      ),
-    );
-  }
-}
-
-// ── Liste de recommandations (partagée) ──────────────────────────────────────
+// ── Liste de recommandations ──────────────────────────────────────────────────
 
 class _RecoList extends ConsumerWidget {
   const _RecoList({
@@ -146,283 +137,269 @@ class _RecoList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final recos = feed.items;
-    void openWatchlist(MediaModel media) =>
-        openWatchlistSheet(context, ref, anime: media, user: user);
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
 
     return RefreshIndicator(
       onRefresh: () async => onRetry(),
-      child: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: feed.isPersonalised
-                ? const SizedBox(height: 8)
-                : Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: _InfoBanner(
-                      icon: Icons.favorite_border_rounded,
-                      text: hintText,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withValues(alpha: 0.35),
-                    ),
-                  ),
-          ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => _RecoCard(
-                item: recos[index],
-                index: index,
-                isFallback: !feed.isPersonalised,
-                onWatchlistTap: () => openWatchlist(recos[index].recommended),
-              ),
-              childCount: recos.length,
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
-        ],
+      child: ListView.separated(
+        padding: EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.sm,
+            AppSpacing.screen, AppSpacing.xl + bottomInset),
+        itemCount: recos.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return feed.isPersonalised
+                ? const SizedBox.shrink()
+                : _InfoBanner(text: hintText);
+          }
+          final item = recos[index - 1];
+          return _RecoCard(
+            item: item,
+            index: index - 1,
+            isFallback: !feed.isPersonalised,
+            onWatchlistTap: () => openWatchlistSheet(context, ref,
+                anime: item.recommended, user: user),
+          );
+        },
       ),
     );
   }
 }
 
-Widget _buildError(BuildContext context, WidgetRef ref, Object error,
-    {required VoidCallback onRetry}) {
-  final cs = Theme.of(context).colorScheme;
-  return Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.wifi_off_rounded,
-            size: 48, color: cs.onSurface.withValues(alpha: 0.38)),
-        const SizedBox(height: 12),
-        Text(
-          error.toString(),
-          style: TextStyle(color: cs.onSurface.withValues(alpha: 0.54)),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 16),
-        FilledButton.icon(
-          icon: const Icon(Icons.refresh),
-          label: Text('action_retry'.tr()),
-          onPressed: onRetry,
-        ),
-      ],
-    ),
-  );
-}
-
 // ── Carte recommandation ──────────────────────────────────────────────────────
 
+/// La recommandation d'abord (titre, note, genres) ; la raison « parce que
+/// tu as aimé » en petit dessous, pour ne pas voler la vedette.
 class _RecoCard extends ConsumerWidget {
   const _RecoCard({
     required this.item,
     required this.index,
     required this.isFallback,
-    this.onWatchlistTap,
+    required this.onWatchlistTap,
   });
 
   final RecommendationItem item;
   final int index;
   final bool isFallback;
-  final VoidCallback? onWatchlistTap;
+  final VoidCallback onWatchlistTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final anime = item.recommended;
-    final cs = Theme.of(context).colorScheme;
-    final user =
-        ref.watch(authProvider).whenOrNull(data: (a) => a.user);
-    final bool isInWatchlist;
-    if (user?.usesAnilistList == true) {
-      isInWatchlist = ref.watch(userListEntryProvider(anime.id)) != null;
-    } else if (user?.hasFirebase == true) {
-      isInWatchlist =
-          ref.watch(firestoreListEntryProvider(anime.id)) != null;
-    } else {
-      isInWatchlist = ref.watch(guestListEntryProvider(anime.id)) != null;
-    }
-    final heroTag = 'reco_$index';
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+    final media = item.recommended;
+    final inList = ref.watch(inWatchlistProvider(media.id));
+    final heroTag = 'reco_${media.isManga ? 'm' : 'a'}_$index';
 
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => context.push('/detail/${anime.id}',
-          extra: {'heroTag': heroTag, 'coverUrl': anime.coverImage}),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 80,
-              height: 115,
-              child: Stack(
-                children: [
-                  Hero(
-                    tag: heroTag,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: SizedBox.expand(
-                        child: anime.coverImage != null
-                            ? CachedNetworkImage(
-                                imageUrl: anime.coverImage!,
-                                fit: BoxFit.cover,
-                              )
-                            : Container(color: cs.surfaceContainerHighest),
-                      ),
-                    ),
-                  ),
-                  if (onWatchlistTap != null)
-                    Positioned(
-                      bottom: 6,
-                      right: 6,
-                      child: GestureDetector(
-                        onTap: onWatchlistTap,
-                        child: Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                            color: cs.primary,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.4),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            isInWatchlist
-                                ? Icons.edit_outlined
-                                : Icons.bookmark_add_outlined,
-                            size: 15,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+    final score = media.formattedScore == null
+        ? null
+        : context.locale.languageCode == 'en'
+            ? media.formattedScore!
+            : media.formattedScore!.replaceAll('.', ',');
+    final count = media.isManga
+        ? (media.chapters == null
+            ? null
+            : 'meta_chapters'.tr(namedArgs: {'count': '${media.chapters}'}))
+        : (media.episodes == null
+            ? null
+            : 'meta_episodes'.tr(namedArgs: {'count': '${media.episodes}'}));
+
+    return Material(
+      color: c.surface1,
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push('/detail/${media.id}',
+            extra: {'heroTag': heroTag, 'coverUrl': media.coverImage}),
+        child: Padding(
+          padding: const EdgeInsets.all(11),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 76,
+                child: MediaCover(
+                  imageUrl: media.coverImage,
+                  radius: 10,
+                  heroTag: heroTag,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!isFallback && item.sourceTitle.isNotEmpty) ...[
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      'reco_because_you_liked'.tr(),
-                      style: TextStyle(
-                          fontSize: 11,
-                          color: cs.onSurface.withValues(alpha: 0.38)),
-                    ),
-                    Text(
-                      item.sourceTitle,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: cs.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
+                      media.displayTitle,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
+                      style: text.titleMedium?.copyWith(color: c.text1),
                     ),
                     const SizedBox(height: 6),
-                  ],
-                  Text(
-                    anime.displayTitle,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      height: 1.3,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      if (anime.formattedScore != null) ...[
-                        const Icon(Icons.star_rounded,
-                            size: 14, color: Color(0xFFFFC107)),
-                        const SizedBox(width: 3),
-                        Text(
-                          anime.formattedScore!,
-                          style: TextStyle(
-                              fontSize: 13,
-                              color: cs.onSurface.withValues(alpha: 0.7)),
-                        ),
-                        const SizedBox(width: 12),
+                    Row(
+                      children: [
+                        if (score != null) ...[
+                          Icon(Icons.star_rounded, size: 14, color: c.star),
+                          const SizedBox(width: 2),
+                          Text(score,
+                              style: text.bodySmall?.copyWith(
+                                  color: c.star,
+                                  fontWeight: FontWeight.w700)),
+                          const SizedBox(width: AppSpacing.xs),
+                        ],
+                        if (count != null)
+                          Text(count,
+                              style:
+                                  text.bodySmall?.copyWith(color: c.text2)),
                       ],
-                      if (anime.isManga && anime.chapters != null)
-                        Text(
-                          '${anime.chapters} ch.',
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: cs.onSurface.withValues(alpha: 0.5)),
-                        )
-                      else if (!anime.isManga && anime.episodes != null)
-                        Text(
-                          '${anime.episodes} ép.',
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: cs.onSurface.withValues(alpha: 0.5)),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  if (anime.genres != null && anime.genres!.isNotEmpty)
-                    Wrap(
-                      spacing: 6,
-                      children: anime.genres!
-                          .take(3)
-                          .map((g) => Text(
-                                g,
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    color: cs.onSurface.withValues(alpha: 0.45)),
-                              ))
-                          .toList(),
                     ),
-                ],
+                    if (media.genres != null && media.genres!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        media.genres!.take(3).join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: text.bodySmall?.copyWith(color: c.text3),
+                      ),
+                    ],
+                    if (!isFallback && item.sourceTitle.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Row(
+                        children: [
+                          Icon(Icons.favorite_rounded,
+                              size: 11, color: c.favourite),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text.rich(
+                              TextSpan(children: [
+                                TextSpan(
+                                    text:
+                                        '${'reco_because_you_liked'.tr()} '),
+                                TextSpan(
+                                  text: item.sourceTitle,
+                                  style: TextStyle(color: c.text2),
+                                ),
+                              ]),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: text.bodySmall
+                                  ?.copyWith(color: c.text3, fontSize: 10.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
-          ],
+              // Ajouter / modifier dans la liste (zone tactile 44 px)
+              Tooltip(
+                message: inList
+                    ? 'detail_edit'.tr()
+                    : 'detail_add_to_watchlist'.tr(),
+                child: InkResponse(
+                  radius: 24,
+                  onTap: onWatchlistTap,
+                  child: SizedBox(
+                    width: AppSpacing.minTouch,
+                    height: AppSpacing.minTouch,
+                    child: Center(
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: inList ? null : c.accentGradient,
+                          color: inList ? c.surface2 : null,
+                        ),
+                        child: Icon(
+                          inList ? Icons.check_rounded : Icons.add_rounded,
+                          size: 18,
+                          color: inList ? c.statusCurrent : Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ── Bannière info ─────────────────────────────────────────────────────────────
+// ── Bannière et erreur ────────────────────────────────────────────────────────
 
 class _InfoBanner extends StatelessWidget {
-  const _InfoBanner({
-    required this.icon,
-    required this.text,
-    required this.color,
-  });
+  const _InfoBanner({required this.text});
 
-  final IconData icon;
   final String text;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        color: c.surface1,
+        borderRadius: BorderRadius.circular(AppRadius.cover),
+        border: Border.all(color: c.border),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 8),
+          Icon(Icons.favorite_border_rounded, size: 16, color: c.favourite),
+          const SizedBox(width: AppSpacing.xs),
           Expanded(
-            child: Text(text, style: TextStyle(fontSize: 12, color: color)),
+            child: Text(
+              text,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: c.text2),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RecoError extends StatelessWidget {
+  const _RecoError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.wifi_off_rounded, size: 44, color: c.text3),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: c.text2),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppButton(
+              label: 'action_retry'.tr(),
+              icon: Icons.refresh_rounded,
+              variant: AppButtonVariant.secondary,
+              onPressed: onRetry,
+            ),
+          ],
+        ),
       ),
     );
   }

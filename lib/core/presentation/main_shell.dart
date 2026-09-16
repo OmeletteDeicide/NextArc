@@ -158,6 +158,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
       final kind = result.celebrate;
       if (kind != null && mounted) {
+        ref.read(titleBadgePulseProvider.notifier).state = true;
         await showTitlePromotion(context, title: stats.title, kind: kind);
       }
     } catch (_) {

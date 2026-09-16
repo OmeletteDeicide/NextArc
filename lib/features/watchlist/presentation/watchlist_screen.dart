@@ -98,7 +98,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                     child: Text('nav_my_list'.tr(),
                         style: text.headlineMedium?.copyWith(color: c.text1)),
                   ),
-                  _RoundIconButton(
+                  RoundIconButton(
                     icon: Icons.calendar_month_outlined,
                     tooltip: 'calendar_title'.tr(),
                     onTap: () => context.push(AppRoutes.calendar),
@@ -378,43 +378,6 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
 }
 
 // ── En-tête ───────────────────────────────────────────────────────────────────
-
-class _RoundIconButton extends StatelessWidget {
-  const _RoundIconButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    return Tooltip(
-      message: tooltip,
-      child: InkResponse(
-        onTap: onTap,
-        radius: 24,
-        child: SizedBox(
-          width: AppSpacing.minTouch,
-          height: AppSpacing.minTouch,
-          child: Center(
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration:
-                  BoxDecoration(color: c.surface2, shape: BoxShape.circle),
-              child: Icon(icon, size: 18, color: c.text2),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 /// Bandeau « Mode invité » discret, masquable pour la session.
 class _GuestBanner extends ConsumerWidget {

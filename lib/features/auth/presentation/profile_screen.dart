@@ -12,6 +12,7 @@ import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/auth/domain/user_model.dart';
 import 'package:nextarc/features/stats/domain/stats_provider.dart';
 import 'package:nextarc/features/stats/domain/user_title.dart';
+import 'package:nextarc/features/stats/presentation/title_promotion_card.dart';
 import 'package:nextarc/features/stats/presentation/user_title_badge.dart';
 import 'package:nextarc/features/watchlist/data/mutation_repository.dart';
 import 'package:nextarc/features/watchlist/data/watchlist_repository.dart';
@@ -561,7 +562,9 @@ class _ProfileHeader extends StatelessWidget {
                 ],
                 if (title != null) ...[
                   const SizedBox(height: 10),
-                  UserTitleBadge(title: title!, onAccent: !isDark),
+                  _PulseOnPromotion(
+                    child: UserTitleBadge(title: title!, onAccent: !isDark),
+                  ),
                 ],
               ],
             ),
@@ -688,6 +691,66 @@ class _HeaderButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Fait pulser une fois le badge de titre après un passage de palier
+/// (agrandissement léger puis retour, 220 ms chacun).
+class _PulseOnPromotion extends ConsumerStatefulWidget {
+  const _PulseOnPromotion({required this.child});
+
+  final Widget child;
+
+  @override
+  ConsumerState<_PulseOnPromotion> createState() => _PulseOnPromotionState();
+}
+
+class _PulseOnPromotionState extends ConsumerState<_PulseOnPromotion>
+    with SingleTickerProviderStateMixin {
+  late final _controller = AnimationController(
+    vsync: this,
+    duration: AppMotion.transition * 2,
+  );
+
+  late final Animation<double> _scale = TweenSequence([
+    TweenSequenceItem(
+      tween: Tween(begin: 1.0, end: 1.14)
+          .chain(CurveTween(curve: Curves.easeOutCubic)),
+      weight: 1,
+    ),
+    TweenSequenceItem(
+      tween: Tween(begin: 1.14, end: 1.0)
+          .chain(CurveTween(curve: Curves.easeInOutCubic)),
+      weight: 1,
+    ),
+  ]).animate(_controller);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _pulseIfPending());
+  }
+
+  void _pulseIfPending() {
+    if (!mounted || !ref.read(titleBadgePulseProvider)) return;
+    ref.read(titleBadgePulseProvider.notifier).state = false;
+    HapticFeedback.lightImpact();
+    _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Nouveau palier pendant que le profil est affiché
+    ref.listen<bool>(titleBadgePulseProvider, (_, pending) {
+      if (pending) _pulseIfPending();
+    });
+    return ScaleTransition(scale: _scale, child: widget.child);
   }
 }
 

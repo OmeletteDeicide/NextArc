@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/core/theme/app_tokens.dart';
@@ -8,6 +9,9 @@ import 'package:nextarc/core/theme/app_typography.dart';
 import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/features/stats/domain/title_promotion.dart';
 import 'package:nextarc/features/stats/domain/user_title.dart';
+
+/// Nouveau titre pas encore vu sur le profil : le badge y pulsera une fois.
+final titleBadgePulseProvider = StateProvider<bool>((_) => false);
 
 /// Le moment du palier : carte plein écran annonçant le nouveau titre, avec
 /// un seul appel à l'action « Partager » (ouvre le carrousel de cartes).

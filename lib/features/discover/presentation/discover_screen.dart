@@ -177,59 +177,19 @@ class _DiscoverHeader extends StatelessWidget {
                 ?.copyWith(fontWeight: FontWeight.w800, fontSize: 16),
           ),
           const Spacer(),
-          _RoundIconButton(
+          RoundIconButton(
             icon: Icons.search_rounded,
             tooltip: 'search_hint'.tr(),
             onTap: () => context.push(AppRoutes.search),
             color: c.text2,
           ),
-          _RoundIconButton(
+          RoundIconButton(
             icon: Icons.tune_rounded,
             tooltip: 'browse_filters'.tr(),
             onTap: () => context.push(AppRoutes.browse),
             color: c.text2,
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Bouton rond de 36 px dans une zone tactile de 44 px.
-class _RoundIconButton extends StatelessWidget {
-  const _RoundIconButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    return Tooltip(
-      message: tooltip,
-      child: InkResponse(
-        onTap: onTap,
-        radius: 24,
-        child: SizedBox(
-          width: AppSpacing.minTouch,
-          height: AppSpacing.minTouch,
-          child: Center(
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration:
-                  BoxDecoration(color: c.surface2, shape: BoxShape.circle),
-              child: Icon(icon, size: 19, color: color),
-            ),
-          ),
-        ),
       ),
     );
   }
