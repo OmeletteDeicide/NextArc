@@ -141,7 +141,7 @@ nouvelle couleur de la maquette.
 - [x] Paramètres compte connecté : Compte (e-mail + fournisseur, AniList lié /
       Délier), Notifications (sorties d'épisodes, récap du mois), Application
       (À propos + version)
-- [ ] Explorer : grille 2 colonnes, barre d'état (N résultats · N filtres ·
+- [x] Explorer : grille 2 colonnes, barre d'état (N résultats · N filtres ·
       Réinitialiser), chips actives avec ×, « Voir N résultats », score en
       segments, bouton + 44 px en bas à droite, squelettes, état vide qui
       nomme le filtre
@@ -350,3 +350,11 @@ nouvelle couleur de la maquette.
   de fond et le message de début de mois), Application (À propos + version),
   Zone sensible. Confirmations destructives en contour ; plein rouge réservé
   à la suppression. Analyse OK, 117 tests OK.
+- 16/09 — Lot 6 (2) : Explorer refait. Grille 2 colonnes (`MediaCard` avec
+  bouton + 44 px), en-tête retour + filtres avec pastille de compte, barre
+  d'état « N résultats · N filtres · Réinitialiser » (total AniList, « 5 000+ »
+  au-delà), chips actives avec × (`active_filters.dart`, pur), squelettes,
+  état vide qui nomme le filtre à retirer (score > année > statut > format >
+  genre), erreur hors ligne. Feuille de filtres : segmenté Anime/Manga, chips
+  actives, pilules 36 px, score minimum en segments (Peu importe / 6+…9+),
+  bouton « Voir N résultats » compté après 350 ms. Analyse OK, 120 tests.

@@ -1,17 +1,20 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nextarc/core/theme/app_tokens.dart';
+import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
-import 'package:nextarc/features/auth/domain/user_model.dart';
+import 'package:nextarc/features/browse/domain/active_filters.dart';
 import 'package:nextarc/features/browse/domain/browse_provider.dart';
 import 'package:nextarc/features/browse/domain/filter_params.dart';
 import 'package:nextarc/features/browse/presentation/filter_sheet.dart';
 import 'package:nextarc/features/discover/domain/media_model.dart';
+import 'package:nextarc/features/watchlist/domain/in_watchlist_provider.dart';
 import 'package:nextarc/features/watchlist/presentation/watchlist_sheet_helper.dart';
 
+/// Explorer : tout le catalogue AniList, filtré et trié.
 class BrowseScreen extends ConsumerStatefulWidget {
   const BrowseScreen({super.key});
 
@@ -25,6 +28,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
   // État de pagination local
   final _items = <MediaModel>[];
   int _page = 1;
+  int? _total;
   bool _hasMore = true;
   bool _loadingMore = false;
   bool _initialLoading = true;
@@ -47,7 +51,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
 
   void _onScroll() {
     if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 300 &&
+            _scrollController.position.maxScrollExtent - 400 &&
         !_loadingMore &&
         _hasMore &&
         !_initialLoading) {
@@ -62,6 +66,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
       setState(() {
         _items.clear();
         _page = 1;
+        _total = null;
         _hasMore = true;
         _initialLoading = true;
         _error = null;
@@ -79,6 +84,7 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
       if (!mounted) return;
       setState(() {
         _items.addAll(result.items);
+        _total ??= result.total;
         _hasMore = result.hasNextPage;
         _page++;
         _initialLoading = false;
@@ -95,319 +101,368 @@ class _BrowseScreenState extends ConsumerState<BrowseScreen> {
     }
   }
 
-  void _openFilters() async {
-    final current = ref.read(browseFilterProvider);
-    final result = await showFilterSheet(context, current: current);
-    if (result != null && mounted) {
-      ref.read(browseFilterProvider.notifier).state = result;
-      HapticFeedback.lightImpact();
-      _load(reset: true);
-    }
+  void _apply(FilterParams params) {
+    ref.read(browseFilterProvider.notifier).state = params;
+    HapticFeedback.lightImpact();
+    _load(reset: true);
   }
 
-  void _clearFilters() {
-    ref.read(browseFilterProvider.notifier).state = const FilterParams();
-    _load(reset: true);
+  Future<void> _openFilters() async {
+    final result = await showFilterSheet(context, current: _params);
+    if (result != null && mounted) _apply(result);
   }
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
     final params = ref.watch(browseFilterProvider);
-    final cs = Theme.of(context).colorScheme;
-    final user = ref.watch(authProvider).whenOrNull<UserModel?>(
-          data: (a) => a.user,
-        );
+    final active = activeFiltersOf(params);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('browse_title'.tr()),
-        actions: [
-          Stack(
-            alignment: Alignment.topRight,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.tune_rounded),
-                tooltip: 'browse_filters'.tr(),
-                onPressed: _openFilters,
-              ),
-              if (params.activeCount > 0)
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: cs.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${params.activeCount}',
-                        style: const TextStyle(
-                            fontSize: 9,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── En-tête ─────────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screen - 4, AppSpacing.xs, AppSpacing.screen - 4, 0),
+              child: Row(
+                children: [
+                  RoundIconButton(
+                    icon: Icons.arrow_back_rounded,
+                    tooltip:
+                        MaterialLocalizations.of(context).backButtonTooltip,
+                    onTap: () => context.pop(),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text('browse_title'.tr(),
+                        style: text.headlineSmall
+                            ?.copyWith(fontSize: 19, color: c.text1)),
+                  ),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      RoundIconButton(
+                        icon: Icons.tune_rounded,
+                        tooltip: 'browse_filters'.tr(),
+                        color: c.accentText,
+                        onTap: _openFilters,
                       ),
-                    ),
+                      if (active.isNotEmpty)
+                        Positioned(
+                          top: 2,
+                          right: 2,
+                          child: IgnorePointer(
+                            child: Container(
+                              constraints: const BoxConstraints(
+                                  minWidth: 17, minHeight: 17),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                gradient: c.accentGradient,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.full),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '${active.length}',
+                                style: text.labelSmall?.copyWith(
+                                  color: Colors.white,
+                                  fontSize: 9.5,
+                                  letterSpacing: 0,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Barre d'état + chips actives ────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screen, AppSpacing.xs, AppSpacing.screen, 0),
+              child: FilterStatusBar(
+                resultLabel: _total == null
+                    ? (_initialLoading ? null : '')
+                    : resultCountLabel(context, _total!),
+                filterCount: active.length,
+                onReset: () =>
+                    _apply(FilterParams(mediaType: params.mediaType, sort: params.sort)),
+              ),
+            ),
+            if (active.isNotEmpty)
+              SizedBox(
+                height: AppSpacing.minTouch,
+                child: ListView.separated(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+                  scrollDirection: Axis.horizontal,
+                  itemCount: active.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
+                  itemBuilder: (_, i) => ActiveFilterChip(
+                    label: activeFilterLabel(active[i]),
+                    onRemove: () => _apply(active[i].remove(params)),
                   ),
                 ),
-            ],
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // ── Filtres actifs ─────────────────────────────────────────────
-          if (!params.isEmpty)
-            _ActiveFiltersBar(params: params, onClear: _clearFilters),
+              ),
+            const SizedBox(height: AppSpacing.xs),
 
-          // ── Contenu ────────────────────────────────────────────────────
-          Expanded(
-            child: _buildBody(params, user, cs),
-          ),
-        ],
+            // ── Contenu ─────────────────────────────────────────────────────
+            Expanded(child: _buildBody(params)),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildBody(FilterParams params, UserModel? user, ColorScheme cs) {
-    if (_initialLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+  Widget _buildBody(FilterParams params) {
+    if (_initialLoading) return const _GridSkeleton();
 
     if (_error != null && _items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.wifi_off_rounded, size: 48),
-            const SizedBox(height: 12),
-            Text(_error.toString(),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                    color: cs.onSurface.withValues(alpha: 0.54))),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              icon: const Icon(Icons.refresh),
-              label: Text('action_retry'.tr()),
-              onPressed: () => _load(reset: true),
-            ),
-          ],
-        ),
+      return _EmptyState(
+        icon: Icons.wifi_off_rounded,
+        title: 'browse_error_title'.tr(),
+        body: 'browse_error_body'.tr(),
+        primaryLabel: 'action_retry'.tr(),
+        onPrimary: () => _load(reset: true),
       );
     }
 
     if (_items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search_off_rounded,
-                size: 56,
-                color: cs.onSurface.withValues(alpha: 0.2)),
-            const SizedBox(height: 16),
-            Text('browse_empty'.tr(),
-                style: TextStyle(
-                    color: cs.onSurface.withValues(alpha: 0.45))),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: _openFilters,
-              child: Text('browse_adjust_filters'.tr()),
-            ),
-          ],
-        ),
+      final relax = filterToRelax(params);
+      final count = activeFilterCount(params);
+      return _EmptyState(
+        icon: Icons.tune_rounded,
+        title: 'browse_empty_title'.tr(),
+        body: relax == null
+            ? 'browse_empty'.tr()
+            : 'browse_empty_body'.tr(namedArgs: {
+                'filters': filterCountLabel(count),
+                'filter': activeFilterLabel(relax),
+              }),
+        primaryLabel: relax == null
+            ? null
+            : 'browse_remove_filter'
+                .tr(namedArgs: {'filter': activeFilterLabel(relax)}),
+        onPrimary: relax == null ? null : () => _apply(relax.remove(params)),
+        secondaryLabel: count > 0 ? 'browse_clear_filters'.tr() : null,
+        onSecondary: () => _apply(
+            FilterParams(mediaType: params.mediaType, sort: params.sort)),
       );
     }
 
-    return GridView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 0.62,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-      ),
-      // +1 pour le loader en bas
-      itemCount: _items.length + (_hasMore ? 1 : 0),
-      itemBuilder: (context, i) {
-        if (i == _items.length) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          );
-        }
-        final media = _items[i];
-        return _MediaCard(
-          media: media,
-          onTap: () => context.push(
-            '/detail/${media.id}',
-            extra: {'coverUrl': media.coverImage},
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 14.0;
+        final cardWidth =
+            (constraints.maxWidth - AppSpacing.screen * 2 - spacing) / 2;
+        // Jaquette 2:3 + titre sur 2 lignes + note
+        final extent = cardWidth * 1.5 + 72;
+
+        return GridView.builder(
+          controller: _scrollController,
+          padding: EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.xs,
+              AppSpacing.screen, AppSpacing.xl + bottomInset),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisExtent: extent,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: 16,
           ),
-          onLongPress: () => openWatchlistSheet(
-            context,
-            ref,
-            anime: media,
-            user: user,
-          ),
+          itemCount: _items.length + (_hasMore ? 2 : 0),
+          itemBuilder: (context, i) {
+            if (i >= _items.length) return const _CardSkeleton();
+            return _BrowseCard(media: _items[i], index: i);
+          },
         );
       },
     );
   }
 }
 
-// ── Barre des filtres actifs ──────────────────────────────────────────────────
+class _BrowseCard extends ConsumerWidget {
+  const _BrowseCard({required this.media, required this.index});
 
-class _ActiveFiltersBar extends StatelessWidget {
-  const _ActiveFiltersBar({required this.params, required this.onClear});
-  final FilterParams params;
-  final VoidCallback onClear;
+  final MediaModel media;
+  final int index;
 
   @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final chips = <String>[];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final inList = ref.watch(inWatchlistProvider(media.id));
+    final heroTag = 'browse_${media.id}_$index';
+    final score = media.formattedScore == null
+        ? null
+        : context.locale.languageCode == 'en'
+            ? media.formattedScore
+            : media.formattedScore!.replaceAll('.', ',');
+    final count = media.isManga
+        ? (media.chapters == null
+            ? null
+            : 'meta_chapters'.tr(namedArgs: {'count': '${media.chapters}'}))
+        : (media.episodes == null
+            ? null
+            : 'meta_episodes'.tr(namedArgs: {'count': '${media.episodes}'}));
 
-    if (params.genres.isNotEmpty) chips.addAll(params.genres);
-    if (params.formats.isNotEmpty) chips.addAll(params.formats);
-    if (params.yearFrom != null || params.yearTo != null) {
-      final from = params.yearFrom ?? '?';
-      final to = params.yearTo ?? '?';
-      chips.add('$from–$to');
-    }
-    if (params.minScore != null) chips.add('≥ ${params.minScore}/10');
-    if (params.status != null) {
-      chips.add(FilterParams.statusOptions
-          .firstWhere((s) => s.value == params.status,
-              orElse: () => (value: '', label: params.status!))
-          .label);
-    }
-
-    return Container(
-      height: 44,
-      color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-      child: Row(
-        children: [
-          Expanded(
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              itemCount: chips.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 6),
-              itemBuilder: (_, i) => Chip(
-                label: Text(chips[i],
-                    style: const TextStyle(fontSize: 11)),
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                padding: EdgeInsets.zero,
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close, size: 18),
-            tooltip: 'browse_clear_filters'.tr(),
-            onPressed: onClear,
-          ),
-        ],
-      ),
+    return MediaCard(
+      title: media.displayTitle,
+      imageUrl: media.coverImage,
+      score: score,
+      meta: count,
+      heroTag: heroTag,
+      inList: inList,
+      onTap: () => context.push('/detail/${media.id}',
+          extra: {'heroTag': heroTag, 'coverUrl': media.coverImage}),
+      onAction: () {
+        final user = ref.read(authProvider).valueOrNull?.user;
+        openWatchlistSheet(context, ref, anime: media, user: user);
+      },
     );
   }
 }
 
-// ── Carte média ───────────────────────────────────────────────────────────────
+// ── Squelettes (jamais de spinner sur une grille) ─────────────────────────────
 
-class _MediaCard extends StatelessWidget {
-  const _MediaCard({
-    required this.media,
-    required this.onTap,
-    required this.onLongPress,
-  });
-
-  final MediaModel media;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
+class _GridSkeleton extends StatelessWidget {
+  const _GridSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 14.0;
+        final cardWidth =
+            (constraints.maxWidth - AppSpacing.screen * 2 - spacing) / 2;
+        return GridView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screen, AppSpacing.xs, AppSpacing.screen, 0),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisExtent: cardWidth * 1.5 + 72,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: 4,
+          itemBuilder: (_, _) => const _CardSkeleton(),
+        );
+      },
+    );
+  }
+}
 
-    return GestureDetector(
-      onTap: onTap,
-      onLongPress: onLongPress,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Stack(
-          fit: StackFit.expand,
+class _CardSkeleton extends StatelessWidget {
+  const _CardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    Widget bar(double widthFactor) => FractionallySizedBox(
+          widthFactor: widthFactor,
+          child: Container(
+            height: 11,
+            decoration: BoxDecoration(
+              color: c.surface1,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+          ),
+        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AspectRatio(
+          aspectRatio: 2 / 3,
+          child: Container(
+            decoration: BoxDecoration(
+              color: c.surface1,
+              borderRadius: BorderRadius.circular(AppRadius.cover),
+            ),
+          ),
+        ),
+        const SizedBox(height: 7),
+        bar(0.9),
+        const SizedBox(height: 6),
+        bar(0.55),
+      ],
+    );
+  }
+}
+
+// ── États vide / erreur ───────────────────────────────────────────────────────
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState({
+    required this.icon,
+    required this.title,
+    required this.body,
+    this.primaryLabel,
+    this.onPrimary,
+    this.secondaryLabel,
+    this.onSecondary,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+  final String? primaryLabel;
+  final VoidCallback? onPrimary;
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            media.coverImage != null
-                ? CachedNetworkImage(
-                    imageUrl: media.coverImage!,
-                    fit: BoxFit.cover,
-                  )
-                : Container(color: cs.surfaceContainerHighest),
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.8),
-                    ],
-                    stops: const [0.55, 1.0],
-                  ),
-                ),
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: c.surface1,
+                borderRadius: BorderRadius.circular(17),
               ),
+              child: Icon(icon, size: 26, color: c.text3),
             ),
-            if (media.averageScore != null)
-              Positioned(
-                top: 6,
-                right: 6,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 5, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.65),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.star_rounded,
-                          size: 10, color: Color(0xFFFFC107)),
-                      const SizedBox(width: 2),
-                      Text(
-                        media.formattedScore ?? '',
-                        style: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
+            const SizedBox(height: 13),
+            Text(title,
+                textAlign: TextAlign.center,
+                style: text.headlineSmall
+                    ?.copyWith(fontSize: 16, color: c.text1)),
+            const SizedBox(height: 6),
+            Text(body,
+                textAlign: TextAlign.center,
+                style: text.bodyMedium?.copyWith(color: c.text2, height: 1.55)),
+            if (primaryLabel != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              AppButton(
+                label: primaryLabel!,
+                expand: true,
+                onPressed: onPrimary,
               ),
-            Positioned(
-              left: 6,
-              right: 6,
-              bottom: 6,
-              child: Text(
-                media.displayTitle,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  shadows: [Shadow(blurRadius: 4, color: Colors.black)],
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+            ],
+            if (secondaryLabel != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              AppButton(
+                label: secondaryLabel!,
+                variant: AppButtonVariant.secondary,
+                expand: true,
+                onPressed: onSecondary,
               ),
-            ),
+            ],
           ],
         ),
       ),
