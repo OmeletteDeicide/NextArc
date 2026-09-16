@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/core/theme/app_tokens.dart';
-import 'package:nextarc/core/theme/zigzag_background.dart';
 import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/auth/domain/user_model.dart';
@@ -438,89 +437,84 @@ class _ProfileHeader extends StatelessWidget {
                 colors: [c.accent, c.violet],
               ),
       ),
-      child: ZigzagBackground(
-        color: isDark ? c.violet : Colors.white,
-        opacity: isDark ? 0.42 : 0.2,
-        alwaysVisible: true,
-        child: Stack(
-          children: [
-            if (isDark)
-              Positioned(
-                right: -40,
-                top: -50,
-                child: IgnorePointer(
-                  child: Container(
-                    width: 200,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: RadialGradient(
-                        colors: [
-                          c.violet.withValues(alpha: 0.45),
-                          c.violet.withValues(alpha: 0),
-                        ],
-                        stops: const [0, 0.7],
-                      ),
+      child: Stack(
+        children: [
+          if (isDark)
+            Positioned(
+              right: -40,
+              top: -50,
+              child: IgnorePointer(
+                child: Container(
+                  width: 200,
+                  height: 200,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        c.violet.withValues(alpha: 0.45),
+                        c.violet.withValues(alpha: 0),
+                      ],
+                      stops: const [0, 0.7],
                     ),
                   ),
                 ),
               ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                  AppSpacing.screen - 4, topInset + 4, AppSpacing.screen - 4, 18),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (onEdit != null)
-                        _HeaderButton(
-                          icon: Icons.edit_outlined,
-                          tooltip: 'profile_edit_title'.tr(),
-                          onTap: onEdit!,
-                        ),
-                      _HeaderButton(
-                        icon: Icons.logout_rounded,
-                        tooltip: 'profile_logout_button'.tr(),
-                        onTap: onLogout,
-                      ),
-                    ],
-                  ),
-                  _Avatar(user: user, isArcer: isArcer),
-                  const SizedBox(height: 10),
-                  Text(
-                    user.displayName,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: text.headlineSmall?.copyWith(
-                      color: isDark ? c.text1 : Colors.white,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: text.bodySmall?.copyWith(
-                        color: isDark
-                            ? c.text2
-                            : Colors.white.withValues(alpha: 0.88),
-                        fontSize: 11.5,
-                      ),
-                    ),
-                  ],
-                  if (title != null) ...[
-                    const SizedBox(height: 10),
-                    UserTitleBadge(title: title!, onAccent: !isDark),
-                  ],
-                ],
-              ),
             ),
-          ],
-        ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+                AppSpacing.screen - 4, topInset + 4, AppSpacing.screen - 4, 18),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (onEdit != null)
+                      _HeaderButton(
+                        icon: Icons.edit_outlined,
+                        tooltip: 'profile_edit_title'.tr(),
+                        onTap: onEdit!,
+                      ),
+                    _HeaderButton(
+                      icon: Icons.logout_rounded,
+                      tooltip: 'profile_logout_button'.tr(),
+                      onTap: onLogout,
+                    ),
+                  ],
+                ),
+                _Avatar(user: user, isArcer: isArcer),
+                const SizedBox(height: 10),
+                Text(
+                  user.displayName,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.headlineSmall?.copyWith(
+                    color: isDark ? c.text1 : Colors.white,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: text.bodySmall?.copyWith(
+                      color: isDark
+                          ? c.text2
+                          : Colors.white.withValues(alpha: 0.88),
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ],
+                if (title != null) ...[
+                  const SizedBox(height: 10),
+                  UserTitleBadge(title: title!, onAccent: !isDark),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
 

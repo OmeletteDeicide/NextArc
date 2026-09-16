@@ -12,10 +12,8 @@
   ❌ direction 1b.
 - Écrans retenus : fiche anime, Découvrir, menus/navigation, fiche d'édition,
   Ma liste, Profil, Stats, cartes de partage.
-- **Motif zigzag** à la place des hachures. Angle / opacité / activation
-  réglables en un seul endroit (le design utilise rotate 25° — à juger sur
-  téléphone ; en clair le design ne le met que sur les fonds accentués, peut-être
-  à retirer complètement en clair).
+- **Aucun motif de fond** (ni hachures ni zigzag) : essayé puis retiré le 16/09
+  à la demande de Simon (« sans ça sort mieux »). Dégradés et halos conservés.
 - **Cartes de partage : toujours en sombre**, quel que soit le thème.
 - Pied de carte : « NextArc — Dispo sur Google Play ». ❌ jamais `nextarc.app`.
   Pas de mention Apple tant que l'app n'y est pas.
@@ -71,8 +69,7 @@
       polices téléchargées au 1er lancement ; à intégrer en assets plus tard pour
       éviter le flash hors ligne)
 - [x] Espacements / rayons / durées en constantes
-- [x] Motif zigzag → `lib/core/theme/zigzag_background.dart`
-      (`ZigzagBackground`, réglages dans `ZigzagConfig`)
+- [x] ~~Motif zigzag~~ retiré le 16/09 (widget, test et token supprimés)
 - [x] `ThemeData` sombre et clair branchés sur les tokens → `app_theme.dart`
 
 ### Lot 2 — Composants ✅ (dans `lib/core/widgets/ds/`, import `ds.dart`)
@@ -234,3 +231,8 @@
   `activity/{mois}`). `AsyncValue.value` relance l'erreur en Riverpod 2 →
   toujours `valueOrNull` dans le nouveau code. Cause côté serveur : règle
   `activity` de `firestore.rules` pas encore publiée.
+- 16/09 — Validé sur téléphone : Stats OK après publication des règles,
+  Blaze réactivé. **Zigzag retiré partout** (Découvrir, hero, Profil, Stats,
+  Mon titre, cartes de partage, moment du palier) : `zigzag_background.dart`,
+  `test/zigzag_painter_test.dart` et le token `AppColors.zigzag` supprimés.
+  Dégradés et halos gardés. Analyse OK, 93 tests OK. Prochain : Lot 4.

@@ -8,7 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/domain/paginated_result.dart';
 import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/core/theme/app_tokens.dart';
-import 'package:nextarc/core/theme/zigzag_background.dart';
 import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/browse/domain/browse_provider.dart';
@@ -111,44 +110,40 @@ class DiscoverScreen extends ConsumerWidget {
         : [...animeRails, ...mangaRails];
 
     return Scaffold(
-      body: ZigzagBackground(
-        // Le design ne met le motif en clair que sur les fonds accentués
-        showInLight: false,
-        child: RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(trendingAnimeProvider);
-            ref.invalidate(seasonalAnimeProvider);
-            ref.invalidate(trendingMangaProvider);
-            ref.invalidate(releasingMangaProvider);
-            await Future.wait([
-              ref.read(trendingAnimeProvider.future),
-              ref.read(seasonalAnimeProvider.future),
-              ref.read(trendingMangaProvider.future),
-              ref.read(releasingMangaProvider.future),
-            ]);
-          },
-          child: CustomScrollView(
-            slivers: [
-              const SliverSafeArea(
-                bottom: false,
-                sliver: SliverToBoxAdapter(child: _DiscoverHeader()),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(trendingAnimeProvider);
+          ref.invalidate(seasonalAnimeProvider);
+          ref.invalidate(trendingMangaProvider);
+          ref.invalidate(releasingMangaProvider);
+          await Future.wait([
+            ref.read(trendingAnimeProvider.future),
+            ref.read(seasonalAnimeProvider.future),
+            ref.read(trendingMangaProvider.future),
+            ref.read(releasingMangaProvider.future),
+          ]);
+        },
+        child: CustomScrollView(
+          slivers: [
+            const SliverSafeArea(
+              bottom: false,
+              sliver: SliverToBoxAdapter(child: _DiscoverHeader()),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screen, AppSpacing.sm, AppSpacing.screen, 0),
+                child: hero != null
+                    ? _HeroCard(hero: hero)
+                    : trending.isLoading
+                        ? const _HeroSkeleton()
+                        : const SizedBox.shrink(),
               ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.screen, AppSpacing.sm, AppSpacing.screen, 0),
-                  child: hero != null
-                      ? _HeroCard(hero: hero)
-                      : trending.isLoading
-                          ? const _HeroSkeleton()
-                          : const SizedBox.shrink(),
-                ),
-              ),
-              SliverList(delegate: SliverChildListDelegate(rails)),
-              const SliverToBoxAdapter(
-                  child: SizedBox(height: AppSpacing.xl)),
-            ],
-          ),
+            ),
+            SliverList(delegate: SliverChildListDelegate(rails)),
+            const SliverToBoxAdapter(
+                child: SizedBox(height: AppSpacing.xl)),
+          ],
         ),
       ),
     );
@@ -328,14 +323,6 @@ class _HeroCard extends StatelessWidget {
                             c.violet.withValues(alpha: 0),
                           ]),
                         ),
-                      ),
-                    ),
-                  )
-                else
-                  const Positioned.fill(
-                    child: IgnorePointer(
-                      child: CustomPaint(
-                        painter: ZigzagPainter(color: Color(0x29FFFFFF)),
                       ),
                     ),
                   ),

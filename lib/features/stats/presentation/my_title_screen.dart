@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/theme/app_tokens.dart';
 import 'package:nextarc/core/theme/app_typography.dart';
-import 'package:nextarc/core/theme/zigzag_background.dart';
 import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/features/stats/domain/stats_provider.dart';
 import 'package:nextarc/features/stats/domain/user_title.dart';
@@ -150,90 +149,85 @@ class _CurrentTitleHero extends StatelessWidget {
               ),
       ),
       clipBehavior: Clip.antiAlias,
-      child: ZigzagBackground(
-        color: isDark ? c.violet : Colors.white,
-        opacity: isDark ? 0.45 : 0.2,
-        alwaysVisible: true,
-        child: Stack(
-          children: [
-            Positioned(
-              right: -30,
-              top: -40,
-              child: IgnorePointer(
-                child: Container(
-                  width: 170,
-                  height: 170,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        c.violet.withValues(alpha: isDark ? 0.45 : 0.35),
-                        c.violet.withValues(alpha: 0),
-                      ],
-                      stops: const [0, 0.7],
-                    ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -30,
+            top: -40,
+            child: IgnorePointer(
+              child: Container(
+                width: 170,
+                height: 170,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      c.violet.withValues(alpha: isDark ? 0.45 : 0.35),
+                      c.violet.withValues(alpha: 0),
+                    ],
+                    stops: const [0, 0.7],
                   ),
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'my_title_overline'.tr().toUpperCase(),
-                    style: AppTypography.overline(
-                        isDark ? const Color(0xFFA99BE0) : Colors.white70),
-                  ),
-                  const SizedBox(height: 9),
-                  Row(
-                    children: [
-                      if (title.isArcer) ...[
-                        const Text('👑', style: TextStyle(fontSize: 24)),
-                        const SizedBox(width: 8),
-                      ],
-                      Flexible(
-                        child: Text(
-                          title.label,
-                          style: text.displaySmall?.copyWith(
-                            fontSize: 28,
-                            height: 1.05,
-                            letterSpacing: -1,
-                            color: title.isArcer ? c.star : Colors.white,
-                          ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'my_title_overline'.tr().toUpperCase(),
+                  style: AppTypography.overline(
+                      isDark ? const Color(0xFFA99BE0) : Colors.white70),
+                ),
+                const SizedBox(height: 9),
+                Row(
+                  children: [
+                    if (title.isArcer) ...[
+                      const Text('👑', style: TextStyle(fontSize: 24)),
+                      const SizedBox(width: 8),
+                    ],
+                    Flexible(
+                      child: Text(
+                        title.label,
+                        style: text.displaySmall?.copyWith(
+                          fontSize: 28,
+                          height: 1.05,
+                          letterSpacing: -1,
+                          color: title.isArcer ? c.star : Colors.white,
                         ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (!title.isArcer) ...[
+                  const SizedBox(height: 11),
+                  Wrap(
+                    spacing: 7,
+                    runSpacing: 7,
+                    children: [
+                      _HeroChip(
+                        label: 'my_title_chip'.tr(namedArgs: {
+                          'word': qualifierWord,
+                          'value': '${numbers.format(title.watchHours)} h',
+                        }),
+                        color: chipColor,
+                      ),
+                      _HeroChip(
+                        label: 'my_title_chip'.tr(namedArgs: {
+                          'word': title.rankKey.tr(),
+                          'value': numbers.format(title.animeCompleted),
+                        }),
+                        color: chipColor,
                       ),
                     ],
                   ),
-                  if (!title.isArcer) ...[
-                    const SizedBox(height: 11),
-                    Wrap(
-                      spacing: 7,
-                      runSpacing: 7,
-                      children: [
-                        _HeroChip(
-                          label: 'my_title_chip'.tr(namedArgs: {
-                            'word': qualifierWord,
-                            'value': '${numbers.format(title.watchHours)} h',
-                          }),
-                          color: chipColor,
-                        ),
-                        _HeroChip(
-                          label: 'my_title_chip'.tr(namedArgs: {
-                            'word': title.rankKey.tr(),
-                            'value': numbers.format(title.animeCompleted),
-                          }),
-                          color: chipColor,
-                        ),
-                      ],
-                    ),
-                  ],
                 ],
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

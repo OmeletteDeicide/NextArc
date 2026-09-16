@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/core/theme/app_tokens.dart';
 import 'package:nextarc/core/theme/app_typography.dart';
-import 'package:nextarc/core/theme/zigzag_background.dart';
 import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/features/activity/domain/activity_providers.dart';
 import 'package:nextarc/features/activity/domain/month_activity.dart';
@@ -427,68 +426,64 @@ class _MonthStoryCard extends ConsumerWidget {
         border: isDark ? Border.all(color: c.border) : null,
       ),
       clipBehavior: Clip.antiAlias,
-      child: ZigzagBackground(
-        color: c.accent,
-        opacity: 0.3,
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'stats_story_overline'
-                    .tr(namedArgs: {'month': monthName})
-                    .toUpperCase(),
-                style: AppTypography.overline(c.text3),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'stats_story_overline'
+                  .tr(namedArgs: {'month': monthName})
+                  .toUpperCase(),
+              style: AppTypography.overline(c.text3),
+            ),
+            const SizedBox(height: 6),
+            if (isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else if (current.isEmpty)
+              Text('stats_month_empty'.tr(), style: bodyStyle)
+            else ...[
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  heroDuration(minutesOf(current)),
+                  maxLines: 1,
+                  style: text.displayLarge?.copyWith(
+                    fontSize: 44,
+                    height: 0.95,
+                    color: c.text1,
+                    letterSpacing: -1.5,
+                  ),
+                ),
               ),
               const SizedBox(height: 6),
-              if (isLoading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )
-              else if (current.isEmpty)
-                Text('stats_month_empty'.tr(), style: bodyStyle)
-              else ...[
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    heroDuration(minutesOf(current)),
-                    maxLines: 1,
-                    style: text.displayLarge?.copyWith(
-                      fontSize: 44,
-                      height: 0.95,
-                      color: c.text1,
-                      letterSpacing: -1.5,
-                    ),
+              Text.rich(
+                TextSpan(
+                  style: bodyStyle,
+                  children: _storySpans(
+                    current: current,
+                    previous: previous,
+                    previousMonthName:
+                        DateFormat.MMMM(locale).format(months[months.length - 2]),
+                    strong: strong,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text.rich(
-                  TextSpan(
-                    style: bodyStyle,
-                    children: _storySpans(
-                      current: current,
-                      previous: previous,
-                      previousMonthName:
-                          DateFormat.MMMM(locale).format(months[months.length - 2]),
-                      strong: strong,
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 14),
-              _MonthBars(
-                months: months,
-                minutes: [for (final r in recaps) minutesOf(r)],
               ),
             ],
-          ),
+            const SizedBox(height: 14),
+            _MonthBars(
+              months: months,
+              minutes: [for (final r in recaps) minutesOf(r)],
+            ),
+          ],
         ),
       ),
     );

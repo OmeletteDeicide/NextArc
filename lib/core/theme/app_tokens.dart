@@ -21,7 +21,6 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.text3,
     required this.border,
     required this.navBar,
-    required this.zigzag,
   });
 
   /// Fond des écrans.
@@ -72,9 +71,6 @@ class AppColors extends ThemeExtension<AppColors> {
   /// Fond de la barre de navigation basse.
   final Color navBar;
 
-  /// Couleur du motif zigzag (l'opacité est dans ZigzagConfig).
-  final Color zigzag;
-
   /// Dégradé accent — réservé au badge de titre, au CTA primaire et aux
   /// barres de progression. Jamais en fond de carte.
   LinearGradient get accentGradient => LinearGradient(
@@ -100,7 +96,6 @@ class AppColors extends ThemeExtension<AppColors> {
     text3: Color(0xFF66739A),
     border: Color(0x14FFFFFF), // blanc 8 %
     navBar: Color(0xEB060A15), // base 92 %
-    zigzag: Color(0xFF6D8BFF),
   );
 
   static const light = AppColors(
@@ -120,7 +115,6 @@ class AppColors extends ThemeExtension<AppColors> {
     text3: Color(0xFF7A849E),
     border: Color(0x170C1226), // encre 9 %
     navBar: Color(0xFFFFFFFF),
-    zigzag: Color(0xFF4560E0),
   );
 
   static AppColors of(BuildContext context) =>
@@ -144,7 +138,6 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? text3,
     Color? border,
     Color? navBar,
-    Color? zigzag,
   }) =>
       AppColors(
         base: base ?? this.base,
@@ -163,7 +156,6 @@ class AppColors extends ThemeExtension<AppColors> {
         text3: text3 ?? this.text3,
         border: border ?? this.border,
         navBar: navBar ?? this.navBar,
-        zigzag: zigzag ?? this.zigzag,
       );
 
   @override
@@ -187,7 +179,6 @@ class AppColors extends ThemeExtension<AppColors> {
       text3: l(text3, other.text3),
       border: l(border, other.border),
       navBar: l(navBar, other.navBar),
-      zigzag: l(zigzag, other.zigzag),
     );
   }
 }

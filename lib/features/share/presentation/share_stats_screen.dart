@@ -11,7 +11,6 @@ import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/constants/app_links.dart';
 import 'package:nextarc/core/theme/app_tokens.dart';
 import 'package:nextarc/core/theme/app_typography.dart';
-import 'package:nextarc/core/theme/zigzag_background.dart';
 import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/features/activity/domain/activity_providers.dart';
 import 'package:nextarc/features/activity/domain/month_activity.dart';
@@ -641,14 +640,6 @@ class _CardFrame extends StatelessWidget {
                         stops: [0, 0.45, 1],
                       ),
                     ),
-                  ),
-                ),
-                Positioned.fill(
-                  child: ZigzagBackground(
-                    color: _card.violet,
-                    opacity: 0.38,
-                    alwaysVisible: true,
-                    child: const SizedBox.expand(),
                   ),
                 ),
                 Positioned(

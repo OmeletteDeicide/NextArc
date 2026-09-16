@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/core/theme/app_tokens.dart';
 import 'package:nextarc/core/theme/app_typography.dart';
-import 'package:nextarc/core/theme/zigzag_background.dart';
 import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/features/stats/domain/title_promotion.dart';
 import 'package:nextarc/features/stats/domain/user_title.dart';
@@ -102,112 +101,107 @@ class _TitlePromotionCard extends StatelessWidget {
                   ),
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: ZigzagBackground(
-                  color: isArcer ? c.star : c.violet,
-                  opacity: 0.35,
-                  alwaysVisible: true,
-                  child: Stack(
-                    children: [
-                      Positioned(
-                        right: -50,
-                        top: -60,
-                        child: IgnorePointer(
-                          child: Container(
-                            width: 240,
-                            height: 240,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  (isArcer ? c.star : c.violet)
-                                      .withValues(alpha: 0.45),
-                                  (isArcer ? c.star : c.violet)
-                                      .withValues(alpha: 0),
-                                ],
-                                stops: const [0, 0.7],
-                              ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      right: -50,
+                      top: -60,
+                      child: IgnorePointer(
+                        child: Container(
+                          width: 240,
+                          height: 240,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                (isArcer ? c.star : c.violet)
+                                    .withValues(alpha: 0.45),
+                                (isArcer ? c.star : c.violet)
+                                    .withValues(alpha: 0),
+                              ],
+                              stops: const [0, 0.7],
                             ),
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(22, 10, 10, 22),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    'title_promotion_overline'
-                                        .tr()
-                                        .toUpperCase(),
-                                    style: AppTypography.overline(
-                                        const Color(0xFFA99BE0)),
-                                  ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(22, 10, 10, 22),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'title_promotion_overline'
+                                      .tr()
+                                      .toUpperCase(),
+                                  style: AppTypography.overline(
+                                      const Color(0xFFA99BE0)),
                                 ),
-                                IconButton(
-                                  tooltip: 'title_promotion_close'.tr(),
-                                  onPressed: onClose,
-                                  icon: Icon(Icons.close_rounded,
-                                      color: c.text2),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: AppSpacing.xs),
-                            if (isArcer) ...[
-                              const Text('👑',
-                                  style: TextStyle(fontSize: 44, height: 1)),
-                              const SizedBox(height: AppSpacing.sm),
+                              ),
+                              IconButton(
+                                tooltip: 'title_promotion_close'.tr(),
+                                onPressed: onClose,
+                                icon: Icon(Icons.close_rounded,
+                                    color: c.text2),
+                              ),
                             ],
-                            Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: Text(
-                                title.label,
-                                style: text.displayLarge?.copyWith(
-                                  fontSize: 40,
-                                  height: 0.98,
-                                  letterSpacing: -1.2,
-                                  color: isArcer
-                                      ? c.star
-                                      : const Color(0xFFF7F9FF),
-                                ),
-                              ),
-                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          if (isArcer) ...[
+                            const Text('👑',
+                                style: TextStyle(fontSize: 44, height: 1)),
                             const SizedBox(height: AppSpacing.sm),
-                            Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: Text(
-                                reason,
-                                style: text.bodyMedium?.copyWith(
-                                  color: const Color(0xFFA9B6D6),
-                                  fontSize: 14,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.lg),
-                            Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: Theme(
-                                // Bouton aux couleurs sombres même en thème clair
-                                data: Theme.of(context).copyWith(
-                                  extensions: const [AppColors.dark],
-                                ),
-                                child: AppButton(
-                                  label: 'share_stats_button'.tr(),
-                                  icon: Icons.ios_share_rounded,
-                                  expand: true,
-                                  onPressed: onShare,
-                                ),
-                              ),
-                            ),
                           ],
-                        ),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: Text(
+                              title.label,
+                              style: text.displayLarge?.copyWith(
+                                fontSize: 40,
+                                height: 0.98,
+                                letterSpacing: -1.2,
+                                color: isArcer
+                                    ? c.star
+                                    : const Color(0xFFF7F9FF),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: Text(
+                              reason,
+                              style: text.bodyMedium?.copyWith(
+                                color: const Color(0xFFA9B6D6),
+                                fontSize: 14,
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: Theme(
+                              // Bouton aux couleurs sombres même en thème clair
+                              data: Theme.of(context).copyWith(
+                                extensions: const [AppColors.dark],
+                              ),
+                              child: AppButton(
+                                label: 'share_stats_button'.tr(),
+                                icon: Icons.ios_share_rounded,
+                                expand: true,
+                                onPressed: onShare,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
