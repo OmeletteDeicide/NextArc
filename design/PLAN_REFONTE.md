@@ -120,12 +120,18 @@
 - [ ] Calendrier : **regrouper par semaine** (« Cette semaine », « Semaine
       prochaine », jours en sous-titres) — idée de Simon du 16/09, à donner à
       Claude Design avec la demande de maquette
-- [ ] Pour toi · Explorer & filtres · Recherche · Calendrier · Paramètres
-      connecté · À propos
+- [x] Paramètres (maquette « Paramètres invité ») : thème en segmenté, langues
+      côte à côte, liste locale en carte + « Passer sur un compte ? », version
+      unique (`app_version.dart`) — fait le 16/09, aussi pour les comptes connectés
+- [x] « Modifier le profil » aligné sur le design system (pas de maquette)
+- [ ] Pour toi · Explorer & filtres · Recherche · Calendrier · À propos
 - [ ] Versions claires : Stats, Mon titre, Connexion, Ma liste invité
 
 ## Hors refonte — à faire / en attente
 
+- [ ] **Activer Firebase Storage** (console → Storage → Commencer) puis
+      `firebase deploy --only storage` : le bucket n'existe pas encore, d'où
+      l'erreur « object-not-found » à l'envoi d'une photo (16/09)
 - [ ] **Changer sa bannière de profil** (la photo et le pseudo sont déjà
       modifiables) — pas de bannière choisie = bannière AniList si liée
 - [ ] **Republier `firestore.rules`** : champs `customName` / `customPhoto`
@@ -136,7 +142,7 @@
 - [ ] Suppression de compte (obligatoire Play Store) — Cloud Function possible
       maintenant que Blaze est actif
 - [x] Publier `firestore.rules` (règle `activity` ajoutée) — fait, Stats OK le 16/09
-- [ ] Version incohérente : Paramètres « 1.0.0 » vs À propos « 1.2.0 »
+- [x] Version incohérente : 1.2.0 partout via `lib/core/constants/app_version.dart`
 - [ ] ASO + captures Play Store (après la refonte)
 
 ## Journal

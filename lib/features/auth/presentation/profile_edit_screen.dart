@@ -2,11 +2,31 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:nextarc/core/theme/app_tokens.dart';
+import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/features/auth/data/profile_service.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+
+/// Message lisible pour une erreur d'enregistrement du profil.
+String profileSaveErrorKey(Object error) {
+  if (error is FirebaseException) {
+    return switch (error.code) {
+      // Stockage des photos pas encore activé côté Firebase (bucket absent)
+      'object-not-found' || 'bucket-not-found' => 'profile_edit_error_storage',
+      'unauthorized' || 'permission-denied' => 'profile_edit_error_denied',
+      'network-request-failed' ||
+      'unavailable' ||
+      'retry-limit-exceeded' =>
+        'profile_edit_error_network',
+      _ => 'auth_error_generic',
+    };
+  }
+  return 'auth_error_generic';
+}
 
 /// Écran de modification du profil NextArc (pseudo + avatar).
 class ProfileEditScreen extends ConsumerStatefulWidget {
@@ -23,9 +43,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   final _picker = ImagePicker();
 
   File? _pickedImage;
-  bool _uploading = false;
   bool _saving = false;
-  String? _error;
+  String? _errorKey;
 
   /// Pseudo affiché à l'ouverture de l'écran.
   String _initialName = '';
@@ -33,7 +52,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   @override
   void initState() {
     super.initState();
-    final user = ref.read(authProvider).value?.user;
+    final user = ref.read(authProvider).valueOrNull?.user;
     _initialName = user?.displayName ?? '';
     _nameCtrl.text = _initialName;
   }
@@ -85,18 +104,13 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _saving = true;
-      _error = null;
+      _errorKey = null;
     });
 
     try {
       // Upload avatar si nouvelle image sélectionnée
-      if (_pickedImage != null) {
-        setState(() => _uploading = true);
-        await _svc.updateAvatar(_pickedImage!);
-        setState(() => _uploading = false);
-      }
+      if (_pickedImage != null) await _svc.updateAvatar(_pickedImage!);
 
-      // Mise à jour du pseudo
       // Seulement si l'utilisateur a changé le pseudo affiché : sinon un
       // pseudo AniList serait enregistré comme « choisi »
       final newName = _nameCtrl.text.trim();
@@ -109,123 +123,198 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
-      setState(() {
-        _uploading = false;
-        _saving = false;
-        _error = e.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _errorKey = profileSaveErrorKey(e);
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final user = ref.watch(authProvider).value?.user;
-    final currentAvatar = _pickedImage != null
-        ? null
-        : user?.avatar;
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+    final user = ref.watch(authProvider).valueOrNull?.user;
+    final currentAvatar = _pickedImage != null ? null : user?.avatar;
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('profile_edit_title'.tr()),
-        actions: [
-          TextButton(
-            onPressed: (_saving || _uploading) ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text('profile_edit_save'.tr()),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
-
-              // ── Avatar ───────────────────────────────────────────────
-              GestureDetector(
-                onTap: _pickImage,
-                child: Stack(
-                  alignment: Alignment.bottomRight,
-                  children: [
-                    CircleAvatar(
-                      radius: 56,
-                      backgroundColor: cs.surfaceContainerHighest,
-                      backgroundImage: _pickedImage != null
-                          ? FileImage(_pickedImage!) as ImageProvider
-                          : (currentAvatar != null
-                              ? CachedNetworkImageProvider(currentAvatar)
-                              : null),
-                      child: (_pickedImage == null && currentAvatar == null)
-                          ? Icon(Icons.person,
-                              size: 56,
-                              color: cs.onSurface.withValues(alpha: 0.4))
-                          : null,
-                    ),
-                    if (_uploading)
-                      const CircularProgressIndicator()
-                    else
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: cs.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: cs.surface, width: 2),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screen - 4, AppSpacing.xs, AppSpacing.screen, 0),
+              child: Row(
+                children: [
+                  Tooltip(
+                    message:
+                        MaterialLocalizations.of(context).backButtonTooltip,
+                    child: InkResponse(
+                      radius: 24,
+                      onTap: () => Navigator.of(context).maybePop(),
+                      child: SizedBox(
+                        width: AppSpacing.minTouch,
+                        height: AppSpacing.minTouch,
+                        child: Center(
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                                color: c.surface2, shape: BoxShape.circle),
+                            child: Icon(Icons.arrow_back_rounded,
+                                size: 18, color: c.text2),
+                          ),
                         ),
-                        child: Icon(Icons.camera_alt,
-                            size: 16, color: cs.onPrimary),
                       ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: _pickImage,
-                child: Text('profile_edit_change_photo'.tr()),
-              ),
-
-              const SizedBox(height: 24),
-
-              // ── Pseudo ───────────────────────────────────────────────
-              TextFormField(
-                controller: _nameCtrl,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(
-                  labelText: 'auth_field_name'.tr(),
-                  prefixIcon: const Icon(Icons.person_outline),
-                  border: const OutlineInputBorder(),
-                ),
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'auth_field_name_required'.tr()
-                    : null,
-              ),
-
-              // ── Erreur ───────────────────────────────────────────────
-              if (_error != null) ...[
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: cs.errorContainer,
-                    borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  child: Text(
-                    _error!,
-                    style: TextStyle(color: cs.onErrorContainer, fontSize: 13),
+                  const SizedBox(width: 6),
+                  Text('profile_edit_title'.tr(),
+                      style: text.headlineSmall
+                          ?.copyWith(fontSize: 19, color: c.text1)),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                    22, AppSpacing.lg, 22, AppSpacing.lg + bottomInset),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // ── Avatar ───────────────────────────────────────
+                      Center(
+                        child: Semantics(
+                          button: true,
+                          label: 'profile_edit_change_photo'.tr(),
+                          child: GestureDetector(
+                            onTap: _saving ? null : _pickImage,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Container(
+                                  width: 112,
+                                  height: 112,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: c.accentGradient,
+                                    image: _pickedImage != null
+                                        ? DecorationImage(
+                                            image: FileImage(_pickedImage!),
+                                            fit: BoxFit.cover)
+                                        : currentAvatar != null
+                                            ? DecorationImage(
+                                                image:
+                                                    CachedNetworkImageProvider(
+                                                        currentAvatar),
+                                                fit: BoxFit.cover)
+                                            : null,
+                                  ),
+                                  child: (_pickedImage == null &&
+                                          currentAvatar == null)
+                                      ? const Icon(Icons.person_rounded,
+                                          size: 52, color: Colors.white)
+                                      : null,
+                                ),
+                                Positioned(
+                                  right: -2,
+                                  bottom: -2,
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      gradient: c.accentGradient,
+                                      shape: BoxShape.circle,
+                                      border:
+                                          Border.all(color: c.base, width: 3),
+                                    ),
+                                    child: const Icon(
+                                        Icons.photo_camera_rounded,
+                                        size: 16,
+                                        color: Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Center(
+                        child: TextButton(
+                          style: TextButton.styleFrom(
+                              foregroundColor: c.accentText),
+                          onPressed: _saving ? null : _pickImage,
+                          child: Text('profile_edit_change_photo'.tr()),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+
+                      // ── Pseudo ───────────────────────────────────────
+                      TextFormField(
+                        controller: _nameCtrl,
+                        enabled: !_saving,
+                        textCapitalization: TextCapitalization.words,
+                        maxLength: 40,
+                        decoration: InputDecoration(
+                          labelText: 'auth_field_name'.tr(),
+                          prefixIcon: const Icon(Icons.person_outline),
+                          helperText: 'profile_edit_name_hint'.tr(),
+                        ),
+                        validator: (v) => (v == null || v.trim().isEmpty)
+                            ? 'auth_field_name_required'.tr()
+                            : null,
+                      ),
+
+                      // ── Erreur ───────────────────────────────────────
+                      if (_errorKey != null) ...[
+                        const SizedBox(height: AppSpacing.md),
+                        Container(
+                          padding: const EdgeInsets.all(AppSpacing.sm),
+                          decoration: BoxDecoration(
+                            color: c.favourite.withValues(alpha: 0.12),
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.cover),
+                            border: Border.all(
+                                color: c.favourite.withValues(alpha: 0.35)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.error_outline_rounded,
+                                  size: 18, color: c.statusDroppedText),
+                              const SizedBox(width: AppSpacing.xs),
+                              Expanded(
+                                child: Text(
+                                  _errorKey!.tr(),
+                                  style: text.bodyMedium?.copyWith(
+                                      color: c.statusDroppedText),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: AppSpacing.lg),
+                      AppButton(
+                        label: 'profile_edit_save'.tr(),
+                        expand: true,
+                        loading: _saving,
+                        onPressed: _save,
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ],
-          ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:nextarc/core/constants/app_version.dart';
 
 /// Écran "À propos" — crédits AniList + infos app.
 class AboutScreen extends StatelessWidget {
@@ -46,7 +47,7 @@ class AboutScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'about_version'.tr(namedArgs: {'version': '1.2.0'}),
+                  'about_version'.tr(namedArgs: {'version': appVersion}),
                   style: TextStyle(
                     color: cs.onSurface.withValues(alpha: 0.38),
                     fontSize: 13,

@@ -4,7 +4,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:nextarc/core/constants/app_version.dart';
 import 'package:nextarc/core/providers/theme_provider.dart';
+import 'package:nextarc/core/router/app_router.dart';
+import 'package:nextarc/core/theme/app_tokens.dart';
+import 'package:nextarc/core/theme/app_typography.dart';
+import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/watchlist/domain/guest_backup.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
@@ -36,7 +42,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('settings_export_error'.tr(namedArgs: {'error': e.toString()}))),
+          SnackBar(
+              content: Text('settings_export_error'
+                  .tr(namedArgs: {'error': e.toString()}))),
         );
       }
     } finally {
@@ -69,7 +77,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('settings_import_error'.tr(namedArgs: {'error': e.toString()}))),
+          SnackBar(
+              content: Text('settings_import_error'
+                  .tr(namedArgs: {'error': e.toString()}))),
         );
       }
     } finally {
@@ -79,8 +89,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
     final currentMode = ref.watch(themeProvider);
-    final cs = Theme.of(context).colorScheme;
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     // L'export/import ne concerne que la liste locale : un compte NextArc
     // est sauvegardé dans Firestore.
     final isGuest = ref
@@ -88,293 +100,396 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             .whenOrNull(data: (a) => !a.isAuthenticated) ??
         true;
 
+    final themeHint = switch (currentMode) {
+      ThemeMode.system => 'settings_theme_system_subtitle',
+      ThemeMode.dark => 'settings_theme_dark_subtitle',
+      ThemeMode.light => 'settings_theme_light_subtitle',
+    };
+
+    final backup = backupAge(
+      ref.watch(lastGuestExportProvider).valueOrNull,
+      DateTime.now(),
+    );
+
     return Scaffold(
-      appBar: AppBar(title: Text('settings_title'.tr())),
-      body: ListView(
-        children: [
-          // ── Apparence ───────────────────────────────────────────────────────
-          _SectionHeader(label: 'settings_section_appearance'.tr()),
-
-          _ThemeOption(
-            icon: Icons.brightness_auto_rounded,
-            title: 'settings_theme_system'.tr(),
-            subtitle: 'settings_theme_system_subtitle'.tr(),
-            selected: currentMode == ThemeMode.system,
-            onTap: () =>
-                ref.read(themeProvider.notifier).setTheme(ThemeMode.system),
-          ),
-
-          _ThemeOption(
-            icon: Icons.dark_mode_rounded,
-            title: 'settings_theme_dark'.tr(),
-            subtitle: 'settings_theme_dark_subtitle'.tr(),
-            selected: currentMode == ThemeMode.dark,
-            onTap: () =>
-                ref.read(themeProvider.notifier).setTheme(ThemeMode.dark),
-          ),
-
-          _ThemeOption(
-            icon: Icons.light_mode_rounded,
-            title: 'settings_theme_light'.tr(),
-            subtitle: 'settings_theme_light_subtitle'.tr(),
-            selected: currentMode == ThemeMode.light,
-            onTap: () =>
-                ref.read(themeProvider.notifier).setTheme(ThemeMode.light),
-          ),
-
-          const SizedBox(height: 8),
-          Divider(color: cs.outline.withValues(alpha: 0.2)),
-          const SizedBox(height: 8),
-
-          // ── Liste locale (invité uniquement) ─────────────────────────────────
-          if (isGuest) ...[
-            _SectionHeader(label: 'settings_section_local_list'.tr()),
-
-            ListTile(
-              leading: _isExporting
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Icon(Icons.upload_rounded, color: cs.primary),
-              title: Text('settings_export_title'.tr()),
-              // Filet de sécurité du mode invité : quand date la sauvegarde
-              subtitle: Text(
-                () {
-                  final age = backupAge(
-                    ref.watch(lastGuestExportProvider).valueOrNull,
-                    DateTime.now(),
-                  );
-                  return age.key
-                      .tr(namedArgs: {'count': '${age.days}'});
-                }(),
-                style: TextStyle(
-                    fontSize: 12, color: cs.onSurface.withValues(alpha: 0.54)),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── En-tête ─────────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screen - 4, AppSpacing.xs, AppSpacing.screen, 0),
+              child: Row(
+                children: [
+                  _RoundBackButton(
+                    onTap: () => context.canPop()
+                        ? context.pop()
+                        : context.go(AppRoutes.profile),
+                  ),
+                  const SizedBox(width: 6),
+                  Text('settings_title'.tr(),
+                      style: text.headlineSmall
+                          ?.copyWith(fontSize: 19, color: c.text1)),
+                ],
               ),
-              onTap: _isExporting ? null : _export,
             ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.md,
+                    AppSpacing.screen, AppSpacing.xl + bottomInset),
+                children: [
+                  // ── Apparence ─────────────────────────────────────────────
+                  _Section(
+                    label: 'settings_section_appearance'.tr(),
+                    children: [
+                      SegmentedControl<ThemeMode>(
+                        segments: [
+                          (
+                            value: ThemeMode.system,
+                            label: 'settings_theme_short_system'.tr(),
+                          ),
+                          (
+                            value: ThemeMode.dark,
+                            label: 'settings_theme_short_dark'.tr(),
+                          ),
+                          (
+                            value: ThemeMode.light,
+                            label: 'settings_theme_short_light'.tr(),
+                          ),
+                        ],
+                        selected: currentMode,
+                        onChanged: (mode) =>
+                            ref.read(themeProvider.notifier).setTheme(mode),
+                      ),
+                      Text(
+                        themeHint.tr(),
+                        style: text.bodySmall
+                            ?.copyWith(color: c.text2, fontSize: 10.5),
+                      ),
+                    ],
+                  ),
 
-            ListTile(
-              leading: _isImporting
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Icon(Icons.download_rounded, color: cs.primary),
-              title: Text('settings_import_title'.tr()),
-              subtitle: Text(
-                'settings_import_subtitle'.tr(),
-                style: TextStyle(
-                    fontSize: 12, color: cs.onSurface.withValues(alpha: 0.54)),
+                  // ── Langue ────────────────────────────────────────────────
+                  _Section(
+                    label: 'settings_section_language'.tr(),
+                    children: [
+                      Row(
+                        children: [
+                          for (final (code, name) in const [
+                            ('fr', 'Français'),
+                            ('en', 'English'),
+                            ('es', 'Español'),
+                          ]) ...[
+                            if (code != 'fr') const SizedBox(width: AppSpacing.xs),
+                            Expanded(
+                              child: _LanguageButton(
+                                code: code.toUpperCase(),
+                                semanticsLabel: name,
+                                selected:
+                                    context.locale.languageCode == code,
+                                onTap: () => context.setLocale(Locale(code)),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  // ── Liste locale (invité uniquement) ──────────────────────
+                  if (isGuest)
+                    _Section(
+                      label: 'settings_section_local_list'.tr(),
+                      children: [
+                        _Card(
+                          children: [
+                            _SettingsRow(
+                              icon: Icons.upload_rounded,
+                              title: 'settings_export_title'.tr(),
+                              subtitle: backup.key
+                                  .tr(namedArgs: {'count': '${backup.days}'}),
+                              busy: _isExporting,
+                              onTap: _isExporting ? null : _export,
+                            ),
+                            Divider(height: 1, color: c.border),
+                            _SettingsRow(
+                              icon: Icons.download_rounded,
+                              title: 'settings_import_title'.tr(),
+                              subtitle: 'settings_import_subtitle'.tr(),
+                              busy: _isImporting,
+                              onTap: _isImporting ? null : _import,
+                            ),
+                          ],
+                        ),
+                        const _AccountNudge(),
+                      ],
+                    ),
+
+                  // ── Application ───────────────────────────────────────────
+                  _Section(
+                    label: 'settings_section_app'.tr(),
+                    children: [
+                      _Card(
+                        children: [
+                          _SettingsRow(
+                            icon: Icons.info_outline_rounded,
+                            title: 'settings_version_title'.tr(),
+                            trailing: Text(
+                              appVersion,
+                              style: AppTypography.overline(c.text2)
+                                  .copyWith(fontSize: 12, letterSpacing: 0),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              onTap: _isImporting ? null : _import,
             ),
-
-            const SizedBox(height: 8),
-            Divider(color: cs.outline.withValues(alpha: 0.2)),
-            const SizedBox(height: 8),
           ],
+        ),
+      ),
+    );
+  }
+}
 
-          // ── Langue ───────────────────────────────────────────────────────────
-          _SectionHeader(label: 'settings_section_language'.tr()),
+// ── Widgets ───────────────────────────────────────────────────────────────────
 
-          _LanguageOption(
-            flag: 'FR',
-            label: 'Français',
-            locale: const Locale('fr'),
-            selected: context.locale.languageCode == 'fr',
-            onTap: () => context.setLocale(const Locale('fr')),
-          ),
-          _LanguageOption(
-            flag: 'EN',
-            label: 'English',
-            locale: const Locale('en'),
-            selected: context.locale.languageCode == 'en',
-            onTap: () => context.setLocale(const Locale('en')),
-          ),
-          _LanguageOption(
-            flag: 'ES',
-            label: 'Español',
-            locale: const Locale('es'),
-            selected: context.locale.languageCode == 'es',
-            onTap: () => context.setLocale(const Locale('es')),
-          ),
+class _RoundBackButton extends StatelessWidget {
+  const _RoundBackButton({required this.onTap});
 
-          const SizedBox(height: 8),
-          Divider(color: cs.outline.withValues(alpha: 0.2)),
-          const SizedBox(height: 8),
+  final VoidCallback onTap;
 
-          // ── À propos ────────────────────────────────────────────────────────
-          _SectionHeader(label: 'settings_section_app'.tr()),
-
-          ListTile(
-            leading: Icon(Icons.info_outline_rounded, color: cs.primary),
-            title: Text('settings_version_title'.tr()),
-            trailing: Text(
-              '1.0.0',
-              style: TextStyle(
-                color: cs.onSurface.withValues(alpha: 0.5),
-                fontSize: 13,
-              ),
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Tooltip(
+      message: MaterialLocalizations.of(context).backButtonTooltip,
+      child: InkResponse(
+        radius: 24,
+        onTap: onTap,
+        child: SizedBox(
+          width: AppSpacing.minTouch,
+          height: AppSpacing.minTouch,
+          child: Center(
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration:
+                  BoxDecoration(color: c.surface2, shape: BoxShape.circle),
+              child: Icon(Icons.arrow_back_rounded,
+                  size: 18, color: c.accentText),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Section : sur-titre mono + contenu espacé de 9 px.
+class _Section extends StatelessWidget {
+  const _Section({required this.label, required this.children});
+
+  final String label;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(label.toUpperCase(), style: AppTypography.overline(c.text3)),
+          for (final child in children) ...[
+            const SizedBox(height: 9),
+            child,
+          ],
         ],
       ),
     );
   }
 }
 
-// ── Widgets utilitaires ────────────────────────────────────────────────────────
+class _Card extends StatelessWidget {
+  const _Card({required this.children});
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
-  final String label;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      child: Text(
-        label.toUpperCase(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.2,
-          color: cs.onSurface.withValues(alpha: 0.45),
-        ),
-      ),
+    final c = AppColors.of(context);
+    return Material(
+      color: c.surface1,
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: children),
     );
   }
 }
 
-class _LanguageOption extends StatelessWidget {
-  const _LanguageOption({
-    required this.flag,
-    required this.label,
-    required this.locale,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String flag;
-  final String label;
-  final Locale locale;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: selected ? cs.primary.withValues(alpha: 0.12) : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: selected ? cs.primary.withValues(alpha: 0.5) : Colors.transparent,
-          width: 1.5,
-        ),
-      ),
-      child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        onTap: onTap,
-        // Code langue (FR / EN / ES) plutôt qu'un drapeau émoji
-        leading: Container(
-          width: 40,
-          height: 28,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected
-                ? cs.primary.withValues(alpha: 0.16)
-                : cs.onSurface.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            flag,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: selected ? cs.primary : cs.onSurface.withValues(alpha: 0.7),
-            ),
-          ),
-        ),
-        title: Text(
-          label,
-          style: TextStyle(
-            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            color: selected ? cs.primary : cs.onSurface,
-          ),
-        ),
-        trailing: selected
-            ? Icon(Icons.check_circle_rounded, color: cs.primary, size: 20)
-            : null,
-      ),
-    );
-  }
-}
-
-class _ThemeOption extends StatelessWidget {
-  const _ThemeOption({
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({
     required this.icon,
     required this.title,
-    required this.subtitle,
-    required this.selected,
-    required this.onTap,
+    this.subtitle,
+    this.trailing,
+    this.busy = false,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
-  final String subtitle;
+  final String? subtitle;
+  final Widget? trailing;
+  final bool busy;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: c.surface2,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: busy
+                  ? Padding(
+                      padding: const EdgeInsets.all(9),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: c.accentText),
+                    )
+                  : Icon(icon, size: 17, color: c.accentText),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: text.titleSmall
+                          ?.copyWith(color: c.text1, fontSize: 12.5)),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(subtitle!,
+                        style: text.bodySmall
+                            ?.copyWith(color: c.text2, fontSize: 10.5)),
+                  ],
+                ],
+              ),
+            ),
+            if (trailing != null)
+              trailing!
+            else if (onTap != null || busy)
+              Icon(Icons.chevron_right_rounded, size: 20, color: c.text3),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Langue : trois boutons côte à côte, le choix actif en dégradé accent.
+class _LanguageButton extends StatelessWidget {
+  const _LanguageButton({
+    required this.code,
+    required this.semanticsLabel,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String code;
+  final String semanticsLabel;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: selected
-            ? cs.primary.withValues(alpha: 0.12)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: selected
-              ? cs.primary.withValues(alpha: 0.5)
-              : Colors.transparent,
-          width: 1.5,
+    final c = AppColors.of(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: semanticsLabel,
+      excludeSemantics: true,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: selected ? c.accentGradient : null,
+            color: selected ? null : c.surface1,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(11),
+            onTap: selected ? null : onTap,
+            child: SizedBox(
+              height: AppSpacing.minTouch,
+              child: Center(
+                child: Text(
+                  code,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontSize: 12,
+                        fontWeight:
+                            selected ? FontWeight.w800 : FontWeight.w700,
+                        color: selected ? Colors.white : c.text2,
+                      ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
-      child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        onTap: onTap,
-        leading: Icon(icon,
-            color: selected
-                ? cs.primary
-                : cs.onSurface.withValues(alpha: 0.5)),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            color: selected ? cs.primary : cs.onSurface,
+    );
+  }
+}
+
+/// Encart invité : se connecter transfère la liste locale sans rien perdre.
+class _AccountNudge extends StatelessWidget {
+  const _AccountNudge();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: isDark
+            ? c.accent.withValues(alpha: 0.12)
+            : const Color(0xFFE9EDFC),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: c.accent.withValues(alpha: 0.26)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('settings_account_title'.tr(),
+              style:
+                  text.titleSmall?.copyWith(color: c.text1, fontSize: 12.5)),
+          const SizedBox(height: 6),
+          Text('settings_account_body'.tr(),
+              style: text.bodySmall?.copyWith(color: c.text2, height: 1.5)),
+          const SizedBox(height: 10),
+          AppButton(
+            label: 'settings_account_cta'.tr(),
+            onPressed: () => context.go(AppRoutes.profile),
           ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 12,
-            color: cs.onSurface.withValues(alpha: 0.5),
-          ),
-        ),
-        trailing: selected
-            ? Icon(Icons.check_circle_rounded, color: cs.primary, size: 20)
-            : null,
+        ],
       ),
     );
   }
