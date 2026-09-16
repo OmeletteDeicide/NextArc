@@ -127,7 +127,7 @@
 - [ ] Pour toi · Explorer & filtres · Recherche · Calendrier · À propos
 - [ ] Versions claires : Stats, Mon titre, Connexion, Ma liste invité
 
-### Lot 6 — Revue 2 de Claude Design ()
+### Lot 6 — Revue 2 de Claude Design (`design/NextArc Revue 2 - Ecrans restants.dc.html`)
 Ordre conseillé par la revue. Remarques de Simon (16/09) : la cloche de rappel
 n'est **pas jaune** mais celle des fiches d'édition (notifications, accent) ;
 **Ko-fi reste dans le Profil** au-dessus d'À propos (pas dans À propos), avec la
@@ -135,7 +135,7 @@ nouvelle couleur de la maquette.
 - [ ] Suppression de compte (bloqueur Play Store) : Paramètres « Zone
       sensible », écran explication supprimé / conservé + export, feuille
       « taper SUPPRIMER », écran en cours (3 étapes réelles), écran de fin
-      (invité / nouveau compte). Cloud Function  (Firestore
+      (invité / nouveau compte). Cloud Function `deleteAccount` (Firestore
       récursif + Storage + Auth). Seul bouton **plein rouge** de l'app :
       Déconnexion / Retirer passent en **contour**.
 - [ ] Paramètres compte connecté : Compte (e-mail + fournisseur, AniList lié /
