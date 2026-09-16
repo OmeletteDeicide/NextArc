@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nextarc/core/domain/paginated_result.dart';
 import 'package:nextarc/features/discover/data/anime_providers.dart';
+import 'package:nextarc/features/onboarding/domain/onboarding_prefs.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 import 'package:nextarc/features/watchlist/domain/watchlist_providers.dart';
 
@@ -53,7 +54,10 @@ final contentPreferenceProvider = Provider<String>((ref) {
   final guestAnimeCount = guestEntries.where((e) => !e.isManga).length;
   final guestMangaCount = guestEntries.where((e) => e.isManga).length;
 
-  final totalAnime = animeCount + guestAnimeCount;
-  final totalManga = mangaCount + guestMangaCount;
-  return totalManga > totalAnime ? 'MANGA' : 'ANIME';
+  // À égalité (liste vide notamment) : réponse donnée à l'onboarding
+  return resolveContentPreference(
+    animeCount: animeCount + guestAnimeCount,
+    mangaCount: mangaCount + guestMangaCount,
+    choice: ref.watch(contentChoiceProvider),
+  );
 });

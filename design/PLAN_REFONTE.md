@@ -106,14 +106,14 @@
 - [x] Cartes de partage (3 cartes, sombres, zone de sécurité 9:16)
 - [x] Moment du palier (carte plein écran au passage de titre → Partager)
 
-### Lot 4 — Comptes
+### Lot 4 — Comptes ✅ (code, à valider sur téléphone)
 - [x] Connexion : Google principal, e-mail secondaire, « Continuer en invité »
 - [x] Liaison AniList seulement une fois connecté (retirer la connexion AniList
       autonome, garder la restauration des sessions existantes)
 - [x] Déconnexion : titre en question, action rouge, message rassurant
 - [x] Mode invité : bandeau discret, états vides avec action,
       « dernière sauvegarde : il y a X j » sur l'export
-- [ ] Onboarding 3 écrans (promesse · anime/manga/les deux · compte), « Passer »
+- [x] Onboarding 3 écrans (promesse · anime/manga/les deux · compte), « Passer »
       dès le 1er écran, pas de demande de notifications
 
 ### Lot 5 — Écrans non dessinés (⏳ en attente des maquettes Claude Design)
@@ -256,3 +256,15 @@
   (`guest_backup.dart`, date écrite après le partage du JSON). L'écran
   Paramètres lui-même reste à restyler (Lot 5, maquette invité claire dispo).
   Analyse OK, 97 tests OK dont `test/guest_backup_test.dart`.
+- 16/09 — Lot 4 (3/3) : onboarding `/onboarding` (`features/onboarding`).
+  3 écrans (01 promesse avec logo + halo · 02 anime / manga / les deux en
+  cartes · 03 compte : Google principal, e-mail, « Continuer en invité »),
+  « Passer » en haut de chaque écran, points + « Suivant », aucune demande de
+  notifications. Déclenché par `MainShell` au 1er lancement, avant le message
+  de récap ; un utilisateur existant (connecté ou liste locale non vide) est
+  marqué « vu » en silence. Préférences en stockage sécurisé, lues dans
+  `main.dart` (`OnboardingPrefs.load` → overrides). La réponse 02 sert
+  d'onglet par défaut quand la liste est à égalité (vide) :
+  `resolveContentPreference`. Pour le revoir : effacer les données de l'app.
+  Analyse OK, 101 tests OK dont `test/onboarding_prefs_test.dart`.
+  **Lot 4 terminé** — reste le Lot 5 (maquettes à venir) et le hors refonte.

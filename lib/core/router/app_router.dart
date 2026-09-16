@@ -8,6 +8,7 @@ import 'package:nextarc/features/auth/presentation/profile_screen.dart';
 import 'package:nextarc/features/detail/presentation/detail_screen.dart';
 import 'package:nextarc/features/discover/presentation/discover_screen.dart';
 import 'package:nextarc/features/search/presentation/search_screen.dart';
+import 'package:nextarc/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:nextarc/features/recommendations/presentation/recommendations_screen.dart';
 import 'package:nextarc/features/settings/presentation/settings_screen.dart';
 import 'package:nextarc/features/browse/presentation/browse_screen.dart';
@@ -79,6 +80,7 @@ class AppRoutes {
   static const String login = '/login';
   static const String profileEdit = '/profile-edit';
   static const String myTitle = '/my-title';
+  static const String onboarding = '/onboarding';
 }
 
 final GoRouter appRouter = GoRouter(
@@ -147,6 +149,13 @@ final GoRouter appRouter = GoRouter(
       path: '/stats',
       pageBuilder: (context, state) =>
           _slideFade(state: state, child: const StatsScreen()),
+    ),
+
+    // Onboarding (premier lancement) — hors shell
+    GoRoute(
+      path: AppRoutes.onboarding,
+      pageBuilder: (context, state) =>
+          _fade(state: state, child: const OnboardingScreen()),
     ),
 
     // Mon titre — hors shell

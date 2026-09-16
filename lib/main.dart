@@ -11,6 +11,7 @@ import 'package:nextarc/core/services/notification_service.dart';
 import 'package:nextarc/core/services/notification_prefs_repository.dart';
 import 'package:nextarc/core/services/episode_checker_task.dart';
 import 'package:nextarc/core/utils/hive_cache.dart';
+import 'package:nextarc/features/onboarding/domain/onboarding_prefs.dart';
 import 'package:nextarc/features/search/domain/search_history_service.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -37,6 +38,7 @@ Future<void> main() async {
   await NotificationPrefsRepository.instance.init();
   await SearchHistoryService.instance.init();
   await NotificationService.instance.init();
+  final onboarding = await OnboardingPrefs.load();
 
   // Planifie la vérification périodique des épisodes (toutes les 6 h).
   // iOS : BGTaskScheduler — la fréquence exacte est à la discrétion d'iOS.
@@ -60,8 +62,12 @@ Future<void> main() async {
       ],
       path: 'assets/translations',
       fallbackLocale: const Locale('en'),
-      child: const ProviderScope(
-        child: NextArcApp(),
+      child: ProviderScope(
+        overrides: [
+          onboardingDoneProvider.overrideWith((_) => onboarding.done),
+          contentChoiceProvider.overrideWith((_) => onboarding.choice),
+        ],
+        child: const NextArcApp(),
       ),
     ),
   );

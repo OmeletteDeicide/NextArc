@@ -7,6 +7,8 @@ import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/features/activity/domain/activity_providers.dart';
 import 'package:nextarc/features/activity/domain/month_activity.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/onboarding/domain/onboarding_prefs.dart';
+import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 import 'package:nextarc/features/stats/domain/stats_model.dart';
 import 'package:nextarc/features/stats/domain/stats_provider.dart';
 import 'package:nextarc/features/stats/domain/title_promotion.dart';
@@ -30,8 +32,37 @@ class _MainShellState extends ConsumerState<MainShell> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _maybeShowRecapPrompt());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Premier lancement : l'onboarding passe avant tout autre message
+      if (await _maybeShowOnboarding()) return;
+      await _maybeShowRecapPrompt();
+    });
+  }
+
+  /// Ouvre l'onboarding pour un nouveau venu. Un utilisateur existant (compte
+  /// connecté ou liste locale remplie, ex. mise à jour de l'app) ne le voit
+  /// jamais : il est marqué comme vu en silence.
+  Future<bool> _maybeShowOnboarding() async {
+    if (ref.read(onboardingDoneProvider)) return false;
+    try {
+      final auth = await ref.read(authProvider.future);
+      final local = await ref.read(guestWatchlistProvider.future);
+      final show = shouldShowOnboarding(
+        done: false,
+        isAuthenticated: auth.isAuthenticated,
+        hasLocalEntries: local.isNotEmpty,
+      );
+      if (!show) {
+        ref.read(onboardingDoneProvider.notifier).state = true;
+        await OnboardingPrefs.saveDone();
+        return false;
+      }
+      if (!mounted) return false;
+      context.push(AppRoutes.onboarding);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Début de mois : propose une seule fois le récap complet du mois précédent,
