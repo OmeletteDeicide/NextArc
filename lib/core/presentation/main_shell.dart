@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/router/app_router.dart';
+import 'package:nextarc/core/services/notification_prefs_repository.dart';
 import 'package:nextarc/features/activity/domain/activity_providers.dart';
 import 'package:nextarc/features/activity/domain/month_activity.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
@@ -72,6 +73,8 @@ class _MainShellState extends ConsumerState<MainShell> {
   Future<void> _maybeShowRecapPrompt() async {
     final now = DateTime.now();
     if (now.day > _recapPromptLastDay) return;
+    // Coupé dans Paramètres → Notifications
+    if (!NotificationPrefsRepository.instance.monthlyRecapEnabled) return;
 
     final month = previousMonthKey(now);
     final shownKey = 'recap_prompt_$month';

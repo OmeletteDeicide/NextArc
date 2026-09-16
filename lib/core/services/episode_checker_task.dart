@@ -35,6 +35,8 @@ class EpisodeCheckerTask {
   }
 
   static Future<void> _checkAll(NotificationPrefsRepository repo) async {
+    // Coupé dans Paramètres → Notifications
+    if (!repo.episodeReleasesEnabled) return;
     final List<NotifEntry> entries = repo.getAllEnabled();
     if (entries.isEmpty) return;
 

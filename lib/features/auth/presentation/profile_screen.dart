@@ -10,6 +10,7 @@ import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/core/widgets/google_logo.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/auth/domain/user_model.dart';
+import 'package:nextarc/features/auth/presentation/anilist_actions.dart';
 import 'package:nextarc/features/stats/domain/stats_provider.dart';
 import 'package:nextarc/features/stats/domain/user_title.dart';
 import 'package:nextarc/features/stats/presentation/title_promotion_card.dart';
@@ -108,7 +109,7 @@ class ProfileScreen extends ConsumerWidget {
                         ? 'profile_anilist_unlink'.tr()
                         : null,
                     onTap: user.hasFirebase
-                        ? () => _confirmUnlinkAnilist(context, ref)
+                        ? () => confirmUnlinkAnilist(context, ref)
                         : null,
                   )
                 else if (user.hasFirebase)
@@ -366,25 +367,6 @@ class ProfileScreen extends ConsumerWidget {
                 : '$success / ${newEntries.length} anime(s) migrés (${newEntries.length - success} erreurs)',
           ),
         ),
-      );
-    }
-  }
-
-  // ── Délier AniList ────────────────────────────────────────────────────────
-
-  Future<void> _confirmUnlinkAnilist(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showConfirmDialog(
-      context,
-      title: 'anilist_unlink_title'.tr(),
-      message: 'anilist_unlink_body'.tr(),
-      confirmLabel: 'profile_anilist_unlink'.tr(),
-      destructive: true,
-    );
-    if (!confirmed) return;
-    await ref.read(authProvider.notifier).unlinkAnilist();
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('anilist_unlink_done'.tr())),
       );
     }
   }

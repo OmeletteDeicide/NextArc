@@ -4,7 +4,8 @@ import 'package:nextarc/core/theme/app_tokens.dart';
 import 'package:nextarc/core/widgets/ds/app_button.dart';
 
 /// Boîte de confirmation du design system : titre posé en question, message
-/// qui dit la conséquence, action destructive en rouge. Renvoie true si
+/// qui dit la conséquence, action destructive en rouge (contour : le plein
+/// rouge est réservé à la suppression de compte). Renvoie true si
 /// l'utilisateur confirme.
 Future<bool> showConfirmDialog(
   BuildContext context, {
@@ -88,7 +89,7 @@ class _ConfirmDialog extends StatelessWidget {
                   child: AppButton(
                     label: confirmLabel,
                     variant: destructive
-                        ? AppButtonVariant.danger
+                        ? AppButtonVariant.destructive
                         : AppButtonVariant.primary,
                     expand: true,
                     onPressed: () => Navigator.of(context).pop(true),

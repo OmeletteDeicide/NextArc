@@ -9,6 +9,9 @@ class NotificationPrefsRepository {
   static const _titlesBoxName = 'notif_titles';
   static const _countsBoxName = 'notif_counts';
   static const _isMangaBoxName = 'notif_is_manga';
+  static const _settingsBoxName = 'notif_settings';
+  static const _episodeReleasesKey = 'episode_releases';
+  static const _monthlyRecapKey = 'monthly_recap';
 
   static NotificationPrefsRepository? _instance;
   static NotificationPrefsRepository get instance =>
@@ -19,13 +22,31 @@ class NotificationPrefsRepository {
   late Box<String> _titlesBox;
   late Box<int> _countsBox;
   late Box<bool> _isMangaBox;
+  late Box<bool> _settingsBox;
 
   Future<void> init() async {
     _prefsBox = await Hive.openBox<bool>(_boxName);
     _titlesBox = await Hive.openBox<String>(_titlesBoxName);
     _countsBox = await Hive.openBox<int>(_countsBoxName);
     _isMangaBox = await Hive.openBox<bool>(_isMangaBoxName);
+    _settingsBox = await Hive.openBox<bool>(_settingsBoxName);
   }
+
+  // ── Réglages généraux (Paramètres → Notifications) ────────────────────────
+
+  /// Notifications de sortie d'épisodes / chapitres, tous médias confondus.
+  /// Désactivé : les rappels par média sont conservés mais rien n'est envoyé.
+  bool get episodeReleasesEnabled =>
+      _settingsBox.get(_episodeReleasesKey) ?? true;
+
+  Future<void> setEpisodeReleasesEnabled(bool enabled) =>
+      _settingsBox.put(_episodeReleasesKey, enabled);
+
+  /// Proposition du récap du mois précédent en début de mois.
+  bool get monthlyRecapEnabled => _settingsBox.get(_monthlyRecapKey) ?? true;
+
+  Future<void> setMonthlyRecapEnabled(bool enabled) =>
+      _settingsBox.put(_monthlyRecapKey, enabled);
 
   bool isEnabled(int mediaId) => _prefsBox.get(mediaId.toString()) ?? false;
 
@@ -85,6 +106,7 @@ class NotificationPrefsRepository {
     repo._titlesBox = await Hive.openBox<String>(_titlesBoxName);
     repo._countsBox = await Hive.openBox<int>(_countsBoxName);
     repo._isMangaBox = await Hive.openBox<bool>(_isMangaBoxName);
+    repo._settingsBox = await Hive.openBox<bool>(_settingsBoxName);
     return repo;
   }
 }

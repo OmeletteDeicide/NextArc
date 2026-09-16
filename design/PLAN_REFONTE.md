@@ -132,13 +132,13 @@ Ordre conseillé par la revue. Remarques de Simon (16/09) : la cloche de rappel
 n'est **pas jaune** mais celle des fiches d'édition (notifications, accent) ;
 **Ko-fi reste dans le Profil** au-dessus d'À propos (pas dans À propos), avec la
 nouvelle couleur de la maquette.
-- [ ] Suppression de compte (bloqueur Play Store) : Paramètres « Zone
+- [x] Suppression de compte (bloqueur Play Store) : Paramètres « Zone
       sensible », écran explication supprimé / conservé + export, feuille
       « taper SUPPRIMER », écran en cours (3 étapes réelles), écran de fin
       (invité / nouveau compte). Cloud Function `deleteAccount` (Firestore
       récursif + Storage + Auth). Seul bouton **plein rouge** de l'app :
       Déconnexion / Retirer passent en **contour**.
-- [ ] Paramètres compte connecté : Compte (e-mail + fournisseur, AniList lié /
+- [x] Paramètres compte connecté : Compte (e-mail + fournisseur, AniList lié /
       Délier), Notifications (sorties d'épisodes, récap du mois), Application
       (À propos + version)
 - [ ] Explorer : grille 2 colonnes, barre d'état (N résultats · N filtres ·
@@ -337,3 +337,16 @@ nouvelle couleur de la maquette.
   (`design/PROMPT_CLAUDE_DESIGN_2.md`) — Explorer + filtres, Recherche, Pour
   toi, Calendrier par semaine, À propos, versions claires, bannière de profil,
   suppression de compte, Paramètres connecté. **Attendre ses maquettes.**
+- 16/09 — Lot 6 (1) : suppression de compte + Paramètres connecté.
+  Cloud Function `deleteAccount` (onRequest, jeton Firebase vérifié,
+  étapes `data` = Firestore récursif et `account` = Storage puis Auth) —
+  **à déployer** : `firebase deploy --only functions:deleteAccount`. Écran
+  `/delete-account` : explication supprimé / conservé (AniList seulement si
+  lié) + export JSON, feuille « taper SUPPRIMER » (DELETE / ELIMINAR), 3 étapes
+  réelles (liaison AniList locale, données, compte), reprise après échec,
+  écran de fin invité / nouveau compte. Paramètres connecté : Compte (e-mail
+  + Google/e-mail, AniList lié → Délier ou Lier), Notifications (sorties
+  d'épisodes, récap du mois — réglages globaux Hive, respectés par la tâche
+  de fond et le message de début de mois), Application (À propos + version),
+  Zone sensible. Confirmations destructives en contour ; plein rouge réservé
+  à la suppression. Analyse OK, 117 tests OK.

@@ -2,16 +2,19 @@ import 'dart:convert';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/constants/app_version.dart';
 import 'package:nextarc/core/providers/theme_provider.dart';
 import 'package:nextarc/core/router/app_router.dart';
+import 'package:nextarc/core/services/notification_prefs_repository.dart';
 import 'package:nextarc/core/theme/app_tokens.dart';
 import 'package:nextarc/core/theme/app_typography.dart';
 import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/auth/presentation/anilist_actions.dart';
 import 'package:nextarc/features/watchlist/domain/guest_backup.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 import 'package:share_plus/share_plus.dart';
@@ -87,6 +90,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  /// Moyen de connexion du compte Firebase affiché sous l'e-mail.
+  String _signInProvider() {
+    final providers = fb.FirebaseAuth.instance.currentUser?.providerData
+            .map((p) => p.providerId) ??
+        const <String>[];
+    return providers.contains('google.com')
+        ? 'settings_connected_google'
+        : 'settings_connected_email';
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
@@ -99,6 +112,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             .watch(authProvider)
             .whenOrNull(data: (a) => !a.isAuthenticated) ??
         true;
+    final user = ref.watch(authProvider).valueOrNull?.user;
 
     final themeHint = switch (currentMode) {
       ThemeMode.system => 'settings_theme_system_subtitle',
@@ -227,6 +241,89 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ],
                     ),
 
+                  // ── Compte + notifications (connecté) ─────────────────────
+                  if (!isGuest && user != null) ...[
+                    _Section(
+                      label: 'settings_section_account'.tr(),
+                      children: [
+                        _Card(
+                          children: [
+                            if (user.hasFirebase) ...[
+                              _SettingsRow(
+                                icon: Icons.mail_outline_rounded,
+                                title: user.email ?? user.displayName,
+                                subtitle: _signInProvider().tr(),
+                              ),
+                              Divider(height: 1, color: c.border),
+                            ],
+                            if (user.hasAnilist)
+                              _SettingsRow(
+                                icon: Icons.link_rounded,
+                                title: 'AniList',
+                                subtitle: 'settings_anilist_linked'.tr(
+                                    namedArgs: {
+                                      'name': user.anilistName ?? user.name
+                                    }),
+                                subtitleColor: c.statusCurrent,
+                                // AniList seul : c'est la déconnexion qui
+                                // s'applique, pas le déliage
+                                trailing: user.hasFirebase
+                                    ? Text(
+                                        'profile_anilist_unlink'.tr(),
+                                        style: text.labelMedium?.copyWith(
+                                            color: c.statusDroppedText),
+                                      )
+                                    : null,
+                                onTap: user.hasFirebase
+                                    ? () => confirmUnlinkAnilist(context, ref)
+                                    : null,
+                              )
+                            else
+                              _SettingsRow(
+                                icon: Icons.link_rounded,
+                                title: 'settings_anilist_link'.tr(),
+                                subtitle: 'settings_anilist_link_sub'.tr(),
+                                onTap: () =>
+                                    ref.read(authProvider.notifier).login(),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    _Section(
+                      label: 'settings_section_notifications'.tr(),
+                      children: [
+                        _Card(
+                          children: [
+                            _SwitchRow(
+                              title: 'settings_notif_episodes'.tr(),
+                              subtitle: 'settings_notif_episodes_sub'.tr(),
+                              value: NotificationPrefsRepository
+                                  .instance.episodeReleasesEnabled,
+                              onChanged: (v) async {
+                                await NotificationPrefsRepository.instance
+                                    .setEpisodeReleasesEnabled(v);
+                                if (mounted) setState(() {});
+                              },
+                            ),
+                            Divider(height: 1, color: c.border),
+                            _SwitchRow(
+                              title: 'settings_notif_recap'.tr(),
+                              subtitle: 'settings_notif_recap_sub'.tr(),
+                              value: NotificationPrefsRepository
+                                  .instance.monthlyRecapEnabled,
+                              onChanged: (v) async {
+                                await NotificationPrefsRepository.instance
+                                    .setMonthlyRecapEnabled(v);
+                                if (mounted) setState(() {});
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+
                   // ── Application ───────────────────────────────────────────
                   _Section(
                     label: 'settings_section_app'.tr(),
@@ -235,7 +332,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         children: [
                           _SettingsRow(
                             icon: Icons.info_outline_rounded,
-                            title: 'settings_version_title'.tr(),
+                            title: 'profile_about_title'.tr(),
+                            onTap: () => context.push(AppRoutes.about),
                             trailing: Text(
                               appVersion,
                               style: AppTypography.overline(c.text2)
@@ -246,6 +344,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                     ],
                   ),
+
+                  // ── Zone sensible (compte NextArc) ────────────────────────
+                  if (!isGuest && user?.hasFirebase == true)
+                    _Section(
+                      label: 'settings_section_danger'.tr(),
+                      labelColor: c.statusDroppedText,
+                      children: [
+                        Material(
+                          color: c.favourite.withValues(alpha: 0.08),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.card),
+                            side: BorderSide(
+                                color: c.favourite.withValues(alpha: 0.3)),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: _SettingsRow(
+                            icon: Icons.delete_forever_outlined,
+                            iconColor: c.statusDroppedText,
+                            iconBackground:
+                                c.favourite.withValues(alpha: 0.16),
+                            title: 'settings_delete_account'.tr(),
+                            titleColor: c.statusDroppedText,
+                            subtitle: 'settings_delete_account_sub'.tr(),
+                            onTap: () =>
+                                context.push(AppRoutes.deleteAccount),
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -292,10 +420,15 @@ class _RoundBackButton extends StatelessWidget {
 
 /// Section : sur-titre mono + contenu espacé de 9 px.
 class _Section extends StatelessWidget {
-  const _Section({required this.label, required this.children});
+  const _Section({
+    required this.label,
+    required this.children,
+    this.labelColor,
+  });
 
   final String label;
   final List<Widget> children;
+  final Color? labelColor;
 
   @override
   Widget build(BuildContext context) {
@@ -305,7 +438,8 @@ class _Section extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(label.toUpperCase(), style: AppTypography.overline(c.text3)),
+          Text(label.toUpperCase(),
+              style: AppTypography.overline(labelColor ?? c.text3)),
           for (final child in children) ...[
             const SizedBox(height: 9),
             child,
@@ -341,11 +475,19 @@ class _SettingsRow extends StatelessWidget {
     this.trailing,
     this.busy = false,
     this.onTap,
+    this.subtitleColor,
+    this.titleColor,
+    this.iconColor,
+    this.iconBackground,
   });
 
   final IconData icon;
   final String title;
   final String? subtitle;
+  final Color? subtitleColor;
+  final Color? titleColor;
+  final Color? iconColor;
+  final Color? iconBackground;
   final Widget? trailing;
   final bool busy;
   final VoidCallback? onTap;
@@ -364,7 +506,7 @@ class _SettingsRow extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: c.surface2,
+                color: iconBackground ?? c.surface2,
                 borderRadius: BorderRadius.circular(9),
               ),
               child: busy
@@ -373,7 +515,7 @@ class _SettingsRow extends StatelessWidget {
                       child: CircularProgressIndicator(
                           strokeWidth: 2, color: c.accentText),
                     )
-                  : Icon(icon, size: 17, color: c.accentText),
+                  : Icon(icon, size: 17, color: iconColor ?? c.accentText),
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
@@ -381,13 +523,15 @@ class _SettingsRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(title,
-                      style: text.titleSmall
-                          ?.copyWith(color: c.text1, fontSize: 12.5)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.titleSmall?.copyWith(
+                          color: titleColor ?? c.text1, fontSize: 12.5)),
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
                     Text(subtitle!,
-                        style: text.bodySmall
-                            ?.copyWith(color: c.text2, fontSize: 10.5)),
+                        style: text.bodySmall?.copyWith(
+                            color: subtitleColor ?? c.text2, fontSize: 10.5)),
                   ],
                 ],
               ),
@@ -396,6 +540,52 @@ class _SettingsRow extends StatelessWidget {
               trailing!
             else if (onTap != null || busy)
               Icon(Icons.chevron_right_rounded, size: 20, color: c.text3),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Ligne avec interrupteur (Notifications).
+class _SwitchRow extends StatelessWidget {
+  const _SwitchRow({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+    return InkWell(
+      onTap: () => onChanged(!value),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: text.titleSmall
+                          ?.copyWith(color: c.text1, fontSize: 12.5)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: text.bodySmall
+                          ?.copyWith(color: c.text2, fontSize: 10.5)),
+                ],
+              ),
+            ),
+            Switch(value: value, onChanged: onChanged),
           ],
         ),
       ),

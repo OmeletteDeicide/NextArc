@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/presentation/main_shell.dart';
 import 'package:nextarc/features/about/presentation/about_screen.dart';
+import 'package:nextarc/features/account/presentation/delete_account_screen.dart';
 import 'package:nextarc/features/auth/presentation/login_screen.dart';
 import 'package:nextarc/features/auth/presentation/profile_edit_screen.dart';
 import 'package:nextarc/features/auth/presentation/profile_screen.dart';
@@ -81,6 +82,7 @@ class AppRoutes {
   static const String profileEdit = '/profile-edit';
   static const String myTitle = '/my-title';
   static const String onboarding = '/onboarding';
+  static const String deleteAccount = '/delete-account';
 }
 
 final GoRouter appRouter = GoRouter(
@@ -149,6 +151,13 @@ final GoRouter appRouter = GoRouter(
       path: '/stats',
       pageBuilder: (context, state) =>
           _slideFade(state: state, child: const StatsScreen()),
+    ),
+
+    // Suppression de compte — hors shell
+    GoRoute(
+      path: AppRoutes.deleteAccount,
+      pageBuilder: (context, state) =>
+          _slideFade(state: state, child: const DeleteAccountScreen()),
     ),
 
     // Onboarding (premier lancement) — hors shell
