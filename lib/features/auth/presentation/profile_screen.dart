@@ -134,122 +134,115 @@ class ProfileScreen extends ConsumerWidget {
 
   // ── Écran non connecté ────────────────────────────────────────────────────
 
+  /// Connexion : Google en principal, e-mail en secondaire, invité en lien.
+  /// AniList n'est plus proposé ici : il se lie depuis un compte NextArc
+  /// (les sessions « AniList seul » existantes restent restaurées).
   Widget _buildLogin(BuildContext context, WidgetRef ref, AuthState auth) {
-    final cs = Theme.of(context).colorScheme;
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
     final isLoading = ref.watch(authProvider).isLoading;
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    final hintStyle = text.bodySmall
+        ?.copyWith(color: c.text3, fontSize: 10.5, height: 1.5);
 
     return Scaffold(
-      appBar: AppBar(title: Image.asset('assets/images/logo.png', height: 40)),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        children: [
-          const SizedBox(height: 48),
-          Icon(Icons.account_circle_outlined,
-              size: 80, color: cs.onSurface.withValues(alpha: 0.24)),
-          const SizedBox(height: 24),
-          Text(
-            'profile_login_title'.tr(),
-            style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: cs.onSurface),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'profile_login_description'.tr(),
-            style: TextStyle(
-                color: cs.onSurface.withValues(alpha: 0.54), height: 1.5),
-            textAlign: TextAlign.center,
-          ),
-
-          if (auth.error != null) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: cs.errorContainer,
-                borderRadius: BorderRadius.circular(8),
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: EdgeInsets.fromLTRB(
+              22, AppSpacing.md, 22, AppSpacing.lg + bottomInset),
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset('assets/images/logo.png',
+                    width: 44, height: 44, fit: BoxFit.cover),
               ),
-              child: Text(
-                auth.error!.tr(),
-                style: TextStyle(color: cs.onErrorContainer, fontSize: 13),
-                textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 26),
+            Text(
+              'auth_promise_title'.tr(),
+              style: text.headlineMedium?.copyWith(
+                fontSize: 27,
+                height: 1.12,
+                letterSpacing: -1,
+                color: c.text1,
               ),
+            ),
+            const SizedBox(height: 18),
+            for (final key in const [
+              'auth_benefit_list',
+              'auth_benefit_recos',
+              'auth_benefit_stats',
+            ])
+              _Benefit(label: key.tr()),
+            if (auth.error != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: c.favourite.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppRadius.cover),
+                  border:
+                      Border.all(color: c.favourite.withValues(alpha: 0.35)),
+                ),
+                child: Text(
+                  auth.error!.tr(),
+                  textAlign: TextAlign.center,
+                  style: text.bodyMedium
+                      ?.copyWith(color: c.statusDroppedText),
+                ),
+              ),
+            ],
+            const SizedBox(height: 26),
+            AppButton(
+              label: 'auth_continue_google'.tr(),
+              leading: const _GoogleMark(),
+              expand: true,
+              loading: isLoading,
+              onPressed: () =>
+                  ref.read(authProvider.notifier).loginWithGoogle(),
+            ),
+            const SizedBox(height: 10),
+            AppButton(
+              label: 'auth_continue_email'.tr(),
+              icon: Icons.mail_outline_rounded,
+              variant: AppButtonVariant.secondary,
+              expand: true,
+              onPressed:
+                  isLoading ? null : () => context.push(AppRoutes.login),
+            ),
+            const SizedBox(height: 14),
+            Center(
+              child: TextButton(
+                style: TextButton.styleFrom(foregroundColor: c.accentText),
+                onPressed: () => context.go(AppRoutes.discover),
+                child: Text('auth_continue_guest'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+            Text('auth_guest_hint'.tr(),
+                textAlign: TextAlign.center, style: hintStyle),
+            const SizedBox(height: 6),
+            Text('auth_anilist_later'.tr(),
+                textAlign: TextAlign.center, style: hintStyle),
+            const SizedBox(height: 28),
+            _MenuRow(
+              icon: Icons.settings_outlined,
+              title: 'profile_settings_title'.tr(),
+              subtitle: 'profile_settings_login_summary'.tr(),
+              onTap: () => context.push(AppRoutes.settings),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            _MenuRow(
+              icon: Icons.info_outline_rounded,
+              title: 'profile_about_title'.tr(),
+              subtitle: 'profile_about_subtitle'.tr(),
+              onTap: () => context.push(AppRoutes.about),
             ),
           ],
-
-          const SizedBox(height: 32),
-
-          // ── Google ────────────────────────────────────────────────────
-          _SocialButton(
-            label: 'auth_continue_google'.tr(),
-            icon: _GoogleIcon(),
-            loading: isLoading,
-            onPressed: () => ref.read(authProvider.notifier).loginWithGoogle(),
-          ),
-
-          const SizedBox(height: 12),
-
-          // ── Email ─────────────────────────────────────────────────────
-          OutlinedButton.icon(
-            icon: const Icon(Icons.email_outlined),
-            label: Text('auth_continue_email'.tr()),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 48),
-            ),
-            onPressed: isLoading ? null : () => context.push(AppRoutes.login),
-          ),
-
-          const SizedBox(height: 24),
-
-          // ── Séparateur ────────────────────────────────────────────────
-          Row(children: [
-            const Expanded(child: Divider()),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Text(
-                'auth_or'.tr(),
-                style: TextStyle(
-                    color: cs.onSurface.withValues(alpha: 0.4), fontSize: 13),
-              ),
-            ),
-            const Expanded(child: Divider()),
-          ]),
-
-          const SizedBox(height: 16),
-
-          // ── AniList (secondaire) ──────────────────────────────────────
-          TextButton.icon(
-            icon: const Icon(Icons.link_rounded, size: 18),
-            label: Text('profile_login_button'.tr()),
-            style: TextButton.styleFrom(
-              minimumSize: const Size(double.infinity, 44),
-            ),
-            onPressed: isLoading
-                ? null
-                : () => ref.read(authProvider.notifier).login(),
-          ),
-
-          const SizedBox(height: 40),
-
-          _MenuRow(
-            icon: Icons.settings_outlined,
-            title: 'profile_settings_title'.tr(),
-            subtitle: 'profile_settings_summary'.tr(),
-            onTap: () => context.push(AppRoutes.settings),
-          ),
-          const SizedBox(height: 8),
-          const _SupportRow(),
-          const SizedBox(height: 8),
-          _MenuRow(
-            icon: Icons.info_outline_rounded,
-            title: 'profile_about_title'.tr(),
-            subtitle: 'profile_about_subtitle'.tr(),
-            onTap: () => context.push(AppRoutes.about),
-          ),
-          const SizedBox(height: 24),
-        ],
+        ),
       ),
     );
   }
@@ -370,27 +363,85 @@ class ProfileScreen extends ConsumerWidget {
   // ── Confirmation logout ───────────────────────────────────────────────────
 
   Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('profile_logout_dialog_title'.tr()),
-        content: Text('profile_logout_dialog_content'.tr()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text('dialog_cancel'.tr()),
+    final user = ref.read(authProvider).valueOrNull?.user;
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'logout_title'.tr(),
+      // AniList seul : la liste vit sur AniList ; sinon sur le compte NextArc
+      message: user?.usesAnilistList == true
+          ? 'logout_body_anilist'.tr()
+          : 'logout_body_nextarc'.tr(),
+      confirmLabel: 'dialog_confirm_logout'.tr(),
+      destructive: true,
+    );
+    if (confirmed) await ref.read(authProvider.notifier).logout();
+  }
+}
+
+// ── Écran de connexion : bénéfice et logo Google ──────────────────────────────
+
+class _Benefit extends StatelessWidget {
+  const _Benefit({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 11),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: c.accent.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.check_rounded, size: 12, color: c.accentText),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text('dialog_confirm_logout'.tr()),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: c.text2, fontSize: 12.5, height: 1.45),
+            ),
           ),
         ],
       ),
     );
+  }
+}
 
-    if (confirmed == true) {
-      await ref.read(authProvider.notifier).logout();
-    }
+/// « G » de Google, blanc sur le bouton principal.
+class _GoogleMark extends StatelessWidget {
+  const _GoogleMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: const Text(
+        'G',
+        style: TextStyle(
+          fontSize: 12,
+          height: 1,
+          fontWeight: FontWeight.w800,
+          color: Color(0xFF4285F4),
+        ),
+      ),
+    );
   }
 }
 
@@ -893,67 +944,6 @@ class _SupportRow extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ── Bouton social générique ───────────────────────────────────────────────────
-
-class _SocialButton extends StatelessWidget {
-  const _SocialButton({
-    required this.label,
-    required this.icon,
-    required this.onPressed,
-    this.loading = false,
-  });
-
-  final String label;
-  final Widget icon;
-  final VoidCallback? onPressed;
-  final bool loading;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: loading ? null : onPressed,
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size(double.infinity, 48),
-      ),
-      child: loading
-          ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                icon,
-                const SizedBox(width: 10),
-                Text(label),
-              ],
-            ),
-    );
-  }
-}
-
-class _GoogleIcon extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    // Icône Google SVG simplifiée en Container coloré
-    return Container(
-      width: 20,
-      height: 20,
-      decoration: const BoxDecoration(shape: BoxShape.circle),
-      child: const Text(
-        'G',
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF4285F4),
-        ),
-        textAlign: TextAlign.center,
       ),
     );
   }

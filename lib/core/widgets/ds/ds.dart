@@ -2,6 +2,7 @@
 library;
 
 export 'app_button.dart';
+export 'confirm_dialog.dart';
 export 'gradient_progress_bar.dart';
 export 'icon_tab.dart';
 export 'media_card.dart';

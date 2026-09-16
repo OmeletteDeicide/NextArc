@@ -53,31 +53,14 @@ void showEditSheetSnackBar(BuildContext context, String message,
 }
 
 /// Dialogue de confirmation avant de retirer un média.
-Future<bool> confirmRemoveFromList(BuildContext context, String content) async {
-  final c = AppColors.of(context);
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: Text('sheet_delete_dialog_title'.tr()),
-      content: Text(content),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: Text('dialog_cancel'.tr()),
-        ),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: c.favourite,
-            foregroundColor: Colors.white,
-          ),
-          onPressed: () => Navigator.pop(ctx, true),
-          child: Text('dialog_confirm_delete'.tr()),
-        ),
-      ],
-    ),
-  );
-  return confirmed ?? false;
-}
+Future<bool> confirmRemoveFromList(BuildContext context, String content) =>
+    showConfirmDialog(
+      context,
+      title: 'sheet_delete_dialog_title'.tr(),
+      message: content,
+      confirmLabel: 'dialog_confirm_delete'.tr(),
+      destructive: true,
+    );
 
 // ── Cadre ─────────────────────────────────────────────────────────────────────
 

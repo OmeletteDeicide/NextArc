@@ -8,8 +8,11 @@ enum AppButtonVariant {
   /// Fond surface/2.
   secondary,
 
-  /// Contour rouge (Retirer, Déconnexion…).
+  /// Contour rouge (Retirer…).
   destructive,
+
+  /// Plein rouge — confirmation d'une action destructive (Déconnexion…).
+  danger,
 }
 
 /// Bouton du design system (hauteur ≥ 44, rayon 14).
@@ -19,6 +22,7 @@ class AppButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.icon,
+    this.leading,
     this.variant = AppButtonVariant.primary,
     this.loading = false,
     this.expand = false,
@@ -27,6 +31,9 @@ class AppButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
+
+  /// Élément libre avant le libellé (logo…), prioritaire sur [icon].
+  final Widget? leading;
   final AppButtonVariant variant;
 
   /// Affiche un indicateur et désactive le bouton.
@@ -40,6 +47,7 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final textStyle = Theme.of(context).textTheme.labelLarge;
 
     final (foreground, decoration) = switch (variant) {
@@ -64,8 +72,16 @@ class AppButton extends StatelessWidget {
             border: Border.all(color: c.favourite.withValues(alpha: 0.45)),
           ),
         ),
+      AppButtonVariant.danger => (
+          isDark ? const Color(0xFF2A0710) : Colors.white,
+          BoxDecoration(
+            color: c.favourite,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+          ),
+        ),
     };
 
+    final hasLeading = loading || leading != null || icon != null;
     final content = Row(
       mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -77,9 +93,11 @@ class AppButton extends StatelessWidget {
             child: CircularProgressIndicator(
                 strokeWidth: 2, color: foreground),
           )
+        else if (leading != null)
+          leading!
         else if (icon != null)
           Icon(icon, size: 18, color: foreground),
-        if (loading || icon != null) const SizedBox(width: AppSpacing.xs),
+        if (hasLeading) const SizedBox(width: AppSpacing.xs),
         Flexible(
           child: Text(
             label,

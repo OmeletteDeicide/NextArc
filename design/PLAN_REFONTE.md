@@ -107,10 +107,10 @@
 - [x] Moment du palier (carte plein écran au passage de titre → Partager)
 
 ### Lot 4 — Comptes
-- [ ] Connexion : Google principal, e-mail secondaire, « Continuer en invité »
-- [ ] Liaison AniList seulement une fois connecté (retirer la connexion AniList
+- [x] Connexion : Google principal, e-mail secondaire, « Continuer en invité »
+- [x] Liaison AniList seulement une fois connecté (retirer la connexion AniList
       autonome, garder la restauration des sessions existantes)
-- [ ] Déconnexion : titre en question, action rouge, message rassurant
+- [x] Déconnexion : titre en question, action rouge, message rassurant
 - [ ] Mode invité : bandeau discret, états vides avec action,
       « dernière sauvegarde : il y a X j » sur l'export
 - [ ] Onboarding 3 écrans (promesse · anime/manga/les deux · compte), « Passer »
@@ -128,7 +128,7 @@
       `anilistToken` = liaison AniList). Conseillé : alerte de budget à 1 €.
 - [ ] Suppression de compte (obligatoire Play Store) — Cloud Function possible
       maintenant que Blaze est actif
-- [ ] Publier `firestore.rules` (règle `activity` ajoutée)
+- [x] Publier `firestore.rules` (règle `activity` ajoutée) — fait, Stats OK le 16/09
 - [ ] Version incohérente : Paramètres « 1.0.0 » vs À propos « 1.2.0 »
 - [ ] ASO + captures Play Store (après la refonte)
 
@@ -236,3 +236,14 @@
   Mon titre, cartes de partage, moment du palier) : `zigzag_background.dart`,
   `test/zigzag_painter_test.dart` et le token `AppColors.zigzag` supprimés.
   Dégradés et halos gardés. Analyse OK, 93 tests OK. Prochain : Lot 4.
+- 16/09 — Lot 4 (1/3) : écran de connexion (Profil non connecté) refait :
+  logo, « Retrouve ta liste, où que tu sois. », 3 bénéfices, **Google en
+  bouton principal**, e-mail en secondaire, « Continuer en invité » + rappel
+  que la liste reste sur l'appareil, mention « compte AniList ? à lier une fois
+  connecté », Paramètres / À propos. Bouton de connexion AniList autonome
+  retiré (restauration des sessions AniList existantes inchangée). Écran
+  e-mail restylé (retour rond, titre, champs du thème, `AppButton`, erreur en
+  rouge discret, autofill). Nouveau `showConfirmDialog` (ds) : « Se
+  déconnecter ? », message selon le compte (NextArc / AniList seul), action
+  en rouge plein (`AppButtonVariant.danger`) ; aussi utilisé pour « Retirer de
+  la liste ». Analyse OK, 93 tests OK.

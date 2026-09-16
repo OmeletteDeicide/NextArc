@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nextarc/core/theme/app_tokens.dart';
+import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 
 /// Écran de connexion / inscription par email + mot de passe.
@@ -52,7 +54,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (!mounted) return;
 
-    final authState = ref.read(authProvider).value;
+    final authState = ref.read(authProvider).valueOrNull;
     if (authState?.isAuthenticated == true) {
       Navigator.of(context).pop();
     } else {
@@ -66,140 +68,220 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_isSignUp ? 'auth_create_account'.tr() : 'auth_sign_in'.tr()),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 16),
-
-              // ── Nom (inscription uniquement) ───────────────────────────
-              if (_isSignUp) ...[
-                TextFormField(
-                  controller: _nameCtrl,
-                  textInputAction: TextInputAction.next,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    labelText: 'auth_field_name'.tr(),
-                    prefixIcon: const Icon(Icons.person_outline),
-                    border: const OutlineInputBorder(),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screen - 4, AppSpacing.xs, AppSpacing.screen, 0),
+              child: Row(
+                children: [
+                  Tooltip(
+                    message:
+                        MaterialLocalizations.of(context).backButtonTooltip,
+                    child: InkResponse(
+                      radius: 24,
+                      onTap: () => Navigator.of(context).maybePop(),
+                      child: SizedBox(
+                        width: AppSpacing.minTouch,
+                        height: AppSpacing.minTouch,
+                        child: Center(
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                                color: c.surface2, shape: BoxShape.circle),
+                            child: Icon(Icons.arrow_back_rounded,
+                                size: 18, color: c.text2),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'auth_field_name_required'.tr()
-                      : null,
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // ── Email ──────────────────────────────────────────────────
-              TextFormField(
-                controller: _emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-                autocorrect: false,
-                decoration: InputDecoration(
-                  labelText: 'auth_field_email'.tr(),
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  border: const OutlineInputBorder(),
-                ),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return 'auth_field_email_required'.tr();
-                  }
-                  if (!v.contains('@')) return 'auth_error_invalid_email'.tr();
-                  return null;
-                },
+                ],
               ),
-              const SizedBox(height: 16),
-
-              // ── Mot de passe ───────────────────────────────────────────
-              TextFormField(
-                controller: _passwordCtrl,
-                obscureText: _obscurePassword,
-                textInputAction: TextInputAction.done,
-                onFieldSubmitted: (_) => _submit(),
-                decoration: InputDecoration(
-                  labelText: 'auth_field_password'.tr(),
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  border: const OutlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscurePassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                  ),
-                ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) {
-                    return 'auth_field_password_required'.tr();
-                  }
-                  if (_isSignUp && v.length < 6) {
-                    return 'auth_error_weak_password'.tr();
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // ── Erreur ─────────────────────────────────────────────────
-              if (_errorMessage != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: cs.errorContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    _errorMessage!,
-                    style: TextStyle(color: cs.onErrorContainer, fontSize: 13),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-
-              // ── Bouton principal ───────────────────────────────────────
-              FilledButton(
-                onPressed: _loading ? null : _submit,
-                child: _loading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(
+                    22, AppSpacing.md, 22, AppSpacing.lg + bottomInset),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
                         _isSignUp
                             ? 'auth_create_account'.tr()
                             : 'auth_sign_in'.tr(),
+                        style: text.headlineMedium?.copyWith(color: c.text1),
                       ),
-              ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _isSignUp
+                            ? 'auth_email_signup_hint'.tr()
+                            : 'auth_email_signin_hint'.tr(),
+                        style: text.bodyMedium?.copyWith(color: c.text2),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
 
-              const SizedBox(height: 16),
+                      // ── Nom (inscription uniquement) ─────────────────
+                      if (_isSignUp) ...[
+                        TextFormField(
+                          controller: _nameCtrl,
+                          textInputAction: TextInputAction.next,
+                          textCapitalization: TextCapitalization.words,
+                          autofillHints: const [AutofillHints.nickname],
+                          decoration: InputDecoration(
+                            labelText: 'auth_field_name'.tr(),
+                            prefixIcon: const Icon(Icons.person_outline),
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty)
+                              ? 'auth_field_name_required'.tr()
+                              : null,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                      ],
 
-              // ── Toggle inscription / connexion ─────────────────────────
-              TextButton(
-                onPressed: () => setState(() {
-                  _isSignUp = !_isSignUp;
-                  _errorMessage = null;
-                }),
-                child: Text(
-                  _isSignUp
-                      ? 'auth_already_have_account'.tr()
-                      : 'auth_no_account'.tr(),
+                      // ── Email ────────────────────────────────────────
+                      TextFormField(
+                        controller: _emailCtrl,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        autocorrect: false,
+                        autofillHints: const [AutofillHints.email],
+                        decoration: InputDecoration(
+                          labelText: 'auth_field_email'.tr(),
+                          prefixIcon: const Icon(Icons.mail_outline_rounded),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'auth_field_email_required'.tr();
+                          }
+                          if (!v.contains('@')) {
+                            return 'auth_error_invalid_email'.tr();
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+
+                      // ── Mot de passe ─────────────────────────────────
+                      TextFormField(
+                        controller: _passwordCtrl,
+                        obscureText: _obscurePassword,
+                        textInputAction: TextInputAction.done,
+                        autofillHints: [
+                          _isSignUp
+                              ? AutofillHints.newPassword
+                              : AutofillHints.password,
+                        ],
+                        onFieldSubmitted: (_) => _submit(),
+                        decoration: InputDecoration(
+                          labelText: 'auth_field_password'.tr(),
+                          prefixIcon: const Icon(Icons.lock_outline_rounded),
+                          suffixIcon: IconButton(
+                            tooltip: _obscurePassword
+                                ? 'auth_show_password'.tr()
+                                : 'auth_hide_password'.tr(),
+                            icon: Icon(_obscurePassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined),
+                            onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword),
+                          ),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) {
+                            return 'auth_field_password_required'.tr();
+                          }
+                          if (_isSignUp && v.length < 6) {
+                            return 'auth_error_weak_password'.tr();
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+
+                      // ── Erreur ───────────────────────────────────────
+                      if (_errorMessage != null) ...[
+                        _ErrorBox(message: _errorMessage!),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
+
+                      AppButton(
+                        label: _isSignUp
+                            ? 'auth_create_account'.tr()
+                            : 'auth_sign_in'.tr(),
+                        expand: true,
+                        loading: _loading,
+                        onPressed: _submit,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      TextButton(
+                        style:
+                            TextButton.styleFrom(foregroundColor: c.accentText),
+                        onPressed: _loading
+                            ? null
+                            : () => setState(() {
+                                  _isSignUp = !_isSignUp;
+                                  _errorMessage = null;
+                                }),
+                        child: Text(
+                          _isSignUp
+                              ? 'auth_already_have_account'.tr()
+                              : 'auth_no_account'.tr(),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+/// Message d'erreur de connexion (rouge discret).
+class _ErrorBox extends StatelessWidget {
+  const _ErrorBox({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: c.favourite.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadius.cover),
+        border: Border.all(color: c.favourite.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, size: 18, color: c.statusDroppedText),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: c.statusDroppedText),
+            ),
+          ),
+        ],
       ),
     );
   }
