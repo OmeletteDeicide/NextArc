@@ -127,6 +127,38 @@
 - [ ] Pour toi · Explorer & filtres · Recherche · Calendrier · À propos
 - [ ] Versions claires : Stats, Mon titre, Connexion, Ma liste invité
 
+### Lot 6 — Revue 2 de Claude Design ()
+Ordre conseillé par la revue. Remarques de Simon (16/09) : la cloche de rappel
+n'est **pas jaune** mais celle des fiches d'édition (notifications, accent) ;
+**Ko-fi reste dans le Profil** au-dessus d'À propos (pas dans À propos), avec la
+nouvelle couleur de la maquette.
+- [ ] Suppression de compte (bloqueur Play Store) : Paramètres « Zone
+      sensible », écran explication supprimé / conservé + export, feuille
+      « taper SUPPRIMER », écran en cours (3 étapes réelles), écran de fin
+      (invité / nouveau compte). Cloud Function  (Firestore
+      récursif + Storage + Auth). Seul bouton **plein rouge** de l'app :
+      Déconnexion / Retirer passent en **contour**.
+- [ ] Paramètres compte connecté : Compte (e-mail + fournisseur, AniList lié /
+      Délier), Notifications (sorties d'épisodes, récap du mois), Application
+      (À propos + version)
+- [ ] Explorer : grille 2 colonnes, barre d'état (N résultats · N filtres ·
+      Réinitialiser), chips actives avec ×, « Voir N résultats », score en
+      segments, bouton + 44 px en bas à droite, squelettes, état vide qui
+      nomme le filtre
+- [ ] Calendrier : liste groupée par semaine, jours avec sorties seulement,
+      pastille date 44 px, cloche 2 états, états vides
+- [ ] Recherche : tendances à l'ouverture, lignes d'historique 44 px, résultats
+      en liste (terme surligné, « dans ta liste »), aucun résultat / hors ligne
+- [ ] Pour toi en rails : reco mise en avant, rails par source (≤ 2 par
+      source, rotation quotidienne, ordre ❤️ > 10 > ≥ 8), rail « Dans tes
+      genres », carte d'aide avec action
+- [ ] À propos : bloc logo, paragraphe, carte AniList accentuée, technologies
+      en chips, liens Confidentialité / Conditions / Licences (Ko-fi : non)
+- [ ] Bannière de profil : feuille de choix, cascade (choisie > AniList >
+      dégradé), scrim, en-tête 230 px, « Modifier le profil » refait
+- [ ] Versions claires : Stats (mois vides = trait 3 px), Mon titre,
+      Connexion (AniList en carte d'info en pied), Ma liste invité
+
 ## Hors refonte — à faire / en attente
 
 - [ ] **Activer Firebase Storage** (console → Storage → Commencer) puis
