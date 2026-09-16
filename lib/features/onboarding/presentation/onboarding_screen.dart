@@ -9,6 +9,7 @@ import 'package:nextarc/core/theme/app_typography.dart';
 import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/core/widgets/google_logo.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/discover/domain/discover_providers.dart';
 import 'package:nextarc/features/onboarding/domain/onboarding_prefs.dart';
 
 /// Onboarding léger : 3 écrans (promesse · contenu · compte), « Passer »
@@ -273,17 +274,116 @@ class _PromisePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return _PageFrame(
       titleAtBottom: true,
-      top: Align(
-        alignment: Alignment.centerLeft,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.asset('assets/images/logo.png',
-              width: 44, height: 44, fit: BoxFit.cover),
-        ),
+      top: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset('assets/images/logo.png',
+                  width: 44, height: 44, fit: BoxFit.cover),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          const _TrendingFan(),
+        ],
       ),
       step: 'onboarding_step_promise'.tr(),
       title: 'onboarding_promise_title'.tr(),
       body: 'onboarding_promise_body'.tr(),
+    );
+  }
+}
+
+/// Les 3 anime tendance du moment en éventail : l'app montre tout de suite
+/// ce qu'elle suit. Rien (écran épuré) si la requête échoue.
+class _TrendingFan extends ConsumerWidget {
+  const _TrendingFan();
+
+  static const double _height = 250;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+    final trending = ref.watch(trendingAnimeProvider);
+
+    return trending.when(
+      error: (_, _) => const SizedBox.shrink(),
+      loading: () => SizedBox(
+        height: _height + 34,
+        child: Center(
+          child: Container(
+            width: 140,
+            height: 210,
+            decoration: BoxDecoration(
+              color: c.surface1,
+              borderRadius: BorderRadius.circular(AppRadius.cover),
+            ),
+          ),
+        ),
+      ),
+      data: (page) {
+        final covers =
+            page.items.where((m) => m.coverImage != null).take(3).toList();
+        if (covers.isEmpty) return const SizedBox.shrink();
+
+        // Ordre d'empilement : les côtés derrière, le n°1 devant au centre
+        final slots = <({int index, double dx, double angle, double width})>[
+          if (covers.length > 1) (index: 1, dx: -92, angle: -0.14, width: 118),
+          if (covers.length > 2) (index: 2, dx: 92, angle: 0.14, width: 118),
+          (index: 0, dx: 0, angle: 0, width: 150),
+        ];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              height: _height,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  for (final slot in slots)
+                    Transform.translate(
+                      offset: Offset(slot.dx, slot.index == 0 ? 0 : 14),
+                      child: Transform.rotate(
+                        angle: slot.angle,
+                        child: Container(
+                          width: slot.width,
+                          decoration: BoxDecoration(
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.cover),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x66000000),
+                                blurRadius: 18,
+                                offset: Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: MediaCover(
+                            imageUrl: covers[slot.index].coverImage,
+                            rank: slot.index + 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'onboarding_trending_caption'
+                  .tr(namedArgs: {'title': covers.first.displayTitle}),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: text.bodySmall?.copyWith(color: c.text3),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -140,6 +140,7 @@
   "airing_in_minutes": "dans {count} min",
   "airing_in_hours": "dans {count} h",
   "airing_in_days": "dans {count} j",
+  "onboarding_trending_caption": "N°1 des tendances en ce moment : {title}",
   "profile_anilist_unlink": "Délier",
   "anilist_unlink_title": "Délier AniList ?",
   "anilist_unlink_body": "Ta liste NextArc est conservée : elle ne sera simplement plus mise à jour depuis AniList. Tu pourras le relier à tout moment.",

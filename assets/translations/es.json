@@ -140,6 +140,7 @@
   "airing_in_minutes": "en {count} min",
   "airing_in_hours": "en {count} h",
   "airing_in_days": "en {count} d",
+  "onboarding_trending_caption": "N.º 1 en tendencias ahora: {title}",
   "profile_anilist_unlink": "Desvincular",
   "anilist_unlink_title": "¿Desvincular AniList?",
   "anilist_unlink_body": "Tu lista NextArc se conserva: simplemente dejará de actualizarse desde AniList. Puedes volver a vincularla cuando quieras.",

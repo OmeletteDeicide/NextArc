@@ -117,12 +117,19 @@
       dès le 1er écran, pas de demande de notifications
 
 ### Lot 5 — Écrans non dessinés (⏳ en attente des maquettes Claude Design)
+- [ ] Calendrier : **regrouper par semaine** (« Cette semaine », « Semaine
+      prochaine », jours en sous-titres) — idée de Simon du 16/09, à donner à
+      Claude Design avec la demande de maquette
 - [ ] Pour toi · Explorer & filtres · Recherche · Calendrier · Paramètres
       connecté · À propos
 - [ ] Versions claires : Stats, Mon titre, Connexion, Ma liste invité
 
 ## Hors refonte — à faire / en attente
 
+- [ ] **Changer sa bannière de profil** (la photo et le pseudo sont déjà
+      modifiables) — pas de bannière choisie = bannière AniList si liée
+- [ ] **Republier ** : champs  / 
+      ajoutés le 16/09 (sinon l'édition du profil est refusée)
 - [ ] **Connexion Apple** (quand le compte Apple Developer à 99 €/an sera créé)
 - [x] **Facturation Firebase** : forfait Blaze réactivé le 15/09 (Cloud Function
       `anilistToken` = liaison AniList). Conseillé : alerte de budget à 1 €.
@@ -268,3 +275,21 @@
   `resolveContentPreference`. Pour le revoir : effacer les données de l'app.
   Analyse OK, 101 tests OK dont `test/onboarding_prefs_test.dart`.
   **Lot 4 terminé** — reste le Lot 5 (maquettes à venir) et le hors refonte.
+- 16/09 — Retours de test de Simon, corrigés :
+  - Barres de progression qui grandissaient depuis le centre (piste réduite au
+    remplissage dans un `Center`) → piste toujours pleine largeur, test ajouté.
+  - Note : demi-points possibles (moitié gauche d'un segment = ,5).
+  - Vrai logo Google multicolore dessiné (`google_logo.dart`) sur la connexion
+    et l'onboarding.
+  - Carte « Nouveau titre » : palier le plus haut mémorisé **par compte**
+    (`title_level_<compte>`), comparaison après 3 s de stabilité. Plus de
+    carte à chaque reconnexion ; un utilisateur existant ne voit qu'une carte,
+    celle de son titre actuel.
+  - Pseudo / photo : ceux choisis dans NextArc (`customName`/`customPhoto`,
+    ou photo envoyée dans Storage pour les anciens profils, ou pseudo tapé à
+    l'inscription e-mail) ne sont jamais remplacés par AniList ; sinon AniList
+    les remplace. **Délier AniList** depuis la ligne AniList du profil (liste
+    NextArc conservée).
+  - Onboarding écran 1 : éventail des 3 anime tendance du moment (n°1 devant).
+  - Ancien texte « synchroniser avec AniList » du bandeau invité remplacé.
+  Analyse OK, 112 tests OK.
