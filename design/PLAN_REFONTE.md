@@ -111,7 +111,7 @@
 - [x] Liaison AniList seulement une fois connecté (retirer la connexion AniList
       autonome, garder la restauration des sessions existantes)
 - [x] Déconnexion : titre en question, action rouge, message rassurant
-- [ ] Mode invité : bandeau discret, états vides avec action,
+- [x] Mode invité : bandeau discret, états vides avec action,
       « dernière sauvegarde : il y a X j » sur l'export
 - [ ] Onboarding 3 écrans (promesse · anime/manga/les deux · compte), « Passer »
       dès le 1er écran, pas de demande de notifications
@@ -247,3 +247,12 @@
   déconnecter ? », message selon le compte (NextArc / AniList seul), action
   en rouge plein (`AppButtonVariant.danger`) ; aussi utilisé pour « Retirer de
   la liste ». Analyse OK, 93 tests OK.
+- 16/09 — Lot 4 (2/3) : mode invité. Bandeau de Ma liste « Mode invité — ta
+  liste est gardée sur cet appareil » + Connexion + croix (masqué pour la
+  session, `guestBannerDismissedProvider`). État vide avec promesse et actions :
+  « Explorer les tendances » (→ Découvrir) et, en invité, « Importer une liste
+  .json » (→ Paramètres). Paramètres : sous-titre de l'export = « Dernière
+  sauvegarde : aujourd'hui / hier / il y a N j » ou « Jamais sauvegardée »
+  (`guest_backup.dart`, date écrite après le partage du JSON). L'écran
+  Paramètres lui-même reste à restyler (Lot 5, maquette invité claire dispo).
+  Analyse OK, 97 tests OK dont `test/guest_backup_test.dart`.

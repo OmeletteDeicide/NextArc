@@ -13,6 +13,7 @@ import 'package:nextarc/features/calendar/domain/calendar_provider.dart';
 import 'package:nextarc/features/discover/domain/discover_providers.dart';
 import 'package:nextarc/features/watchlist/data/mutation_repository.dart';
 import 'package:nextarc/features/watchlist/domain/firestore_watchlist_providers.dart';
+import 'package:nextarc/features/watchlist/domain/guest_backup.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 import 'package:nextarc/features/watchlist/domain/list_items.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
@@ -105,10 +106,9 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                 ],
               ),
             ),
-            if (source == _ListSource.guest) ...[
-              const SizedBox(height: AppSpacing.sm),
+            if (source == _ListSource.guest &&
+                !ref.watch(guestBannerDismissedProvider))
               const _GuestBanner(),
-            ],
             const SizedBox(height: 14),
             Padding(
               padding:
@@ -148,14 +148,22 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     UserModel? user,
   ) {
     if (items.isEmpty) {
+      // Un état vide promet quelque chose et propose une action
       return _EmptyState(
         icon: _isManga ? Icons.menu_book_rounded : Icons.live_tv_rounded,
         title: _isManga
             ? 'watchlist_manga_empty_title'.tr()
-            : 'watchlist_anime_empty_title'.tr(),
+            : 'watchlist_empty_title'.tr(),
         subtitle: _isManga
             ? 'watchlist_manga_empty_subtitle'.tr()
-            : 'watchlist_anime_empty_subtitle'.tr(),
+            : 'watchlist_empty_subtitle'.tr(),
+        actionLabel: 'watchlist_empty_explore'.tr(),
+        onAction: () => context.go(AppRoutes.discover),
+        // Invité : la liste peut venir d'une sauvegarde .json
+        secondaryLabel: source == _ListSource.guest
+            ? 'watchlist_empty_import'.tr()
+            : null,
+        onSecondary: () => context.push(AppRoutes.settings),
       );
     }
 
@@ -408,17 +416,19 @@ class _RoundIconButton extends StatelessWidget {
   }
 }
 
-class _GuestBanner extends StatelessWidget {
+/// Bandeau « Mode invité » discret, masquable pour la session.
+class _GuestBanner extends ConsumerWidget {
   const _GuestBanner();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final c = AppColors.of(context);
     final text = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screen),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screen, AppSpacing.sm, AppSpacing.screen, 0),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 2, 4, 2),
+        padding: const EdgeInsets.fromLTRB(12, 0, 0, 0),
         decoration: BoxDecoration(
           color: c.surface1,
           borderRadius: BorderRadius.circular(AppRadius.cover),
@@ -430,14 +440,20 @@ class _GuestBanner extends StatelessWidget {
             const SizedBox(width: AppSpacing.xs),
             Expanded(
               child: Text(
-                'watchlist_guest_banner'.tr(),
+                'watchlist_guest_banner_local'.tr(),
                 style: text.bodySmall?.copyWith(color: c.text2),
               ),
             ),
             TextButton(
-              onPressed: () => context.go('/profile'),
+              onPressed: () => context.go(AppRoutes.profile),
               style: TextButton.styleFrom(foregroundColor: c.accentText),
               child: Text('watchlist_guest_banner_login'.tr()),
+            ),
+            IconButton(
+              tooltip: 'watchlist_guest_banner_hide'.tr(),
+              icon: Icon(Icons.close_rounded, size: 16, color: c.text3),
+              onPressed: () =>
+                  ref.read(guestBannerDismissedProvider.notifier).state = true,
             ),
           ],
         ),
@@ -873,23 +889,39 @@ class _EmptyState extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.actionLabel,
+    this.onAction,
+    this.secondaryLabel,
+    this.onSecondary,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final String? secondaryLabel;
+  final VoidCallback? onSecondary;
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final text = Theme.of(context).textTheme;
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 56, color: c.text3.withValues(alpha: 0.6)),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: c.surface1,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(icon, size: 32, color: c.accentText),
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(title,
                 textAlign: TextAlign.center,
@@ -898,6 +930,23 @@ class _EmptyState extends StatelessWidget {
             Text(subtitle,
                 textAlign: TextAlign.center,
                 style: text.bodyMedium?.copyWith(color: c.text2)),
+            if (actionLabel != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              AppButton(
+                label: actionLabel!,
+                icon: Icons.explore_outlined,
+                onPressed: onAction,
+              ),
+            ],
+            if (secondaryLabel != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              TextButton.icon(
+                style: TextButton.styleFrom(foregroundColor: c.accentText),
+                onPressed: onSecondary,
+                icon: const Icon(Icons.file_download_outlined, size: 18),
+                label: Text(secondaryLabel!),
+              ),
+            ],
           ],
         ),
       ),

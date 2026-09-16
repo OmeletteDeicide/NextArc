@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nextarc/core/providers/theme_provider.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/watchlist/domain/guest_backup.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -30,6 +31,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         jsonStr,
         subject: 'NextArc — Ma watchlist',
       );
+      await recordGuestExport();
+      ref.invalidate(lastGuestExportProvider);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -136,8 +139,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     )
                   : Icon(Icons.upload_rounded, color: cs.primary),
               title: Text('settings_export_title'.tr()),
+              // Filet de sécurité du mode invité : quand date la sauvegarde
               subtitle: Text(
-                'settings_export_subtitle'.tr(),
+                () {
+                  final age = backupAge(
+                    ref.watch(lastGuestExportProvider).valueOrNull,
+                    DateTime.now(),
+                  );
+                  return age.key
+                      .tr(namedArgs: {'count': '${age.days}'});
+                }(),
                 style: TextStyle(
                     fontSize: 12, color: cs.onSurface.withValues(alpha: 0.54)),
               ),
