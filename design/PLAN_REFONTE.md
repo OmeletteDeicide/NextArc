@@ -117,7 +117,7 @@
       dès le 1er écran, pas de demande de notifications
 
 ### Lot 5 — Écrans non dessinés (⏳ en attente des maquettes Claude Design)
-- [ ] Calendrier : **regrouper par semaine** (« Cette semaine », « Semaine
+- [x] Calendrier : **regrouper par semaine** (« Cette semaine », « Semaine
       prochaine », jours en sous-titres) — idée de Simon du 16/09, à donner à
       Claude Design avec la demande de maquette
 - [x] Paramètres (maquette « Paramètres invité ») : thème en segmenté, langues
@@ -145,7 +145,7 @@ nouvelle couleur de la maquette.
       Réinitialiser), chips actives avec ×, « Voir N résultats », score en
       segments, bouton + 44 px en bas à droite, squelettes, état vide qui
       nomme le filtre
-- [ ] Calendrier : liste groupée par semaine, jours avec sorties seulement,
+- [x] Calendrier : liste groupée par semaine, jours avec sorties seulement,
       pastille date 44 px, cloche 2 états, états vides
 - [ ] Recherche : tendances à l'ouverture, lignes d'historique 44 px, résultats
       en liste (terme surligné, « dans ta liste »), aucun résultat / hors ligne
@@ -358,3 +358,10 @@ nouvelle couleur de la maquette.
   genre), erreur hors ligne. Feuille de filtres : segmenté Anime/Manga, chips
   actives, pilules 36 px, score minimum en segments (Peu importe / 6+…9+),
   bouton « Voir N résultats » compté après 350 ms. Analyse OK, 120 tests.
+- 16/09 — Lot 6 (3) : Calendrier refait. Plus de bande de jours : prochaine
+  sortie du jour épinglée (dégradé, compte à rebours), puis « Cette semaine /
+  Semaine prochaine / Plus tard » (lundi → dimanche, `calendar_groups.dart`
+  pur), sous-titres de jour seulement quand il y a des sorties, lignes avec
+  pastille date 44 px et **cloche accent de la fiche d'édition** (pleine =
+  rappel actif). États vides / hors ligne avec actions (anime en cours →
+  Explorer, Ma liste). Analyse OK, 124 tests.
