@@ -51,9 +51,28 @@ void main() {
       child: GradientProgressBar(value: 1.8, animate: false),
     )));
     await tester.pumpAndSettle();
-    final bar = tester.widget<FractionallySizedBox>(
-        find.byType(FractionallySizedBox));
-    expect(bar.widthFactor, 1);
+    final fill = find.descendant(
+      of: find.byType(GradientProgressBar),
+      matching: find.byType(DecoratedBox),
+    );
+    expect(tester.getSize(fill).width, 200);
+  });
+
+  testWidgets(
+      'GradientProgressBar remplit depuis la gauche même dans un Center',
+      (tester) async {
+    await tester.pumpWidget(host(const SizedBox(
+      width: 200,
+      child: Center(child: GradientProgressBar(value: 0.5, animate: false)),
+    )));
+    await tester.pumpAndSettle();
+    final bar = find.byType(GradientProgressBar);
+    final fill =
+        find.descendant(of: bar, matching: find.byType(DecoratedBox));
+    // La piste occupe toute la largeur, le remplissage part du bord gauche
+    expect(tester.getSize(bar).width, 200);
+    expect(tester.getSize(fill).width, 100);
+    expect(tester.getTopLeft(fill).dx, tester.getTopLeft(bar).dx);
   });
 
   testWidgets('StatusChip sélectionnable déclenche onTap', (tester) async {
