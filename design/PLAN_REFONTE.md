@@ -299,3 +299,9 @@
   - Onboarding écran 1 : éventail des 3 anime tendance du moment (n°1 devant).
   - Ancien texte « synchroniser avec AniList » du bandeau invité remplacé.
   Analyse OK, 112 tests OK.
+- 16/09 — Pour toi : en-tête titre + segmenté, cartes reco d'abord / raison
+  en petit, bouton rond partagé (`RoundIconButton`) ; pulsation du badge de
+  titre sur le Profil après un palier. Lot 5 : brief rédigé pour Claude Design
+  (`design/PROMPT_CLAUDE_DESIGN_2.md`) — Explorer + filtres, Recherche, Pour
+  toi, Calendrier par semaine, À propos, versions claires, bannière de profil,
+  suppression de compte, Paramètres connecté. **Attendre ses maquettes.**
