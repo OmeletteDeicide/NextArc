@@ -49,12 +49,15 @@ service cloud.firestore {
       return data.keys().hasOnly([
             'displayName', 'email', 'photoUrl',
             'anilistId', 'anilistName', 'anilistAvatar',
+            'customName', 'customPhoto',
             'createdAt', 'updatedAt'])
         && optString(data, 'displayName', 100)
         && optString(data, 'email', 200)
         && optString(data, 'photoUrl', 2048)
         && optString(data, 'anilistName', 100)
         && optString(data, 'anilistAvatar', 2048)
+        && (!('customName' in data) || data.customName is bool)
+        && (!('customPhoto' in data) || data.customPhoto is bool)
         && (data.get('anilistId', null) == null
             || (data.anilistId is int && data.anilistId > 0));
     }

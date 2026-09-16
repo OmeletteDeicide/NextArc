@@ -98,9 +98,17 @@ class ProfileScreen extends ConsumerWidget {
                   _MenuRow(
                     icon: Icons.link_rounded,
                     title: 'AniList',
-                    subtitle: 'profile_anilist_connected'
-                        .tr(namedArgs: {'name': user.name}),
+                    subtitle: 'profile_anilist_connected'.tr(
+                        namedArgs: {'name': user.anilistName ?? user.name}),
                     subtitleColor: c.statusCurrent,
+                    // Compte NextArc : AniList peut être délié. AniList seul :
+                    // c'est la déconnexion qui s'applique.
+                    trailingLabel: user.hasFirebase
+                        ? 'profile_anilist_unlink'.tr()
+                        : null,
+                    onTap: user.hasFirebase
+                        ? () => _confirmUnlinkAnilist(context, ref)
+                        : null,
                   )
                 else if (user.hasFirebase)
                   _MenuRow(
@@ -357,6 +365,25 @@ class ProfileScreen extends ConsumerWidget {
                 : '$success / ${newEntries.length} anime(s) migrés (${newEntries.length - success} erreurs)',
           ),
         ),
+      );
+    }
+  }
+
+  // ── Délier AniList ────────────────────────────────────────────────────────
+
+  Future<void> _confirmUnlinkAnilist(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'anilist_unlink_title'.tr(),
+      message: 'anilist_unlink_body'.tr(),
+      confirmLabel: 'profile_anilist_unlink'.tr(),
+      destructive: true,
+    );
+    if (!confirmed) return;
+    await ref.read(authProvider.notifier).unlinkAnilist();
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('anilist_unlink_done'.tr())),
       );
     }
   }
@@ -789,6 +816,7 @@ class _MenuRow extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.subtitleColor,
+    this.trailingLabel,
     this.onTap,
   });
 
@@ -796,6 +824,9 @@ class _MenuRow extends StatelessWidget {
   final String title;
   final String subtitle;
   final Color? subtitleColor;
+
+  /// Action nommée à droite (« Délier ») à la place du chevron.
+  final String? trailingLabel;
 
   /// Null → ligne informative, sans chevron.
   final VoidCallback? onTap;
@@ -843,7 +874,12 @@ class _MenuRow extends StatelessWidget {
                   ],
                 ),
               ),
-              if (onTap != null)
+              if (trailingLabel != null)
+                Text(
+                  trailingLabel!,
+                  style: text.labelMedium?.copyWith(color: c.statusDroppedText),
+                )
+              else if (onTap != null)
                 Icon(Icons.chevron_right_rounded, size: 20, color: c.text3),
             ],
           ),

@@ -1,5 +1,30 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 
+/// Photo envoyée depuis NextArc (Firebase Storage), donc choisie par
+/// l'utilisateur — par opposition à la photo Google ou AniList.
+bool isUploadedPhoto(String? url) =>
+    url != null && url.contains('firebasestorage');
+
+/// Pseudo et photo affichés pour un compte NextArc lié (ou non) à AniList :
+/// ce que l'utilisateur a choisi sur NextArc passe toujours avant AniList ;
+/// sinon AniList remplace le pseudo / la photo reçus de Google ou de l'e-mail.
+({String name, String? avatar}) resolveIdentity({
+  required String accountName,
+  required String? accountPhoto,
+  String? anilistName,
+  String? anilistAvatar,
+  required bool customName,
+  required bool customPhoto,
+}) {
+  final useAnilistName =
+      !customName && anilistName != null && anilistName.isNotEmpty;
+  final useAnilistAvatar = !customPhoto && anilistAvatar != null;
+  return (
+    name: useAnilistName ? anilistName : accountName,
+    avatar: useAnilistAvatar ? anilistAvatar : accountPhoto,
+  );
+}
+
 /// Modèle utilisateur NextArc — Firebase (primaire) + AniList (optionnel).
 class UserModel {
   const UserModel({
@@ -11,6 +36,11 @@ class UserModel {
     this.avatarMedium,
     this.bannerImage,
     this.siteUrl,
+    this.anilistName,
+    this.accountName,
+    this.accountPhoto,
+    this.customName = false,
+    this.customPhoto = false,
   });
 
   // ── Firebase ──────────────────────────────────────────────────────────────
@@ -19,11 +49,29 @@ class UserModel {
 
   // ── AniList (optionnel — 0 si non lié) ───────────────────────────────────
   final int id;
+
+  /// Pseudo affiché (déjà résolu entre NextArc et AniList).
   final String name;
+
+  /// Photo affichée (déjà résolue entre NextArc et AniList).
   final String? avatarLarge;
   final String? avatarMedium;
   final String? bannerImage;
   final String? siteUrl;
+
+  /// Pseudo du compte AniList lié.
+  final String? anilistName;
+
+  // ── Identité propre au compte NextArc ────────────────────────────────────
+
+  /// Pseudo / photo du compte NextArc (Google, e-mail ou choisis).
+  final String? accountName;
+  final String? accountPhoto;
+
+  /// Pseudo / photo choisis par l'utilisateur dans NextArc : AniList ne les
+  /// remplace pas.
+  final bool customName;
+  final bool customPhoto;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -35,10 +83,10 @@ class UserModel {
   /// liste AniList y est fusionnée.
   bool get usesAnilistList => hasAnilist && !hasFirebase;
 
-  /// Photo de profil : AniList d'abord, puis Firebase photoURL.
+  /// Photo de profil affichée.
   String? get avatar => avatarLarge ?? avatarMedium;
 
-  /// Nom affiché : AniList name, sinon partie locale de l'email.
+  /// Nom affiché, sinon partie locale de l'email.
   String get displayName =>
       name.isNotEmpty ? name : (email?.split('@').first ?? 'Utilisateur');
 
@@ -46,9 +94,11 @@ class UserModel {
 
   factory UserModel.fromAnilistJson(Map<String, dynamic> json) {
     final avatar = json['avatar'] as Map<String, dynamic>?;
+    final name = json['name'] as String;
     return UserModel(
       id: json['id'] as int,
-      name: json['name'] as String,
+      name: name,
+      anilistName: name,
       avatarLarge: avatar?['large'] as String?,
       avatarMedium: avatar?['medium'] as String?,
       bannerImage: json['bannerImage'] as String?,
@@ -62,21 +112,36 @@ class UserModel {
       email: user.email,
       name: user.displayName ?? '',
       avatarLarge: user.photoURL,
+      accountName: user.displayName,
+      accountPhoto: user.photoURL,
+      customPhoto: isUploadedPhoto(user.photoURL),
     );
   }
 
-  /// Copie en liant un compte AniList à cet utilisateur Firebase.
-  UserModel withAnilist(Map<String, dynamic> json) {
-    final avatar = json['avatar'] as Map<String, dynamic>?;
+  /// Lie le compte AniList [anilist] à ce compte NextArc, en respectant le
+  /// pseudo et la photo choisis sur NextArc.
+  UserModel linkedTo(UserModel anilist) {
+    final identity = resolveIdentity(
+      accountName: accountName ?? name,
+      accountPhoto: accountPhoto ?? avatar,
+      anilistName: anilist.anilistName ?? anilist.name,
+      anilistAvatar: anilist.avatar,
+      customName: customName,
+      customPhoto: customPhoto,
+    );
     return UserModel(
       firebaseUid: firebaseUid,
       email: email,
-      id: json['id'] as int,
-      name: json['name'] as String,
-      avatarLarge: avatar?['large'] as String?,
-      avatarMedium: avatar?['medium'] as String?,
-      bannerImage: json['bannerImage'] as String?,
-      siteUrl: json['siteUrl'] as String?,
+      id: anilist.id,
+      name: identity.name,
+      avatarLarge: identity.avatar,
+      bannerImage: anilist.bannerImage,
+      siteUrl: anilist.siteUrl,
+      anilistName: anilist.anilistName ?? anilist.name,
+      accountName: accountName,
+      accountPhoto: accountPhoto,
+      customName: customName,
+      customPhoto: customPhoto,
     );
   }
 
@@ -89,6 +154,11 @@ class UserModel {
     String? avatarMedium,
     String? bannerImage,
     String? siteUrl,
+    String? anilistName,
+    String? accountName,
+    String? accountPhoto,
+    bool? customName,
+    bool? customPhoto,
   }) =>
       UserModel(
         firebaseUid: firebaseUid ?? this.firebaseUid,
@@ -99,5 +169,10 @@ class UserModel {
         avatarMedium: avatarMedium ?? this.avatarMedium,
         bannerImage: bannerImage ?? this.bannerImage,
         siteUrl: siteUrl ?? this.siteUrl,
+        anilistName: anilistName ?? this.anilistName,
+        accountName: accountName ?? this.accountName,
+        accountPhoto: accountPhoto ?? this.accountPhoto,
+        customName: customName ?? this.customName,
+        customPhoto: customPhoto ?? this.customPhoto,
       );
 }

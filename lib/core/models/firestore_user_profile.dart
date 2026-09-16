@@ -11,11 +11,15 @@ class FirestoreUserProfile {
     this.anilistId,
     this.anilistName,
     this.anilistAvatar,
+    this.customName,
+    this.customPhoto,
     required this.createdAt,
     required this.updatedAt,
   });
 
   final String uid;
+
+  /// Pseudo / photo du compte NextArc (Google, e-mail ou choisis dans l'app).
   final String displayName;
   final String email;
   final String? photoUrl;
@@ -25,8 +29,20 @@ class FirestoreUserProfile {
   final String? anilistName;
   final String? anilistAvatar;
 
+  /// Pseudo / photo choisis dans NextArc (null = jamais renseigné : anciens
+  /// documents).
+  final bool? customName;
+  final bool? customPhoto;
+
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// Pseudo choisi dans NextArc : AniList ne le remplace pas.
+  bool get nameIsCustom => customName ?? false;
+
+  /// Photo choisie dans NextArc. Anciens documents : une photo envoyée dans
+  /// Firebase Storage ne peut venir que de l'écran d'édition du profil.
+  bool get photoIsCustom => customPhoto ?? isUploadedPhoto(photoUrl);
 
   // ── Sérialisation ─────────────────────────────────────────────────────────
 
@@ -38,6 +54,8 @@ class FirestoreUserProfile {
         if (anilistId != null) 'anilistId': anilistId,
         if (anilistName != null) 'anilistName': anilistName,
         if (anilistAvatar != null) 'anilistAvatar': anilistAvatar,
+        if (customName != null) 'customName': customName,
+        if (customPhoto != null) 'customPhoto': customPhoto,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       };
@@ -51,6 +69,8 @@ class FirestoreUserProfile {
       anilistId: map['anilistId'] as int?,
       anilistName: map['anilistName'] as String?,
       anilistAvatar: map['anilistAvatar'] as String?,
+      customName: map['customName'] as bool?,
+      customPhoto: map['customPhoto'] as bool?,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -67,44 +87,40 @@ class FirestoreUserProfile {
     final now = DateTime.now();
     return FirestoreUserProfile(
       uid: user.firebaseUid!,
-      displayName: user.displayName,
+      displayName: user.accountName ?? user.displayName,
       email: user.email ?? '',
-      photoUrl: user.avatar,
+      photoUrl: user.accountPhoto ?? user.avatar,
       anilistId: user.hasAnilist ? user.id : null,
-      anilistName: user.hasAnilist ? user.name : null,
-      anilistAvatar: user.hasAnilist ? user.avatarLarge : null,
+      anilistName: user.hasAnilist ? (user.anilistName ?? user.name) : null,
+      customName: user.customName ? true : null,
+      customPhoto: user.customPhoto ? true : null,
       createdAt: now,
       updatedAt: now,
     );
   }
 
-  /// Fusionne ce profil Firestore dans un UserModel (enrichit les données).
-  UserModel toUserModel() => UserModel(
-        firebaseUid: uid,
-        email: email,
-        id: anilistId ?? 0,
-        name: anilistName ?? displayName,
-        avatarLarge: anilistAvatar ?? photoUrl,
-        avatarMedium: photoUrl,
-      );
-
-  FirestoreUserProfile copyWith({
-    String? displayName,
-    String? email,
-    String? photoUrl,
-    int? anilistId,
-    String? anilistName,
-    String? anilistAvatar,
-  }) =>
-      FirestoreUserProfile(
-        uid: uid,
-        displayName: displayName ?? this.displayName,
-        email: email ?? this.email,
-        photoUrl: photoUrl ?? this.photoUrl,
-        anilistId: anilistId ?? this.anilistId,
-        anilistName: anilistName ?? this.anilistName,
-        anilistAvatar: anilistAvatar ?? this.anilistAvatar,
-        createdAt: createdAt,
-        updatedAt: DateTime.now(),
-      );
+  /// Utilisateur de l'app : identité NextArc, complétée par AniList selon
+  /// les choix de l'utilisateur (voir [resolveIdentity]).
+  UserModel toUserModel() {
+    final identity = resolveIdentity(
+      accountName: displayName,
+      accountPhoto: photoUrl,
+      anilistName: anilistName,
+      anilistAvatar: anilistAvatar,
+      customName: nameIsCustom,
+      customPhoto: photoIsCustom,
+    );
+    return UserModel(
+      firebaseUid: uid,
+      email: email,
+      id: anilistId ?? 0,
+      name: identity.name,
+      avatarLarge: identity.avatar,
+      anilistName: anilistName,
+      accountName: displayName,
+      accountPhoto: photoUrl,
+      customName: nameIsCustom,
+      customPhoto: photoIsCustom,
+    );
+  }
 }

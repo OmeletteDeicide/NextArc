@@ -35,9 +35,9 @@ class UserProfileRepository {
 
     // Mise à jour partielle : on ne touche pas anilistId/createdAt
     final updates = <String, dynamic>{
-      'displayName': user.displayName,
+      'displayName': user.accountName ?? user.displayName,
       'email': user.email,
-      'photoUrl': user.avatar,
+      'photoUrl': user.accountPhoto ?? user.avatar,
       'updatedAt': FieldValue.serverTimestamp(),
     };
     await ref.update(updates);
@@ -60,7 +60,19 @@ class UserProfileRepository {
     });
   }
 
-  /// Met à jour le pseudo et/ou la photo depuis l'écran d'édition.
+  /// Retire la liaison AniList du profil.
+  Future<void> unlinkAnilist(String uid) async {
+    await _users.doc(uid).update({
+      'anilistId': FieldValue.delete(),
+      'anilistName': FieldValue.delete(),
+      'anilistAvatar': FieldValue.delete(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// Met à jour le pseudo et/ou la photo depuis l'écran d'édition. Un pseudo
+  /// ou une photo modifiés ici sont marqués « choisis » : AniList ne les
+  /// remplacera plus.
   Future<void> updateProfileFields({
     required String uid,
     String? displayName,
@@ -69,6 +81,8 @@ class UserProfileRepository {
     final updates = <String, dynamic>{
       'displayName': displayName,
       'photoUrl': photoUrl,
+      if (displayName != null) 'customName': true,
+      if (photoUrl != null) 'customPhoto': true,
       'updatedAt': FieldValue.serverTimestamp(),
     }..removeWhere((_, v) => v == null);
     if (updates.length > 1) await _users.doc(uid).update(updates);

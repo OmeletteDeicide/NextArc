@@ -100,7 +100,10 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       final fbUser = await svc.createAccount(email, password, displayName);
       return AuthState(
         status: AuthStatus.authenticated,
-        user: await _upsertFirestore(UserModel.fromFirebase(fbUser)),
+        user: await _upsertFirestore(
+          // Pseudo tapé à l'inscription = choisi : AniList ne le remplacera pas
+          UserModel.fromFirebase(fbUser).copyWith(customName: true),
+        ),
       );
     });
     _handleError();
@@ -144,7 +147,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
                 uid: firebaseUid,
                 anilistId: anilistUser.id,
                 anilistName: anilistUser.name,
-                anilistAvatar: anilistUser.avatarLarge,
+                anilistAvatar: anilistUser.avatar,
               );
         } catch (_) {
           // Firestore hors ligne : on continue quand même
@@ -205,14 +208,35 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     return user;
   }
 
-  UserModel _withAnilist(UserModel base, UserModel anilist) => base.copyWith(
-        id: anilist.id,
-        name: anilist.name,
-        avatarLarge: anilist.avatarLarge,
-        avatarMedium: anilist.avatarMedium,
-        bannerImage: anilist.bannerImage,
-        siteUrl: anilist.siteUrl,
-      );
+  /// Pseudo et photo choisis sur NextArc restent prioritaires sur AniList.
+  UserModel _withAnilist(UserModel base, UserModel anilist) =>
+      base.linkedTo(anilist);
+
+  /// Relit le compte (profil Firestore + AniList) après une modification.
+  Future<void> refreshUser() async {
+    final fbUser = ref.read(firebaseAuthServiceProvider).currentUser;
+    if (fbUser == null) return;
+    final user = await _restoreFirebaseUser(fbUser);
+    state = AsyncValue.data(
+      AuthState(status: AuthStatus.authenticated, user: user),
+    );
+  }
+
+  /// Délie AniList d'un compte NextArc : la liste NextArc (déjà fusionnée)
+  /// est conservée, elle n'est simplement plus mise à jour depuis AniList.
+  /// Le pseudo et la photo reviennent à ceux du compte NextArc.
+  Future<void> unlinkAnilist() async {
+    final uid = state.valueOrNull?.user?.firebaseUid;
+    if (uid == null) return;
+    await ref.read(authRepositoryProvider).logout();
+    try {
+      await ref.read(userProfileRepositoryProvider).unlinkAnilist(uid);
+    } catch (_) {
+      // Hors ligne : le jeton AniList est supprimé, la liaison sera retirée du
+      // profil à la prochaine tentative
+    }
+    await refreshUser();
+  }
 
   /// Fusionne dans Firestore la liste invité puis la liste AniList, sans
   /// bloquer l'UI. En cas d'échec (hors ligne…), on réessaiera au prochain

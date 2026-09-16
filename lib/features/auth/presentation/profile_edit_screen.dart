@@ -2,13 +2,11 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nextarc/features/auth/data/profile_service.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
-import 'package:nextarc/features/auth/domain/user_model.dart';
 
 /// Écran de modification du profil NextArc (pseudo + avatar).
 class ProfileEditScreen extends ConsumerStatefulWidget {
@@ -29,11 +27,15 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   bool _saving = false;
   String? _error;
 
+  /// Pseudo affiché à l'ouverture de l'écran.
+  String _initialName = '';
+
   @override
   void initState() {
     super.initState();
     final user = ref.read(authProvider).value?.user;
-    _nameCtrl.text = user?.name ?? user?.displayName ?? '';
+    _initialName = user?.displayName ?? '';
+    _nameCtrl.text = _initialName;
   }
 
   @override
@@ -95,18 +97,15 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       }
 
       // Mise à jour du pseudo
+      // Seulement si l'utilisateur a changé le pseudo affiché : sinon un
+      // pseudo AniList serait enregistré comme « choisi »
       final newName = _nameCtrl.text.trim();
-      final currentUser = fb.FirebaseAuth.instance.currentUser;
-      if (newName != (currentUser?.displayName ?? '')) {
+      if (newName != _initialName) {
         await _svc.updateDisplayName(newName);
       }
 
-      // Rafraîchit l'état auth
-      final fbUser = fb.FirebaseAuth.instance.currentUser;
-      if (fbUser != null) {
-        final updatedUser = UserModel.fromFirebase(fbUser);
-        ref.read(authProvider.notifier).updateUser(updatedUser);
-      }
+      // Relit le compte (identité NextArc + AniList lié)
+      await ref.read(authProvider.notifier).refreshUser();
 
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
