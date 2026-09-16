@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/core/theme/app_tokens.dart';
 import 'package:nextarc/core/widgets/ds/ds.dart';
+import 'package:nextarc/core/widgets/google_logo.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/auth/domain/user_model.dart';
 import 'package:nextarc/features/stats/domain/stats_provider.dart';
@@ -198,7 +199,7 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 26),
             AppButton(
               label: 'auth_continue_google'.tr(),
-              leading: const _GoogleMark(),
+              leading: const GoogleLogo(),
               expand: true,
               loading: isLoading,
               onPressed: () =>
@@ -413,33 +414,6 @@ class _Benefit extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// « G » de Google, blanc sur le bouton principal.
-class _GoogleMark extends StatelessWidget {
-  const _GoogleMark();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 20,
-      height: 20,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-      ),
-      alignment: Alignment.center,
-      child: const Text(
-        'G',
-        style: TextStyle(
-          fontSize: 12,
-          height: 1,
-          fontWeight: FontWeight.w800,
-          color: Color(0xFF4285F4),
-        ),
       ),
     );
   }

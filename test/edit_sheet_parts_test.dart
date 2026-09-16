@@ -2,28 +2,32 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nextarc/features/watchlist/presentation/edit_sheet_parts.dart';
 
 void main() {
-  group('scoreAfterSegmentTap', () {
-    test('toucher un segment donne son numéro', () {
-      expect(scoreAfterSegmentTap(0, 6), 7);
-      expect(scoreAfterSegmentTap(4, 9), 10);
+  group('scoreAfterTap', () {
+    test('toucher une note la pose', () {
+      expect(scoreAfterTap(0, 7), 7);
+      expect(scoreAfterTap(4, 6.5), 6.5);
     });
 
-    test('toucher la note actuelle l\'efface', () {
-      expect(scoreAfterSegmentTap(7, 6), 0);
-    });
-
-    test('un demi-point AniList est remplacé par le segment touché', () {
-      expect(scoreAfterSegmentTap(7.5, 6), 7);
+    test("toucher la note actuelle l'efface", () {
+      expect(scoreAfterTap(7.5, 7.5), 0);
     });
   });
 
   group('scoreFromPosition', () {
-    test('le glissé arrondit au segment supérieur et reste borné', () {
-      expect(scoreFromPosition(0, 200), 0);
-      expect(scoreFromPosition(1, 200), 1);
-      expect(scoreFromPosition(100, 200), 5);
+    // Barre de 200 px : 10 segments de 20 px (le 7e va de 120 à 140)
+    test("moitié gauche d'un segment → demi-point, moitié droite → entier", () {
+      expect(scoreFromPosition(1, 200), 0.5);
+      expect(scoreFromPosition(9, 200), 0.5);
+      expect(scoreFromPosition(11, 200), 1);
+      expect(scoreFromPosition(125, 200), 6.5);
+      expect(scoreFromPosition(131, 200), 7);
+      expect(scoreFromPosition(122, 200), 6.5);
+    });
+
+    test('bornée entre 0,5 et 10', () {
+      expect(scoreFromPosition(0, 200), 0.5);
+      expect(scoreFromPosition(-20, 200), 0.5);
       expect(scoreFromPosition(250, 200), 10);
-      expect(scoreFromPosition(-20, 200), 0);
     });
 
     test('largeur nulle → 0', () {

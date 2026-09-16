@@ -13,17 +13,16 @@ import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 const int kScoreSegments = 10;
 
 /// Note après un appui sur le segment [index] (0 → 9) : toucher la note
-/// actuelle l'efface, sinon la note devient le numéro du segment.
-double scoreAfterSegmentTap(double current, int index) {
-  final target = (index + 1).toDouble();
-  return current == target ? 0 : target;
-}
+/// actuelle l'efface, sinon la note devient la note visée.
+double scoreAfterTap(double current, double target) =>
+    current == target ? 0 : target;
 
-/// Note correspondant à une position horizontale sur la barre de segments.
+/// Note visée à une position horizontale sur la barre de segments, au
+/// demi-point : moitié gauche d'un segment = « ,5 », moitié droite = entier.
 double scoreFromPosition(double dx, double width) {
   if (width <= 0) return 0;
-  final ratio = (dx / width).clamp(0.0, 1.0);
-  return (ratio * kScoreSegments).ceilToDouble().clamp(0, 10).toDouble();
+  final raw = (dx / width).clamp(0.0, 1.0) * kScoreSegments;
+  return ((raw * 2).ceil() / 2).clamp(0.5, 10.0).toDouble();
 }
 
 /// Progression correspondant à une position sur la barre de progression.
@@ -421,18 +420,14 @@ class ScoreSegments extends StatelessWidget {
         return Semantics(
           slider: true,
           value: score == 0 ? 'sheet_score_unrated'.tr() : '$score / 10',
-          increasedValue: '${(score + 1).clamp(0, 10)} / 10',
-          decreasedValue: '${(score - 1).clamp(0, 10)} / 10',
-          onIncrease: () => set((score.floorToDouble() + 1).clamp(0, 10)),
-          onDecrease: () => set((score.ceilToDouble() - 1).clamp(0, 10)),
+          increasedValue: '${(score + 0.5).clamp(0, 10)} / 10',
+          decreasedValue: '${(score - 0.5).clamp(0, 10)} / 10',
+          onIncrease: () => set((score + 0.5).clamp(0, 10).toDouble()),
+          onDecrease: () => set((score - 0.5).clamp(0, 10).toDouble()),
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTapUp: (d) {
-              final index = (d.localPosition.dx / width * kScoreSegments)
-                  .floor()
-                  .clamp(0, kScoreSegments - 1);
-              set(scoreAfterSegmentTap(score, index));
-            },
+            onTapUp: (d) => set(scoreAfterTap(
+                score, scoreFromPosition(d.localPosition.dx, width))),
             onHorizontalDragUpdate: (d) =>
                 set(scoreFromPosition(d.localPosition.dx, width)),
             child: SizedBox(

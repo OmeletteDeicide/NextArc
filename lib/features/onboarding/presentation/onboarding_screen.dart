@@ -7,6 +7,7 @@ import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/core/theme/app_tokens.dart';
 import 'package:nextarc/core/theme/app_typography.dart';
 import 'package:nextarc/core/widgets/ds/ds.dart';
+import 'package:nextarc/core/widgets/google_logo.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/onboarding/domain/onboarding_prefs.dart';
 
@@ -433,7 +434,7 @@ class _AccountPage extends StatelessWidget {
       children: [
         AppButton(
           label: 'auth_continue_google'.tr(),
-          icon: Icons.account_circle_outlined,
+          leading: const GoogleLogo(),
           expand: true,
           loading: signingIn,
           onPressed: onGoogle,
