@@ -1,3 +1,5 @@
+import 'dart:ui' show Color;
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -21,10 +23,20 @@ class NotificationService {
   static const _epChannelName = 'Nouveaux épisodes';
   static const _epChannelDesc = 'Alerte quand un nouvel épisode ou chapitre sort';
 
+  /// Petite icône : silhouette blanche du logo NA (Android n'affiche que la
+  /// transparence de l'icône dans la barre d'état).
+  static const _smallIcon = 'ic_stat_notification';
+
+  /// Accent NextArc pour teinter l'icône dans le volet de notifications.
+  static const _accent = Color(0xFF6D8BFF);
+
+  /// Décalage des ids des notifications programmées du prochain épisode.
+  static const _nextEpisodeIdOffset = 100000000;
+
   Future<void> init() async {
     tz.initializeTimeZones();
 
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const android = AndroidInitializationSettings(_smallIcon);
     // iOS : autorise toutes les alertes au niveau du plugin (la permission
     // runtime est demandée séparément via requestPermission).
     const ios = DarwinInitializationSettings(
@@ -87,6 +99,8 @@ class NotificationService {
           channelDescription: _epChannelDesc,
           importance: Importance.high,
           priority: Priority.high,
+          icon: _smallIcon,
+          color: _accent,
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
@@ -146,7 +160,7 @@ class NotificationService {
     final now = DateTime.now();
     if (airingAt.isBefore(now)) return;
 
-    final notifId = mediaId + 100000000;
+    final notifId = mediaId + _nextEpisodeIdOffset;
     await _scheduleNotif(
       id: notifId,
       title: title,
@@ -154,6 +168,10 @@ class NotificationService {
       scheduledDate: airingAt,
     );
   }
+
+  /// Annule la notification programmée du prochain épisode (rappel désactivé).
+  Future<void> cancelNextEpisodeNotification(int mediaId) =>
+      _plugin.cancel(mediaId + _nextEpisodeIdOffset);
 
   /// Annule les notifications d'un anime (utile si retiré de la liste "Prévu").
   Future<void> cancelReleaseNotifications(int animeId) async {
@@ -180,6 +198,8 @@ class NotificationService {
           channelDescription: _channelDesc,
           importance: Importance.high,
           priority: Priority.high,
+          icon: _smallIcon,
+          color: _accent,
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,

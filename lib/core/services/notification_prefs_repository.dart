@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:nextarc/core/services/episode_checker_task.dart';
+import 'package:nextarc/core/services/notification_service.dart';
 
 /// Stocke les préférences de notification par media (anime ou manga).
 ///
@@ -10,6 +14,7 @@ class NotificationPrefsRepository {
   static const _countsBoxName = 'notif_counts';
   static const _isMangaBoxName = 'notif_is_manga';
   static const _settingsBoxName = 'notif_settings';
+  static const _scheduledBoxName = 'notif_scheduled';
   static const _episodeReleasesKey = 'episode_releases';
   static const _monthlyRecapKey = 'monthly_recap';
 
@@ -24,12 +29,17 @@ class NotificationPrefsRepository {
   late Box<bool> _isMangaBox;
   late Box<bool> _settingsBox;
 
+  /// Épisode dont la notification est programmée à l'heure de sortie, pour
+  /// ne pas l'annoncer une seconde fois lors de la vérification périodique.
+  late Box<int> _scheduledBox;
+
   Future<void> init() async {
     _prefsBox = await Hive.openBox<bool>(_boxName);
     _titlesBox = await Hive.openBox<String>(_titlesBoxName);
     _countsBox = await Hive.openBox<int>(_countsBoxName);
     _isMangaBox = await Hive.openBox<bool>(_isMangaBoxName);
     _settingsBox = await Hive.openBox<bool>(_settingsBoxName);
+    _scheduledBox = await Hive.openBox<int>(_scheduledBoxName);
   }
 
   // ── Réglages généraux (Paramètres → Notifications) ────────────────────────
@@ -39,8 +49,16 @@ class NotificationPrefsRepository {
   bool get episodeReleasesEnabled =>
       _settingsBox.get(_episodeReleasesKey) ?? true;
 
-  Future<void> setEpisodeReleasesEnabled(bool enabled) =>
-      _settingsBox.put(_episodeReleasesKey, enabled);
+  Future<void> setEpisodeReleasesEnabled(bool enabled) async {
+    await _settingsBox.put(_episodeReleasesKey, enabled);
+    for (final entry in getAllEnabled()) {
+      if (enabled) {
+        unawaited(EpisodeCheckerTask.checkMedia(entry.mediaId));
+      } else {
+        await _cancelScheduled(entry.mediaId);
+      }
+    }
+  }
 
   /// Proposition du récap du mois précédent en début de mois.
   bool get monthlyRecapEnabled => _settingsBox.get(_monthlyRecapKey) ?? true;
@@ -61,11 +79,30 @@ class NotificationPrefsRepository {
     if (currentCount != null) {
       await _countsBox.put(mediaId.toString(), currentCount);
     }
+    // Relève le dernier épisode réellement sorti et programme tout de suite le
+    // suivant, sans attendre la prochaine vérification en arrière-plan
+    unawaited(EpisodeCheckerTask.checkMedia(mediaId));
   }
 
   Future<void> disable(int mediaId) async {
     await _prefsBox.delete(mediaId.toString());
+    await _cancelScheduled(mediaId);
   }
+
+  Future<void> _cancelScheduled(int mediaId) async {
+    await _scheduledBox.delete(mediaId.toString());
+    try {
+      await NotificationService.instance.cancelNextEpisodeNotification(mediaId);
+    } catch (_) {
+      // Plugin indisponible : rien de programmé à annuler
+    }
+  }
+
+  int? getScheduledEpisode(int mediaId) =>
+      _scheduledBox.get(mediaId.toString());
+
+  Future<void> setScheduledEpisode(int mediaId, int episode) =>
+      _scheduledBox.put(mediaId.toString(), episode);
 
   Future<void> toggle(int mediaId, {
     required String title,
@@ -107,6 +144,7 @@ class NotificationPrefsRepository {
     repo._countsBox = await Hive.openBox<int>(_countsBoxName);
     repo._isMangaBox = await Hive.openBox<bool>(_isMangaBoxName);
     repo._settingsBox = await Hive.openBox<bool>(_settingsBoxName);
+    repo._scheduledBox = await Hive.openBox<int>(_scheduledBoxName);
     return repo;
   }
 }
