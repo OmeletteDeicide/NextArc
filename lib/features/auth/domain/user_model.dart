@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:nextarc/features/auth/domain/profile_banner.dart';
 
 /// Photo envoyée depuis NextArc (Firebase Storage), donc choisie par
 /// l'utilisateur — par opposition à la photo Google ou AniList.
@@ -41,6 +42,9 @@ class UserModel {
     this.accountPhoto,
     this.customName = false,
     this.customPhoto = false,
+    this.bannerSource,
+    this.bannerUrl,
+    this.bannerLabel,
   });
 
   // ── Firebase ──────────────────────────────────────────────────────────────
@@ -73,6 +77,12 @@ class UserModel {
   final bool customName;
   final bool customPhoto;
 
+  /// Bannière choisie dans NextArc (null = automatique : AniList puis
+  /// dégradé) et son libellé (« Cyberpunk: Edgerunners »).
+  final BannerSource? bannerSource;
+  final String? bannerUrl;
+  final String? bannerLabel;
+
   // ── Helpers ───────────────────────────────────────────────────────────────
 
   bool get hasAnilist => id > 0;
@@ -85,6 +95,13 @@ class UserModel {
 
   /// Photo de profil affichée.
   String? get avatar => avatarLarge ?? avatarMedium;
+
+  /// Bannière affichée sur le Profil (null = dégradé NextArc).
+  String? get profileBanner => resolveBannerUrl(
+        source: bannerSource,
+        chosenUrl: bannerUrl,
+        anilistBanner: bannerImage,
+      );
 
   /// Nom affiché, sinon partie locale de l'email.
   String get displayName =>
@@ -142,6 +159,9 @@ class UserModel {
       accountPhoto: accountPhoto,
       customName: customName,
       customPhoto: customPhoto,
+      bannerSource: bannerSource,
+      bannerUrl: bannerUrl,
+      bannerLabel: bannerLabel,
     );
   }
 
@@ -174,5 +194,8 @@ class UserModel {
         accountPhoto: accountPhoto ?? this.accountPhoto,
         customName: customName ?? this.customName,
         customPhoto: customPhoto ?? this.customPhoto,
+        bannerSource: bannerSource,
+        bannerUrl: bannerUrl,
+        bannerLabel: bannerLabel,
       );
 }

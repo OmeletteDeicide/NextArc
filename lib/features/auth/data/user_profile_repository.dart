@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nextarc/core/models/firestore_user_profile.dart';
+import 'package:nextarc/features/auth/domain/profile_banner.dart';
 import 'package:nextarc/features/auth/domain/user_model.dart';
 
 /// Gère le document Firestore users/{uid}.
@@ -86,5 +87,21 @@ class UserProfileRepository {
       'updatedAt': FieldValue.serverTimestamp(),
     }..removeWhere((_, v) => v == null);
     if (updates.length > 1) await _users.doc(uid).update(updates);
+  }
+
+  /// Enregistre la bannière choisie. [source] null = automatique (AniList
+  /// puis dégradé) : les champs sont retirés.
+  Future<void> updateBanner({
+    required String uid,
+    required BannerSource? source,
+    String? url,
+    String? label,
+  }) async {
+    await _users.doc(uid).update({
+      'bannerSource': source?.value ?? FieldValue.delete(),
+      'bannerUrl': url ?? FieldValue.delete(),
+      'bannerLabel': label ?? FieldValue.delete(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 }

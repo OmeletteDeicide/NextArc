@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:nextarc/features/auth/data/user_profile_repository.dart';
+import 'package:nextarc/features/auth/domain/profile_banner.dart';
 
 /// Gère la mise à jour du profil Firebase + Firestore (pseudo + avatar).
 class ProfileService {
@@ -37,5 +38,34 @@ class ProfileService {
     await _user?.reload();
     await _profileRepo.updateProfileFields(uid: uid, photoUrl: url);
     return url;
+  }
+
+  /// Enregistre la bannière : une image de l'appareil est d'abord envoyée
+  /// dans Storage (banners/{uid}.jpg).
+  Future<void> updateBanner({
+    required BannerSource? source,
+    String? url,
+    String? label,
+    File? file,
+  }) async {
+    final uid = _user?.uid;
+    if (uid == null) throw Exception('Non connecté');
+
+    var bannerUrl = url;
+    if (source == BannerSource.device && file != null) {
+      final task = await _storage.ref('banners/$uid.jpg').putFile(
+            file,
+            SettableMetadata(contentType: 'image/jpeg'),
+          );
+      bannerUrl = await task.ref.getDownloadURL();
+    }
+    await _profileRepo.updateBanner(
+      uid: uid,
+      source: source,
+      url: source == BannerSource.cover || source == BannerSource.device
+          ? bannerUrl
+          : null,
+      label: source == BannerSource.cover ? label : null,
+    );
   }
 }

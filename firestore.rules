@@ -50,6 +50,7 @@ service cloud.firestore {
             'displayName', 'email', 'photoUrl',
             'anilistId', 'anilistName', 'anilistAvatar',
             'customName', 'customPhoto',
+            'bannerSource', 'bannerUrl', 'bannerLabel',
             'createdAt', 'updatedAt'])
         && optString(data, 'displayName', 100)
         && optString(data, 'email', 200)
@@ -58,6 +59,10 @@ service cloud.firestore {
         && optString(data, 'anilistAvatar', 2048)
         && (!('customName' in data) || data.customName is bool)
         && (!('customPhoto' in data) || data.customPhoto is bool)
+        && (data.get('bannerSource', null) == null
+            || data.bannerSource in ['cover', 'device', 'anilist', 'gradient'])
+        && optString(data, 'bannerUrl', 2048)
+        && optString(data, 'bannerLabel', 200)
         && (data.get('anilistId', null) == null
             || (data.anilistId is int && data.anilistId > 0));
     }

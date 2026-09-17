@@ -154,7 +154,7 @@ nouvelle couleur de la maquette.
       genres », carte d'aide avec action
 - [x] À propos : bloc logo, paragraphe, carte AniList accentuée, technologies
       en chips, liens Confidentialité / Conditions / Licences (Ko-fi : non)
-- [ ] Bannière de profil : feuille de choix, cascade (choisie > AniList >
+- [x] Bannière de profil : feuille de choix, cascade (choisie > AniList >
       dégradé), scrim, en-tête 230 px, « Modifier le profil » refait
 - [ ] Versions claires : Stats (mois vides = trait 3 px), Mon titre,
       Connexion (AniList en carte d'info en pied), Ma liste invité
@@ -392,3 +392,18 @@ nouvelle couleur de la maquette.
   n'existe (`termsUrl`). Ko-fi reste dans le Profil (déjà à la couleur de la
   maquette). ⚠ `docs/privacy-policy.html` date d'avant les comptes : à mettre
   à jour (Firestore, Storage, suppression) et activer GitHub Pages.
+- 17/09 — Lot 6 (7) : Bannière de profil. Règle pure `profile_banner.dart`
+  (choisie > AniList > dégradé ; « Dégradé » choisi l'emporte sur AniList ;
+  image manquante ou AniList délié → repli). Firestore `bannerSource`
+  (cover/device/anilist/gradient) + `bannerUrl` + `bannerLabel` (règles
+  mises à jour), image d'appareil dans Storage `banners/{uid}.jpg` (règle
+  ajoutée, déjà effacée par `deleteAccount`). Profil : bannière 120 px +
+  barre d'état, scrim (sombre en haut, fond en bas), avatar 84 px à cheval de
+  42 px, pseudo / e-mail sur le fond, boutons sombres translucides ; sans
+  bannière, dégradé + halo inchangés. « Modifier le profil » refait : aperçu
+  130 px avec pastille de source, carte Photo (« Importée depuis AniList » /
+  « Choisie sur NextArc »), pseudo 24 caractères, 3 options de bannière,
+  bouton Enregistrer fixe. Feuille « Choisir une bannière » : appareil
+  (1600 px), grille 2 colonnes des jaquettes de la liste, Retirer, « Utiliser
+  cette bannière ». Analyse OK, 139 tests. ⚠ Redéployer
+  `firestore:rules,storage`.

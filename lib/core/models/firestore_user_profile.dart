@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nextarc/features/auth/domain/profile_banner.dart';
 import 'package:nextarc/features/auth/domain/user_model.dart';
 
 /// Document Firestore : users/{uid}
@@ -13,6 +14,9 @@ class FirestoreUserProfile {
     this.anilistAvatar,
     this.customName,
     this.customPhoto,
+    this.bannerSource,
+    this.bannerUrl,
+    this.bannerLabel,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -33,6 +37,11 @@ class FirestoreUserProfile {
   /// documents).
   final bool? customName;
   final bool? customPhoto;
+
+  /// Bannière choisie (voir [resolveBannerUrl]).
+  final BannerSource? bannerSource;
+  final String? bannerUrl;
+  final String? bannerLabel;
 
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -56,6 +65,9 @@ class FirestoreUserProfile {
         if (anilistAvatar != null) 'anilistAvatar': anilistAvatar,
         if (customName != null) 'customName': customName,
         if (customPhoto != null) 'customPhoto': customPhoto,
+        if (bannerSource != null) 'bannerSource': bannerSource!.value,
+        if (bannerUrl != null) 'bannerUrl': bannerUrl,
+        if (bannerLabel != null) 'bannerLabel': bannerLabel,
         'createdAt': Timestamp.fromDate(createdAt),
         'updatedAt': Timestamp.fromDate(updatedAt),
       };
@@ -71,6 +83,9 @@ class FirestoreUserProfile {
       anilistAvatar: map['anilistAvatar'] as String?,
       customName: map['customName'] as bool?,
       customPhoto: map['customPhoto'] as bool?,
+      bannerSource: BannerSource.fromValue(map['bannerSource'] as String?),
+      bannerUrl: map['bannerUrl'] as String?,
+      bannerLabel: map['bannerLabel'] as String?,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -121,6 +136,9 @@ class FirestoreUserProfile {
       accountPhoto: photoUrl,
       customName: nameIsCustom,
       customPhoto: photoIsCustom,
+      bannerSource: bannerSource,
+      bannerUrl: bannerUrl,
+      bannerLabel: bannerLabel,
     );
   }
 }

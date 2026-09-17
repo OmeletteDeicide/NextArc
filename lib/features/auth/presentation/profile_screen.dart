@@ -11,6 +11,7 @@ import 'package:nextarc/core/widgets/google_logo.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/auth/domain/user_model.dart';
 import 'package:nextarc/features/auth/presentation/anilist_actions.dart';
+import 'package:nextarc/features/auth/presentation/profile_banner_view.dart';
 import 'package:nextarc/features/stats/domain/stats_provider.dart';
 import 'package:nextarc/features/stats/domain/user_title.dart';
 import 'package:nextarc/features/stats/presentation/title_promotion_card.dart';
@@ -457,21 +458,18 @@ class _ProfileHeader extends StatelessWidget {
         ? user.email
         : 'profile_anilist_id'.tr(namedArgs: {'id': '${user.id}'});
 
-    final header = DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: isDark
-            ? LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [const Color(0xFF1B2140), c.surface1],
-                stops: const [0, 0.7],
-              )
-            : LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [c.accent, c.violet],
-              ),
-      ),
+    final banner = user.profileBanner;
+    final Widget header = banner != null
+        ? _BannerHeader(
+            user: user,
+            bannerUrl: banner,
+            title: title,
+            subtitle: subtitle,
+            onEdit: onEdit,
+            onLogout: onLogout,
+          )
+        : DecoratedBox(
+      decoration: BoxDecoration(gradient: profileHeaderGradient(context)),
       child: Stack(
         children: [
           if (isDark)
@@ -567,16 +565,140 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.user, required this.isArcer});
+/// En-tête avec bannière : image recadrée sous un scrim (fond de l'écran en
+/// bas, assombri en haut pour la barre d'état), avatar à cheval sur le bord.
+/// Pseudo et e-mail sont posés sur le fond, donc lisibles quelle que soit
+/// l'image. Le halo du dégradé n'est pas repris.
+class _BannerHeader extends StatelessWidget {
+  const _BannerHeader({
+    required this.user,
+    required this.bannerUrl,
+    required this.title,
+    required this.subtitle,
+    required this.onEdit,
+    required this.onLogout,
+  });
+
+  static const double _bannerHeight = 120;
+  static const double _avatarOverlap = 42;
 
   final UserModel user;
-  final bool isArcer;
+  final String bannerUrl;
+  final UserTitle? title;
+  final String? subtitle;
+  final VoidCallback? onEdit;
+  final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final text = Theme.of(context).textTheme;
+    final topInset = MediaQuery.viewPaddingOf(context).top;
+    final bannerHeight = _bannerHeight + topInset;
+    final isArcer = title?.isArcer ?? false;
+    // Espace entre la rangée de boutons et le haut de l'avatar
+    final buttonsBottom = topInset + 4 + AppSpacing.minTouch;
+    final avatarTop = bannerHeight - _avatarOverlap - (isArcer ? 6 : 0);
+
+    return Stack(
+      children: [
+        Positioned(
+          left: 0,
+          right: 0,
+          top: 0,
+          height: bannerHeight,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              ProfileBannerImage(url: bannerUrl),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      const Color(0x73060A15),
+                      c.base.withValues(alpha: 0.25),
+                      c.base,
+                    ],
+                    stops: const [0, 0.4, 0.96],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+              AppSpacing.screen - 4, topInset + 4, AppSpacing.screen - 4, 18),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (onEdit != null)
+                    _HeaderButton(
+                      icon: Icons.edit_outlined,
+                      tooltip: 'profile_edit_title'.tr(),
+                      onTap: onEdit!,
+                      onImage: true,
+                    ),
+                  _HeaderButton(
+                    icon: Icons.logout_rounded,
+                    tooltip: 'profile_logout_button'.tr(),
+                    onTap: onLogout,
+                    onImage: true,
+                  ),
+                ],
+              ),
+              SizedBox(height: avatarTop - buttonsBottom),
+              _Avatar(user: user, isArcer: isArcer, borderColor: c.base),
+              const SizedBox(height: 10),
+              Text(
+                user.displayName,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: text.headlineSmall?.copyWith(color: c.text1),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 3),
+                Text(
+                  subtitle!,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.bodySmall
+                      ?.copyWith(color: c.text2, fontSize: 11.5),
+                ),
+              ],
+              if (title != null) ...[
+                const SizedBox(height: 10),
+                _PulseOnPromotion(child: UserTitleBadge(title: title!)),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.user, required this.isArcer, this.borderColor});
+
+  final UserModel user;
+  final bool isArcer;
+
+  /// Bordure imposée (fond de l'écran sous une bannière).
+  final Color? borderColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    // Sous une bannière, l'avatar suit le style sombre (dégradé + bordure fond)
+    final isDark = borderColor != null ||
+        Theme.of(context).brightness == Brightness.dark;
     final initial = user.displayName.trim().isEmpty
         ? '?'
         : user.displayName.trim().characters.first.toUpperCase();
@@ -590,9 +712,10 @@ class _Avatar extends StatelessWidget {
         color: isDark ? null : Colors.white,
         border: Border.all(
           width: 3,
-          color: isDark
-              ? const Color(0x99060A15)
-              : Colors.white.withValues(alpha: 0.65),
+          color: borderColor ??
+              (isDark
+                  ? const Color(0x99060A15)
+                  : Colors.white.withValues(alpha: 0.65)),
         ),
         image: user.avatar == null
             ? null
@@ -636,15 +759,19 @@ class _HeaderButton extends StatelessWidget {
     required this.icon,
     required this.tooltip,
     required this.onTap,
+    this.onImage = false,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
 
+  /// Posé sur une bannière : toujours sombre translucide.
+  final bool onImage;
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = onImage || Theme.of(context).brightness == Brightness.dark;
     return Tooltip(
       message: tooltip,
       child: InkResponse(
