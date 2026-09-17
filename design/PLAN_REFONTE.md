@@ -124,8 +124,8 @@
       côte à côte, liste locale en carte + « Passer sur un compte ? », version
       unique (`app_version.dart`) — fait le 16/09, aussi pour les comptes connectés
 - [x] « Modifier le profil » aligné sur le design system (pas de maquette)
-- [ ] Pour toi · Explorer & filtres · Recherche · Calendrier · À propos
-- [ ] Versions claires : Stats, Mon titre, Connexion, Ma liste invité
+- [x] Pour toi · Explorer & filtres · Recherche · Calendrier · À propos
+- [x] Versions claires : Stats, Mon titre, Connexion, Ma liste invité
 
 ### Lot 6 — Revue 2 de Claude Design (`design/NextArc Revue 2 - Ecrans restants.dc.html`)
 Ordre conseillé par la revue. Remarques de Simon (16/09) : la cloche de rappel
@@ -156,7 +156,7 @@ nouvelle couleur de la maquette.
       en chips, liens Confidentialité / Conditions / Licences (Ko-fi : non)
 - [x] Bannière de profil : feuille de choix, cascade (choisie > AniList >
       dégradé), scrim, en-tête 230 px, « Modifier le profil » refait
-- [ ] Versions claires : Stats (mois vides = trait 3 px), Mon titre,
+- [x] Versions claires : Stats (mois vides = trait 3 px), Mon titre,
       Connexion (AniList en carte d'info en pied), Ma liste invité
 
 ## Hors refonte — à faire / en attente
@@ -407,3 +407,10 @@ nouvelle couleur de la maquette.
   (1600 px), grille 2 colonnes des jaquettes de la liste, Retirer, « Utiliser
   cette bannière ». Analyse OK, 139 tests. ⚠ Redéployer
   `firestore:rules,storage`.
+- 17/09 — Lot 6 (8) : Clairs manquants. Stats (mois vide = trait 3 px) et Mon
+  titre (carte Arcer dorée en clair) étaient déjà conformes. Connexion : la
+  mention AniList devient une carte d'information en pied (« AniList se lie
+  après »). Ma liste invité : bandeau teinté accent avec icône en tuile.
+  **Lot 6 terminé.** Choix faits sur les 2 questions de la revue : jaquettes
+  de la liste autorisées en bannière (recadrage centre), rotation « Pour toi »
+  stable sur 24 h. Pas d'appareil branché pendant le lot : rendu à vérifier.

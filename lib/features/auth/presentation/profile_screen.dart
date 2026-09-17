@@ -236,10 +236,45 @@ class ProfileScreen extends ConsumerWidget {
             ),
             Text('auth_guest_hint'.tr(),
                 textAlign: TextAlign.center, style: hintStyle),
-            const SizedBox(height: 6),
-            Text('auth_anilist_later'.tr(),
-                textAlign: TextAlign.center, style: hintStyle),
-            const SizedBox(height: 28),
+            const SizedBox(height: 22),
+            // AniList n'est pas un 3ᵉ moyen de connexion : simple information
+            Container(
+              padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
+              decoration: BoxDecoration(
+                color: c.surface1,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: c.accent.withValues(alpha: 0.22)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: c.surface2,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    child: Icon(Icons.link_rounded,
+                        size: 17, color: c.accentText),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('auth_anilist_later_title'.tr(),
+                            style: text.titleSmall?.copyWith(color: c.text1)),
+                        const SizedBox(height: 2),
+                        Text('auth_anilist_later'.tr(),
+                            style: text.bodySmall?.copyWith(
+                                color: c.text2, fontSize: 10.5, height: 1.4)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
             _MenuRow(
               icon: Icons.settings_outlined,
               title: 'profile_settings_title'.tr(),

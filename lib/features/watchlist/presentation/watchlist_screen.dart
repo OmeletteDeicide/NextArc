@@ -393,14 +393,23 @@ class _GuestBanner extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(12, 0, 0, 0),
         decoration: BoxDecoration(
-          color: c.surface1,
+          color: c.accent.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(AppRadius.cover),
-          border: Border.all(color: c.border),
+          border: Border.all(color: c.accent.withValues(alpha: 0.28)),
         ),
         child: Row(
           children: [
-            Icon(Icons.info_outline_rounded, size: 16, color: c.text3),
-            const SizedBox(width: AppSpacing.xs),
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: c.surface1,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.info_outline_rounded,
+                  size: 15, color: c.accentText),
+            ),
+            const SizedBox(width: 11),
             Expanded(
               child: Text(
                 'watchlist_guest_banner_local'.tr(),
