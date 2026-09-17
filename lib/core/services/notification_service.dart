@@ -2,11 +2,11 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-/// Service de notifications locales pour les sorties d'anime.
+/// Service de notifications locales (Android + iOS).
 ///
-/// Deux notifications sont programmées quand un anime "Prévu" a une date connue :
-///  - J-7 : "sort dans une semaine"
-///  - J-0 : "sort aujourd'hui"
+/// Canaux :
+///  - `anime_releases`  : J-7 / J-0 pour les anime "Prévu" avec date connue
+///  - `new_episodes`    : nouvel épisode/chapitre pour les RELEASING suivis
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
@@ -17,21 +17,84 @@ class NotificationService {
   static const _channelName = 'Sorties d\'anime';
   static const _channelDesc = 'Notifications de sortie des anime prévus';
 
+  static const _epChannelId = 'new_episodes';
+  static const _epChannelName = 'Nouveaux épisodes';
+  static const _epChannelDesc = 'Alerte quand un nouvel épisode ou chapitre sort';
+
   Future<void> init() async {
     tz.initializeTimeZones();
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    // iOS : autorise toutes les alertes au niveau du plugin (la permission
+    // runtime est demandée séparément via requestPermission).
+    const ios = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
     await _plugin.initialize(
-      const InitializationSettings(android: android),
+      const InitializationSettings(android: android, iOS: ios),
     );
   }
 
-  /// Demande la permission de notifications (Android 13+).
+  /// Demande la permission de notifications (Android 13+ et iOS).
   Future<bool> requestPermission() async {
+    // Android
     final android = _plugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
-    return await android?.requestNotificationsPermission() ?? false;
+    final androidGranted =
+        await android?.requestNotificationsPermission() ?? false;
+
+    // iOS
+    final ios = _plugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>();
+    final iosGranted = await ios?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        ) ??
+        false;
+
+    return androidGranted || iosGranted;
+  }
+
+  /// Notification immédiate : nouvel épisode ou chapitre disponible.
+  ///
+  /// [mediaId]  — utilisé comme id de notif (ne chevauche pas les ids J-7/J-0
+  ///              qui utilisent mediaId*2 / mediaId*2+1)
+  /// [count]    — numéro du dernier épisode/chapitre connu
+  /// [isManga]  — adapte le texte (épisode vs chapitre)
+  Future<void> showNewContentNotification({
+    required int mediaId,
+    required String title,
+    required int count,
+    required bool isManga,
+  }) async {
+    final body = isManga
+        ? '📖 Chapitre $count disponible !'
+        : '▶️ Épisode $count disponible !';
+
+    await _plugin.show(
+      mediaId, // id direct (positif, distinct de mediaId*2 utilisé pour J-7/J-0)
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _epChannelId,
+          _epChannelName,
+          channelDescription: _epChannelDesc,
+          importance: Importance.high,
+          priority: Priority.high,
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+    );
   }
 
   /// Programme les notifications J-7 et J-0 pour un anime.
@@ -69,6 +132,29 @@ class NotificationService {
     }
   }
 
+  /// Programme une notification précise pour le prochain épisode d'un anime.
+  ///
+  /// Utilise [airingAt] (timestamp exact de diffusion AniList) pour déclencher
+  /// la notification à l'heure réelle. N'utilise PAS mediaId*2 pour éviter les
+  /// collisions avec les notifs J-7/J-0 : utilise mediaId + 100_000_000.
+  Future<void> scheduleNextEpisodeNotification({
+    required int mediaId,
+    required String title,
+    required int episode,
+    required DateTime airingAt,
+  }) async {
+    final now = DateTime.now();
+    if (airingAt.isBefore(now)) return;
+
+    final notifId = mediaId + 100000000;
+    await _scheduleNotif(
+      id: notifId,
+      title: title,
+      body: '▶️ Épisode $episode disponible !',
+      scheduledDate: airingAt,
+    );
+  }
+
   /// Annule les notifications d'un anime (utile si retiré de la liste "Prévu").
   Future<void> cancelReleaseNotifications(int animeId) async {
     await _plugin.cancel(animeId * 2);
@@ -94,6 +180,11 @@ class NotificationService {
           channelDescription: _channelDesc,
           importance: Importance.high,
           priority: Priority.high,
+        ),
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
         ),
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,

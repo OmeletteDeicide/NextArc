@@ -7,7 +7,7 @@ class RecoQueries {
       Media(id: \$id) {
         id
         title { romaji english }
-        recommendations(sort: RATING_DESC, perPage: 8) {
+        recommendations(sort: RATING_DESC, perPage: 12) {
           nodes {
             rating
             mediaRecommendation {

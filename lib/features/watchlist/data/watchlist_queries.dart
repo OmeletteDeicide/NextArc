@@ -19,10 +19,12 @@ class WatchlistQueries {
               title { romaji english }
               coverImage { large medium }
               episodes
+              duration
               averageScore
               genres
               status
               startDate { year month day }
+              nextAiringEpisode { airingAt episode }
             }
           }
         }

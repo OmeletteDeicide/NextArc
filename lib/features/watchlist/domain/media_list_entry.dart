@@ -1,16 +1,18 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:nextarc/features/discover/domain/media_model.dart';
 
-/// Statuts AniList traduits.
 enum ListStatus {
-  current('CURRENT', 'En cours'),
-  completed('COMPLETED', 'Terminé'),
-  planning('PLANNING', 'Prévu'),
-  paused('PAUSED', 'En pause'),
-  dropped('DROPPED', 'Abandonné');
+  current('CURRENT', 'status_current'),
+  completed('COMPLETED', 'status_completed'),
+  planning('PLANNING', 'status_planning'),
+  paused('PAUSED', 'status_paused'),
+  dropped('DROPPED', 'status_dropped');
 
-  const ListStatus(this.anilistValue, this.label);
+  const ListStatus(this.anilistValue, this.translationKey);
   final String anilistValue;
-  final String label;
+  final String translationKey;
+
+  String get label => translationKey.tr();
 
   static ListStatus? fromString(String? value) {
     for (final s in values) {

@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create, update: if isOwner(uid) && isValidUserProfile();
+      // Suppression uniquement via Cloud Function (Admin SDK)
+      allow delete: if false;
+
+      match /watchlist/{mediaId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) && isValidWatchlistEntry(mediaId);
+        // Retrait = suppression douce (champ `deleted`) pour garder la date de
+        // suppression ; l'effacement réel passe par la Cloud Function de
+        // suppression de compte (Admin SDK).
+        allow delete: if false;
+      }
+
+      // Journal d'activité du récap mensuel : un document par mois (yyyy-MM)
+      match /activity/{month} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) && isValidActivity(month);
+        allow delete: if false;
+      }
+
+      match /reviews/{mediaId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) && isValidReview();
+        allow delete: if isOwner(uid);
+      }
+    }
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function optString(data, key, maxLen) {
+      return data.get(key, null) == null
+        || (data[key] is string && data[key].size() <= maxLen);
+    }
+
+    function isValidUserProfile() {
+      let data = request.resource.data;
+      return data.keys().hasOnly([
+            'displayName', 'email', 'photoUrl',
+            'anilistId', 'anilistName', 'anilistAvatar',
+            'customName', 'customPhoto',
+            'bannerSource', 'bannerUrl', 'bannerLabel',
+            'createdAt', 'updatedAt'])
+        && optString(data, 'displayName', 100)
+        && optString(data, 'email', 200)
+        && optString(data, 'photoUrl', 2048)
+        && optString(data, 'anilistName', 100)
+        && optString(data, 'anilistAvatar', 2048)
+        && (!('customName' in data) || data.customName is bool)
+        && (!('customPhoto' in data) || data.customPhoto is bool)
+        && (data.get('bannerSource', null) == null
+            || data.bannerSource in ['cover', 'device', 'anilist', 'gradient'])
+        && optString(data, 'bannerUrl', 2048)
+        && optString(data, 'bannerLabel', 200)
+        && (data.get('anilistId', null) == null
+            || (data.anilistId is int && data.anilistId > 0));
+    }
+
+    function isValidWatchlistEntry(mediaId) {
+      let data = request.resource.data;
+      let validStatuses = ['CURRENT', 'COMPLETED', 'PLANNING', 'PAUSED', 'DROPPED'];
+      let validTypes = ['ANIME', 'MANGA'];
+      return data.keys().hasOnly(['animeId', 'title', 'coverImage', 'status', 'score',
+                                  'progress', 'episodes', 'mediaType', 'favourite',
+                                  'deleted', 'genres', 'duration', 'updatedAt'])
+          && data.animeId is int && data.animeId > 0
+          && string(data.animeId) == mediaId
+          && data.title is string && data.title.size() > 0 && data.title.size() <= 500
+          && data.status is string && data.status in validStatuses
+          && data.mediaType is string && data.mediaType in validTypes
+          && data.updatedAt == request.time
+          && (data.get('score', null) == null || (data.score is number && data.score >= 0 && data.score <= 10))
+          && (data.get('progress', null) == null || (data.progress is int && data.progress >= 0 && data.progress <= 50000))
+          && (data.get('episodes', null) == null || (data.episodes is int && data.episodes >= 0 && data.episodes <= 50000))
+          && (data.get('favourite', null) == null || data.favourite is bool)
+          && (data.get('deleted', null) == null || data.deleted is bool)
+          && (data.get('genres', null) == null || (data.genres is list && data.genres.size() <= 20))
+          && (data.get('duration', null) == null || (data.duration is int && data.duration >= 0 && data.duration <= 10000))
+          && optString(data, 'coverImage', 2048);
+    }
+
+    function isValidActivity(month) {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['month', 'media', 'updatedAt'])
+          && month.matches('^[0-9]{4}-[0-9]{2}$')
+          && data.month == month
+          && data.media is map
+          && data.media.size() <= 5000
+          && data.updatedAt == request.time;
+    }
+
+    function isValidReview() {
+      let data = request.resource.data;
+      return data.keys().hasOnly(['mediaId', 'note', 'updatedAt'])
+          && data.mediaId is int && data.mediaId > 0
+          && data.note is string && data.note.size() > 0 && data.note.size() <= 500
+          && data.updatedAt == request.time;
+    }
+  }
+}

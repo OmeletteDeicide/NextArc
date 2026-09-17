@@ -1,7 +1,21 @@
+import 'dart:convert';
+
+import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:nextarc/core/constants/app_version.dart';
 import 'package:nextarc/core/providers/theme_provider.dart';
+import 'package:nextarc/core/router/app_router.dart';
+import 'package:nextarc/core/services/notification_prefs_repository.dart';
+import 'package:nextarc/core/theme/app_tokens.dart';
+import 'package:nextarc/core/theme/app_typography.dart';
+import 'package:nextarc/core/widgets/ds/ds.dart';
+import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/auth/presentation/anilist_actions.dart';
+import 'package:nextarc/features/watchlist/domain/guest_backup.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -26,10 +40,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         jsonStr,
         subject: 'NextArc — Ma watchlist',
       );
+      await recordGuestExport();
+      ref.invalidate(lastGuestExportProvider);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur export : $e')),
+          SnackBar(
+              content: Text('settings_export_error'
+                  .tr(namedArgs: {'error': e.toString()}))),
         );
       }
     } finally {
@@ -50,19 +68,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final bytes = result.files.first.bytes;
       if (bytes == null) return;
 
-      final jsonStr = String.fromCharCodes(bytes);
+      final jsonStr = utf8.decode(bytes);
       await ref.read(guestWatchlistRepositoryProvider).importJson(jsonStr);
       ref.invalidate(guestWatchlistProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Liste importée avec succès ✓')),
+          SnackBar(content: Text('settings_import_success'.tr())),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur import : $e')),
+          SnackBar(
+              content: Text('settings_import_error'
+                  .tr(namedArgs: {'error': e.toString()}))),
         );
       }
     } finally {
@@ -70,192 +90,596 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  /// Moyen de connexion du compte Firebase affiché sous l'e-mail.
+  String _signInProvider() {
+    final providers = fb.FirebaseAuth.instance.currentUser?.providerData
+            .map((p) => p.providerId) ??
+        const <String>[];
+    return providers.contains('google.com')
+        ? 'settings_connected_google'
+        : 'settings_connected_email';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
     final currentMode = ref.watch(themeProvider);
-    final cs = Theme.of(context).colorScheme;
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
+    // L'export/import ne concerne que la liste locale : un compte NextArc
+    // est sauvegardé dans Firestore.
+    final isGuest = ref
+            .watch(authProvider)
+            .whenOrNull(data: (a) => !a.isAuthenticated) ??
+        true;
+    final user = ref.watch(authProvider).valueOrNull?.user;
+
+    final themeHint = switch (currentMode) {
+      ThemeMode.system => 'settings_theme_system_subtitle',
+      ThemeMode.dark => 'settings_theme_dark_subtitle',
+      ThemeMode.light => 'settings_theme_light_subtitle',
+    };
+
+    final backup = backupAge(
+      ref.watch(lastGuestExportProvider).valueOrNull,
+      DateTime.now(),
+    );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Paramètres')),
-      body: ListView(
-        children: [
-          // ── Apparence ───────────────────────────────────────────────────────
-          _SectionHeader(label: 'Apparence'),
-
-          _ThemeOption(
-            icon: Icons.brightness_auto_rounded,
-            title: 'Système',
-            subtitle: 'Suit le mode de ton téléphone',
-            selected: currentMode == ThemeMode.system,
-            onTap: () =>
-                ref.read(themeProvider.notifier).setTheme(ThemeMode.system),
-          ),
-
-          _ThemeOption(
-            icon: Icons.dark_mode_rounded,
-            title: 'Mode sombre',
-            subtitle: 'Noir et bleu denim foncé',
-            selected: currentMode == ThemeMode.dark,
-            onTap: () =>
-                ref.read(themeProvider.notifier).setTheme(ThemeMode.dark),
-          ),
-
-          _ThemeOption(
-            icon: Icons.light_mode_rounded,
-            title: 'Mode clair',
-            subtitle: 'Blanc doux et bleu denim',
-            selected: currentMode == ThemeMode.light,
-            onTap: () =>
-                ref.read(themeProvider.notifier).setTheme(ThemeMode.light),
-          ),
-
-          const SizedBox(height: 8),
-          Divider(color: cs.outline.withValues(alpha: 0.2)),
-          const SizedBox(height: 8),
-
-          // ── Liste locale ─────────────────────────────────────────────────────
-          _SectionHeader(label: 'Liste locale (mode invité)'),
-
-          ListTile(
-            leading: _isExporting
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Icon(Icons.upload_rounded, color: cs.primary),
-            title: const Text('Exporter ma liste'),
-            subtitle: Text(
-              'Partager la watchlist locale en JSON',
-              style: TextStyle(
-                  fontSize: 12, color: cs.onSurface.withValues(alpha: 0.54)),
-            ),
-            onTap: _isExporting ? null : _export,
-          ),
-
-          ListTile(
-            leading: _isImporting
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Icon(Icons.download_rounded, color: cs.primary),
-            title: const Text('Importer une liste'),
-            subtitle: Text(
-              'Charger une watchlist depuis un fichier .json',
-              style: TextStyle(
-                  fontSize: 12, color: cs.onSurface.withValues(alpha: 0.54)),
-            ),
-            onTap: _isImporting ? null : _import,
-          ),
-
-          const SizedBox(height: 8),
-          Divider(color: cs.outline.withValues(alpha: 0.2)),
-          const SizedBox(height: 8),
-
-          // ── À propos ────────────────────────────────────────────────────────
-          _SectionHeader(label: 'Application'),
-
-          ListTile(
-            leading: Icon(Icons.info_outline_rounded, color: cs.primary),
-            title: const Text('Version'),
-            trailing: Text(
-              '1.0.0',
-              style: TextStyle(
-                color: cs.onSurface.withValues(alpha: 0.5),
-                fontSize: 13,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── En-tête ─────────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.screen - 4, AppSpacing.xs, AppSpacing.screen, 0),
+              child: Row(
+                children: [
+                  _RoundBackButton(
+                    onTap: () => context.canPop()
+                        ? context.pop()
+                        : context.go(AppRoutes.profile),
+                  ),
+                  const SizedBox(width: 6),
+                  Text('settings_title'.tr(),
+                      style: text.headlineSmall
+                          ?.copyWith(fontSize: 19, color: c.text1)),
+                ],
               ),
             ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(AppSpacing.screen, AppSpacing.md,
+                    AppSpacing.screen, AppSpacing.xl + bottomInset),
+                children: [
+                  // ── Apparence ─────────────────────────────────────────────
+                  _Section(
+                    label: 'settings_section_appearance'.tr(),
+                    children: [
+                      SegmentedControl<ThemeMode>(
+                        segments: [
+                          (
+                            value: ThemeMode.system,
+                            label: 'settings_theme_short_system'.tr(),
+                          ),
+                          (
+                            value: ThemeMode.dark,
+                            label: 'settings_theme_short_dark'.tr(),
+                          ),
+                          (
+                            value: ThemeMode.light,
+                            label: 'settings_theme_short_light'.tr(),
+                          ),
+                        ],
+                        selected: currentMode,
+                        onChanged: (mode) =>
+                            ref.read(themeProvider.notifier).setTheme(mode),
+                      ),
+                      Text(
+                        themeHint.tr(),
+                        style: text.bodySmall
+                            ?.copyWith(color: c.text2, fontSize: 10.5),
+                      ),
+                    ],
+                  ),
+
+                  // ── Langue ────────────────────────────────────────────────
+                  _Section(
+                    label: 'settings_section_language'.tr(),
+                    children: [
+                      Row(
+                        children: [
+                          for (final (code, name) in const [
+                            ('fr', 'Français'),
+                            ('en', 'English'),
+                            ('es', 'Español'),
+                          ]) ...[
+                            if (code != 'fr') const SizedBox(width: AppSpacing.xs),
+                            Expanded(
+                              child: _LanguageButton(
+                                code: code.toUpperCase(),
+                                semanticsLabel: name,
+                                selected:
+                                    context.locale.languageCode == code,
+                                onTap: () => context.setLocale(Locale(code)),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  // ── Liste locale (invité uniquement) ──────────────────────
+                  if (isGuest)
+                    _Section(
+                      label: 'settings_section_local_list'.tr(),
+                      children: [
+                        _Card(
+                          children: [
+                            _SettingsRow(
+                              icon: Icons.upload_rounded,
+                              title: 'settings_export_title'.tr(),
+                              subtitle: backup.key
+                                  .tr(namedArgs: {'count': '${backup.days}'}),
+                              busy: _isExporting,
+                              onTap: _isExporting ? null : _export,
+                            ),
+                            Divider(height: 1, color: c.border),
+                            _SettingsRow(
+                              icon: Icons.download_rounded,
+                              title: 'settings_import_title'.tr(),
+                              subtitle: 'settings_import_subtitle'.tr(),
+                              busy: _isImporting,
+                              onTap: _isImporting ? null : _import,
+                            ),
+                          ],
+                        ),
+                        const _AccountNudge(),
+                      ],
+                    ),
+
+                  // ── Compte + notifications (connecté) ─────────────────────
+                  if (!isGuest && user != null) ...[
+                    _Section(
+                      label: 'settings_section_account'.tr(),
+                      children: [
+                        _Card(
+                          children: [
+                            if (user.hasFirebase) ...[
+                              _SettingsRow(
+                                icon: Icons.mail_outline_rounded,
+                                title: user.email ?? user.displayName,
+                                subtitle: _signInProvider().tr(),
+                              ),
+                              Divider(height: 1, color: c.border),
+                            ],
+                            if (user.hasAnilist)
+                              _SettingsRow(
+                                icon: Icons.link_rounded,
+                                title: 'AniList',
+                                subtitle: 'settings_anilist_linked'.tr(
+                                    namedArgs: {
+                                      'name': user.anilistName ?? user.name
+                                    }),
+                                subtitleColor: c.statusCurrent,
+                                // AniList seul : c'est la déconnexion qui
+                                // s'applique, pas le déliage
+                                trailing: user.hasFirebase
+                                    ? Text(
+                                        'profile_anilist_unlink'.tr(),
+                                        style: text.labelMedium?.copyWith(
+                                            color: c.statusDroppedText),
+                                      )
+                                    : null,
+                                onTap: user.hasFirebase
+                                    ? () => confirmUnlinkAnilist(context, ref)
+                                    : null,
+                              )
+                            else
+                              _SettingsRow(
+                                icon: Icons.link_rounded,
+                                title: 'settings_anilist_link'.tr(),
+                                subtitle: 'settings_anilist_link_sub'.tr(),
+                                onTap: () =>
+                                    ref.read(authProvider.notifier).login(),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    _Section(
+                      label: 'settings_section_notifications'.tr(),
+                      children: [
+                        _Card(
+                          children: [
+                            _SwitchRow(
+                              title: 'settings_notif_episodes'.tr(),
+                              subtitle: 'settings_notif_episodes_sub'.tr(),
+                              value: NotificationPrefsRepository
+                                  .instance.episodeReleasesEnabled,
+                              onChanged: (v) async {
+                                await NotificationPrefsRepository.instance
+                                    .setEpisodeReleasesEnabled(v);
+                                if (mounted) setState(() {});
+                              },
+                            ),
+                            Divider(height: 1, color: c.border),
+                            _SwitchRow(
+                              title: 'settings_notif_recap'.tr(),
+                              subtitle: 'settings_notif_recap_sub'.tr(),
+                              value: NotificationPrefsRepository
+                                  .instance.monthlyRecapEnabled,
+                              onChanged: (v) async {
+                                await NotificationPrefsRepository.instance
+                                    .setMonthlyRecapEnabled(v);
+                                if (mounted) setState(() {});
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+
+                  // ── Application ───────────────────────────────────────────
+                  _Section(
+                    label: 'settings_section_app'.tr(),
+                    children: [
+                      _Card(
+                        children: [
+                          _SettingsRow(
+                            icon: Icons.info_outline_rounded,
+                            title: 'profile_about_title'.tr(),
+                            onTap: () => context.push(AppRoutes.about),
+                            trailing: Text(
+                              appVersion,
+                              style: AppTypography.overline(c.text2)
+                                  .copyWith(fontSize: 12, letterSpacing: 0),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  // ── Zone sensible (compte NextArc) ────────────────────────
+                  if (!isGuest && user?.hasFirebase == true)
+                    _Section(
+                      label: 'settings_section_danger'.tr(),
+                      labelColor: c.statusDroppedText,
+                      children: [
+                        Material(
+                          color: c.favourite.withValues(alpha: 0.08),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.card),
+                            side: BorderSide(
+                                color: c.favourite.withValues(alpha: 0.3)),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: _SettingsRow(
+                            icon: Icons.delete_forever_outlined,
+                            iconColor: c.statusDroppedText,
+                            iconBackground:
+                                c.favourite.withValues(alpha: 0.16),
+                            title: 'settings_delete_account'.tr(),
+                            titleColor: c.statusDroppedText,
+                            subtitle: 'settings_delete_account_sub'.tr(),
+                            onTap: () =>
+                                context.push(AppRoutes.deleteAccount),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Widgets ───────────────────────────────────────────────────────────────────
+
+class _RoundBackButton extends StatelessWidget {
+  const _RoundBackButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Tooltip(
+      message: MaterialLocalizations.of(context).backButtonTooltip,
+      child: InkResponse(
+        radius: 24,
+        onTap: onTap,
+        child: SizedBox(
+          width: AppSpacing.minTouch,
+          height: AppSpacing.minTouch,
+          child: Center(
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration:
+                  BoxDecoration(color: c.surface2, shape: BoxShape.circle),
+              child: Icon(Icons.arrow_back_rounded,
+                  size: 18, color: c.accentText),
+            ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Section : sur-titre mono + contenu espacé de 9 px.
+class _Section extends StatelessWidget {
+  const _Section({
+    required this.label,
+    required this.children,
+    this.labelColor,
+  });
+
+  final String label;
+  final List<Widget> children;
+  final Color? labelColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(label.toUpperCase(),
+              style: AppTypography.overline(labelColor ?? c.text3)),
+          for (final child in children) ...[
+            const SizedBox(height: 9),
+            child,
+          ],
         ],
       ),
     );
   }
 }
 
-// ── Widgets utilitaires ────────────────────────────────────────────────────────
+class _Card extends StatelessWidget {
+  const _Card({required this.children});
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
-  final String label;
+  final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      child: Text(
-        label.toUpperCase(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.2,
-          color: cs.onSurface.withValues(alpha: 0.45),
+    final c = AppColors.of(context);
+    return Material(
+      color: c.surface1,
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      clipBehavior: Clip.antiAlias,
+      child: Column(children: children),
+    );
+  }
+}
+
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.busy = false,
+    this.onTap,
+    this.subtitleColor,
+    this.titleColor,
+    this.iconColor,
+    this.iconBackground,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final Color? subtitleColor;
+  final Color? titleColor;
+  final Color? iconColor;
+  final Color? iconBackground;
+  final Widget? trailing;
+  final bool busy;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: iconBackground ?? c.surface2,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: busy
+                  ? Padding(
+                      padding: const EdgeInsets.all(9),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: c.accentText),
+                    )
+                  : Icon(icon, size: 17, color: iconColor ?? c.accentText),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.titleSmall?.copyWith(
+                          color: titleColor ?? c.text1, fontSize: 12.5)),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(subtitle!,
+                        style: text.bodySmall?.copyWith(
+                            color: subtitleColor ?? c.text2, fontSize: 10.5)),
+                  ],
+                ],
+              ),
+            ),
+            if (trailing != null)
+              trailing!
+            else if (onTap != null || busy)
+              Icon(Icons.chevron_right_rounded, size: 20, color: c.text3),
+          ],
         ),
       ),
     );
   }
 }
 
-class _ThemeOption extends StatelessWidget {
-  const _ThemeOption({
-    required this.icon,
+/// Ligne avec interrupteur (Notifications).
+class _SwitchRow extends StatelessWidget {
+  const _SwitchRow({
     required this.title,
     required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+    return InkWell(
+      onTap: () => onChanged(!value),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: text.titleSmall
+                          ?.copyWith(color: c.text1, fontSize: 12.5)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: text.bodySmall
+                          ?.copyWith(color: c.text2, fontSize: 10.5)),
+                ],
+              ),
+            ),
+            Switch(value: value, onChanged: onChanged),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Langue : trois boutons côte à côte, le choix actif en dégradé accent.
+class _LanguageButton extends StatelessWidget {
+  const _LanguageButton({
+    required this.code,
+    required this.semanticsLabel,
     required this.selected,
     required this.onTap,
   });
 
-  final IconData icon;
-  final String title;
-  final String subtitle;
+  final String code;
+  final String semanticsLabel;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: selected
-            ? cs.primary.withValues(alpha: 0.12)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: selected
-              ? cs.primary.withValues(alpha: 0.5)
-              : Colors.transparent,
-          width: 1.5,
+    final c = AppColors.of(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: semanticsLabel,
+      excludeSemantics: true,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: selected ? c.accentGradient : null,
+            color: selected ? null : c.surface1,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(11),
+            onTap: selected ? null : onTap,
+            child: SizedBox(
+              height: AppSpacing.minTouch,
+              child: Center(
+                child: Text(
+                  code,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontSize: 12,
+                        fontWeight:
+                            selected ? FontWeight.w800 : FontWeight.w700,
+                        color: selected ? Colors.white : c.text2,
+                      ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
-      child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        onTap: onTap,
-        leading: Icon(icon,
-            color: selected
-                ? cs.primary
-                : cs.onSurface.withValues(alpha: 0.5)),
-        title: Text(
-          title,
-          style: TextStyle(
-            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            color: selected ? cs.primary : cs.onSurface,
+    );
+  }
+}
+
+/// Encart invité : se connecter transfère la liste locale sans rien perdre.
+class _AccountNudge extends StatelessWidget {
+  const _AccountNudge();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: isDark
+            ? c.accent.withValues(alpha: 0.12)
+            : const Color(0xFFE9EDFC),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: c.accent.withValues(alpha: 0.26)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('settings_account_title'.tr(),
+              style:
+                  text.titleSmall?.copyWith(color: c.text1, fontSize: 12.5)),
+          const SizedBox(height: 6),
+          Text('settings_account_body'.tr(),
+              style: text.bodySmall?.copyWith(color: c.text2, height: 1.5)),
+          const SizedBox(height: 10),
+          AppButton(
+            label: 'settings_account_cta'.tr(),
+            onPressed: () => context.go(AppRoutes.profile),
           ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 12,
-            color: cs.onSurface.withValues(alpha: 0.5),
-          ),
-        ),
-        trailing: selected
-            ? Icon(Icons.check_circle_rounded, color: cs.primary, size: 20)
-            : null,
+        ],
       ),
     );
   }

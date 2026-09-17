@@ -5,38 +5,173 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Politique de confidentialité — NextArc</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #222; line-height: 1.7; }
-    h1 { font-size: 1.8em; }
-    h2 { font-size: 1.2em; margin-top: 2em; }
-    p, li { font-size: 0.95em; }
+    :root { color-scheme: light dark; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 780px; margin: 40px auto; padding: 0 20px; line-height: 1.7; color: #1d2230; background: #fff; }
+    @media (prefers-color-scheme: dark) { body { color: #dfe5f5; background: #0b1020; } a { color: #9cb0ff; } th, td { border-color: #2a3350 !important; } }
+    h1 { font-size: 1.8em; line-height: 1.25; }
+    h2 { font-size: 1.2em; margin-top: 2.2em; }
+    h3 { font-size: 1.02em; margin-top: 1.6em; }
+    p, li, td, th { font-size: 0.95em; }
+    table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+    th, td { border: 1px solid #d7deee; padding: 8px 10px; text-align: left; vertical-align: top; }
+    nav { margin: 1em 0 2em; }
+    .lang { font-size: .9em; }
   </style>
 </head>
 <body>
+  <p class="lang"><a href="#fr">Français</a> · <a href="#en">English</a></p>
+
+  <!-- ─────────────────────────────── FRANÇAIS ─────────────────────────────── -->
+  <section id="fr" lang="fr">
   <h1>Politique de confidentialité — NextArc</h1>
-  <p><em>Dernière mise à jour : 10 juin 2026</em></p>
+  <p><em>Dernière mise à jour : 17 septembre 2026 · s'applique à la version 2.0.0 et suivantes</em></p>
 
-  <p>NextArc est une application mobile de suivi de watchlist d'animés développée par Espiègle. Cette politique explique quelles données sont collectées, comment elles sont utilisées et vos droits.</p>
+  <p>NextArc est une application Android de suivi d'anime et de manga, développée et publiée par Espiègle, développeur indépendant (ci-après « nous »). Cette politique explique quelles données sont traitées, pourquoi, où elles sont hébergées, combien de temps elles sont gardées et quels sont tes droits. Nous en sommes le responsable du traitement au sens du RGPD.</p>
+  <p>Contact pour toute question ou demande : <a href="mailto:barthesimonpro@gmail.com">barthesimonpro@gmail.com</a></p>
 
-  <h2>1. Données collectées</h2>
-  <p>NextArc ne collecte ni ne stocke aucune donnée personnelle sur ses propres serveurs. L'application utilise les services tiers suivants :</p>
+  <h2>1. En bref</h2>
   <ul>
-    <li><strong>AniList</strong> : si vous vous connectez avec votre compte AniList, l'application accède à votre watchlist via l'API AniList. Les données restent sur les serveurs d'AniList. Politique de confidentialité AniList : <a href="https://anilist.co/terms">anilist.co/terms</a></li>
-    <li><strong>Firebase (Google)</strong> : utilisé pour la gestion des erreurs et la stabilité de l'application (Crashlytics). Aucune donnée d'identification personnelle n'est transmise. Politique de confidentialité Google : <a href="https://policies.google.com/privacy">policies.google.com/privacy</a></li>
+    <li>Tu peux utiliser NextArc <strong>sans compte</strong> (mode invité) : ta liste reste alors uniquement sur ton téléphone.</li>
+    <li>Si tu crées un compte, nous gardons ce qu'il faut pour le faire fonctionner : e-mail, pseudo, photo et bannière éventuelles, ta liste et tes notes.</li>
+    <li><strong>Aucune publicité, aucune mesure d'audience, aucun traceur publicitaire</strong>, aucune vente ni location de données.</li>
+    <li>Tu peux <strong>supprimer ton compte et toutes ses données</strong> depuis l'app, à tout moment.</li>
   </ul>
 
-  <h2>2. Données stockées localement</h2>
-  <p>Les préférences et tokens d'authentification sont stockés uniquement sur votre appareil (stockage sécurisé local). Ces données ne quittent pas votre appareil et ne sont pas partagées.</p>
+  <h2>2. Utilisation sans compte (mode invité)</h2>
+  <p>En mode invité, ta liste, tes notes, tes préférences (thème, langue, notifications) et ton historique de recherche sont enregistrés <strong>uniquement sur ton appareil</strong>. Nous n'y avons pas accès. Ils sont effacés si tu désinstalles l'app ou vides ses données. L'export de ta liste (fichier .json) passe par le menu de partage d'Android : c'est toi qui choisis où l'envoyer.</p>
 
-  <h2>3. Notifications</h2>
-  <p>NextArc peut envoyer des notifications locales (J-7 et J-0) pour les sorties d'animés que vous suivez. Ces notifications sont gérées entièrement par votre appareil, sans serveur tiers.</p>
+  <h2>3. Données traitées avec un compte NextArc</h2>
+  <table>
+    <tr><th>Données</th><th>Origine</th><th>Pourquoi</th></tr>
+    <tr><td>Adresse e-mail, mot de passe (géré et chiffré par Firebase Authentication, jamais visible par nous), identifiant de compte, dates de création et de dernière connexion</td><td>Toi, ou ton compte Google si tu choisis « Continuer avec Google »</td><td>Créer ton compte et te connecter</td></tr>
+    <tr><td>Pseudo et photo de profil</td><td>Ton compte Google ou AniList, ou ce que tu choisis dans l'app</td><td>Afficher ton profil et tes cartes de partage</td></tr>
+    <tr><td>Bannière de profil (jaquette choisie dans ta liste ou image envoyée depuis ton appareil)</td><td>Toi</td><td>Personnaliser ton profil</td></tr>
+    <tr><td>Ta liste : titres, statut, progression, note, ❤️, genres, durée, dates de modification (y compris des titres retirés, pour la synchronisation entre appareils)</td><td>Toi</td><td>Sauvegarder et synchroniser ta liste, calculer tes statistiques, ton titre et tes recommandations</td></tr>
+    <tr><td>Journal d'activité mensuel (titres suivis dans le mois)</td><td>Calculé par l'app</td><td>Récapitulatif du mois</td></tr>
+    <tr><td>Notes personnelles sur un titre (500 caractères max)</td><td>Toi</td><td>Te permettre de les retrouver</td></tr>
+    <tr><td>Identifiant, pseudo et avatar AniList, si tu lies ce compte</td><td>AniList</td><td>Importer et synchroniser ta liste AniList</td></tr>
+  </table>
+  <p>Ces données sont privées : aucun autre utilisateur ne peut les consulter. Une carte de partage n'est créée que lorsque tu la génères, sur ton appareil, et n'est envoyée qu'où tu le décides.</p>
 
-  <h2>4. Pas de publicité</h2>
-  <p>L'application ne contient aucune publicité et ne partage aucune donnée avec des réseaux publicitaires.</p>
+  <h2>4. Données techniques</h2>
+  <ul>
+    <li><strong>Vérification de l'app (Firebase App Check / Google Play Integrity)</strong> : à chaque échange avec nos serveurs, Google vérifie que la requête vient bien de l'application NextArc authentique, sur un appareil non modifié. Nous recevons seulement un jeton de validité, pas d'information sur ton appareil. Finalité : protéger ton compte et nos services contre les abus (intérêt légitime).</li>
+    <li><strong>Journaux techniques</strong> : l'hébergeur (Google Cloud) enregistre, comme tout serveur, des journaux de requêtes (dont l'adresse IP) pour la sécurité et le diagnostic. Nos fonctions serveur journalisent en plus l'identifiant de compte lors d'une suppression. Ces journaux sont conservés 30 jours.</li>
+    <li><strong>Notifications</strong> : les rappels de sortie d'épisodes et le récap du mois sont programmés <strong>localement</strong> sur ton appareil. Aucun service de notification à distance n'est utilisé.</li>
+  </ul>
 
-  <h2>5. Mineurs</h2>
-  <p>NextArc est destinée à un public de 13 ans et plus, conformément aux conditions d'utilisation d'AniList.</p>
+  <h2>5. AniList</h2>
+  <p>Les informations sur les anime et manga (titres, images, notes, recommandations, calendrier) proviennent de l'API publique d'<a href="https://anilist.co">AniList</a>. Ton téléphone interroge AniList directement ; AniList reçoit donc ton adresse IP, comme pour tout site web. NextArc n'est pas affilié à AniList.</p>
+  <p>Si tu lies ton compte AniList, la connexion se fait sur le site d'AniList. Le code d'autorisation transite par notre fonction serveur uniquement pour être échangé contre un jeton d'accès ; ce jeton est ensuite <strong>stocké chiffré sur ton appareil</strong>, jamais sur nos serveurs. L'app lit alors ta liste AniList et, lorsque tu modifies un titre, peut mettre à jour ta liste sur AniList à ta demande. Les données envoyées à AniList sont régies par la <a href="https://anilist.co/terms">politique d'AniList</a>. Tu peux délier AniList à tout moment depuis ton profil.</p>
 
-  <h2>6. Contact</h2>
-  <p>Pour toute question relative à la confidentialité : <a href="mailto:barthesimonpro@gmail.com">barthesimonpro@gmail.com</a></p>
+  <h2>6. Bases légales</h2>
+  <ul>
+    <li><strong>Exécution du service que tu demandes</strong> (art. 6.1.b RGPD) : compte, sauvegarde et synchronisation de ta liste, profil, statistiques, liaison AniList.</li>
+    <li><strong>Intérêt légitime</strong> (art. 6.1.f) : sécurité, prévention des abus (App Check), journaux techniques.</li>
+  </ul>
+
+  <h2>7. Hébergement et sous-traitants</h2>
+  <p>Nous utilisons les services Firebase de Google (Google Ireland Limited / Google LLC) en tant que sous-traitant :</p>
+  <ul>
+    <li><strong>Cloud Firestore</strong> (profil, liste, notes, journal) : Union européenne (multi-région eur3).</li>
+    <li><strong>Cloud Storage</strong> (photos et bannières envoyées) : Union européenne (multi-région EU).</li>
+    <li><strong>Cloud Functions</strong> (liaison AniList, suppression de compte) : Union européenne (europe-west1, Belgique).</li>
+    <li><strong>Firebase Authentication</strong> et <strong>App Check</strong> : services globaux de Google, pouvant impliquer un traitement aux États-Unis.</li>
+  </ul>
+  <p>Les éventuels transferts hors de l'Union européenne sont encadrés par le cadre de protection des données UE–États-Unis (Data Privacy Framework), auquel Google adhère, et par les clauses contractuelles types de la Commission européenne. Plus d'informations : <a href="https://firebase.google.com/support/privacy">Firebase et la confidentialité</a>.</p>
+
+  <h2>8. Durée de conservation</h2>
+  <ul>
+    <li>Données du compte : tant que ton compte existe. Elles sont effacées dès que tu supprimes ton compte.</li>
+    <li>Photos et bannières : remplacées à chaque changement, effacées avec le compte.</li>
+    <li>Journaux techniques : 30 jours.</li>
+    <li>Données du mode invité : sur ton appareil uniquement, jusqu'à la désinstallation ou l'effacement des données de l'app.</li>
+  </ul>
+
+  <h2>9. Supprimer ton compte</h2>
+  <p>Dans l'app : <strong>Profil → Paramètres → Zone sensible → Supprimer mon compte</strong>. Ton profil, ta liste, tes notes, ton journal, ta photo, ta bannière et ton compte de connexion sont effacés immédiatement et définitivement. Ton compte AniList éventuel n'est pas modifié. Tu peux exporter ta liste juste avant.</p>
+  <p>Sans accès à l'app : voir la page <a href="account-deletion.html">Supprimer son compte NextArc</a>.</p>
+
+  <h2>10. Tes droits</h2>
+  <p>Tu disposes des droits d'accès, de rectification, d'effacement, de limitation, d'opposition et de portabilité de tes données. La plupart s'exercent directement dans l'app (modifier le profil, exporter la liste, supprimer le compte) ; pour le reste, écris-nous à l'adresse ci-dessus, nous répondons sous un mois. Tu peux aussi introduire une réclamation auprès de la <a href="https://www.cnil.fr/fr/plaintes">CNIL</a>.</p>
+
+  <h2>11. Sécurité</h2>
+  <p>Toutes les communications sont chiffrées (HTTPS). L'accès aux données est limité par des règles qui réservent chaque profil, liste et image à son seul propriétaire. Le jeton AniList est conservé dans le stockage chiffré d'Android.</p>
+
+  <h2>12. Âge minimum</h2>
+  <p>NextArc s'adresse aux personnes de 13 ans et plus, conformément aux conditions d'AniList. En France, si tu as moins de 15 ans, demande l'accord d'un parent avant de créer un compte.</p>
+
+  <h2>13. Liens externes</h2>
+  <p>L'app contient des liens vers des sites tiers (AniList, Ko-fi pour soutenir le projet). Ils ont leurs propres politiques de confidentialité.</p>
+
+  <h2>14. Modifications</h2>
+  <p>Cette politique peut évoluer avec l'app. La date de mise à jour figure en haut de la page ; en cas de changement important, nous te prévenons dans l'app.</p>
+  </section>
+
+  <hr style="margin:4em 0">
+
+  <!-- ─────────────────────────────── ENGLISH ─────────────────────────────── -->
+  <section id="en" lang="en">
+  <h1>Privacy Policy — NextArc</h1>
+  <p><em>Last updated: September 17, 2026 · applies to version 2.0.0 and later</em></p>
+
+  <p>NextArc is an Android app to track anime and manga, developed and published by Espiègle, an independent developer ("we"). This policy explains what data is processed, why, where it is hosted, how long it is kept and what your rights are. We are the data controller under the GDPR.</p>
+  <p>Contact: <a href="mailto:barthesimonpro@gmail.com">barthesimonpro@gmail.com</a></p>
+
+  <h2>1. In short</h2>
+  <ul>
+    <li>You can use NextArc <strong>without an account</strong> (guest mode): your list then stays on your phone only.</li>
+    <li>If you create an account, we keep what is needed to run it: email, username, optional photo and banner, your list and notes.</li>
+    <li><strong>No ads, no analytics, no advertising trackers</strong>, and we never sell or rent data.</li>
+    <li>You can <strong>delete your account and all its data</strong> from the app at any time.</li>
+  </ul>
+
+  <h2>2. Using the app without an account</h2>
+  <p>In guest mode, your list, scores, preferences and search history are stored <strong>only on your device</strong>. We have no access to them. List exports (.json) go through Android's share menu, to the destination you choose.</p>
+
+  <h2>3. Data processed with a NextArc account</h2>
+  <ul>
+    <li><strong>Account</strong>: email address, password (handled and hashed by Firebase Authentication, never visible to us), account ID, creation and last sign-in dates — from you or your Google account. Purpose: sign-up and sign-in.</li>
+    <li><strong>Profile</strong>: username, profile photo and banner (a cover from your list or an image uploaded from your device) — from you, Google or AniList. Purpose: displaying your profile and share cards.</li>
+    <li><strong>Your list</strong>: titles, status, progress, score, ❤️, genres, duration, modification dates (including removed titles, for syncing). Purpose: backup, sync, statistics, titles and recommendations.</li>
+    <li><strong>Monthly activity log</strong> and <strong>personal notes</strong> (up to 500 characters). Purpose: monthly recap and your own notes.</li>
+    <li><strong>AniList ID, name and avatar</strong> if you link AniList. Purpose: importing and syncing your AniList list.</li>
+  </ul>
+  <p>This data is private: no other user can see it.</p>
+
+  <h2>4. Technical data</h2>
+  <ul>
+    <li><strong>App verification (Firebase App Check / Google Play Integrity)</strong>: Google checks that requests come from the genuine NextArc app on an unmodified device. We only receive a validity token. Purpose: protecting accounts and services against abuse (legitimate interest).</li>
+    <li><strong>Server logs</strong> (including IP address) kept by our host for security and troubleshooting, for 30 days.</li>
+    <li><strong>Notifications</strong> are scheduled locally on your device; no remote push service is used.</li>
+  </ul>
+
+  <h2>5. AniList</h2>
+  <p>Anime and manga information comes from the public <a href="https://anilist.co">AniList</a> API, queried directly from your phone. NextArc is not affiliated with AniList. When you link AniList, sign-in happens on AniList's website; the authorization code only passes through our server function to be exchanged for an access token, which is then <strong>stored encrypted on your device</strong>, never on our servers. The app can then read your AniList list and update it when you edit a title. You can unlink AniList at any time from your profile.</p>
+
+  <h2>6. Legal bases</h2>
+  <p>Performance of the service you request (Art. 6(1)(b) GDPR) for the account and its features; legitimate interest (Art. 6(1)(f)) for security and abuse prevention.</p>
+
+  <h2>7. Hosting and processors</h2>
+  <p>We use Google Firebase as a processor. Cloud Firestore (eur3), Cloud Storage and Cloud Functions (europe-west1) are hosted in the European Union. Firebase Authentication and App Check are global Google services that may involve processing in the United States; such transfers rely on the EU–US Data Privacy Framework and the European Commission's Standard Contractual Clauses.</p>
+
+  <h2>8. Retention</h2>
+  <p>Account data is kept as long as your account exists and erased as soon as you delete it. Server logs: 30 days. Guest data stays on your device until you uninstall the app or clear its data.</p>
+
+  <h2>9. Deleting your account</h2>
+  <p>In the app: <strong>Profile → Settings → Danger zone → Delete my account</strong>. Your profile, list, notes, activity log, photo, banner and sign-in account are erased immediately and permanently. A linked AniList account is not modified. Without access to the app, see <a href="account-deletion.html#en">Delete your NextArc account</a>.</p>
+
+  <h2>10. Your rights</h2>
+  <p>You have the rights of access, rectification, erasure, restriction, objection and data portability. Most can be exercised in the app (edit profile, export list, delete account); otherwise email us and we will reply within one month. You may also lodge a complaint with your data protection authority (in France, the <a href="https://www.cnil.fr/en">CNIL</a>).</p>
+
+  <h2>11. Security</h2>
+  <p>All communications are encrypted (HTTPS). Access rules restrict every profile, list and image to its owner. The AniList token is kept in Android's encrypted storage.</p>
+
+  <h2>12. Minimum age</h2>
+  <p>NextArc is intended for users aged 13 and over, in line with AniList's terms. Where local law requires it, ask a parent before creating an account.</p>
+
+  <h2>13. Changes</h2>
+  <p>This policy may change with the app. The update date is shown at the top; significant changes will be announced in the app.</p>
+  </section>
 </body>
 </html>

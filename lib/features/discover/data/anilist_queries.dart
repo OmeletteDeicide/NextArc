@@ -15,6 +15,8 @@ class AnilistQueries {
       large
       medium
     }
+    bannerImage
+    nextAiringEpisode { airingAt episode }
     description(asHtml: false)
     averageScore
     genres
@@ -123,6 +125,45 @@ class AnilistQueries {
           hasNextPage
         }
         media(search: \$search, isAdult: false) {
+          $_mediaFields
+        }
+      }
+    }
+  ''';
+
+  // ── 6. Navigation avancée avec filtres ────────────────────────────────────
+
+  static const String browseMedia = '''
+    query BrowseMedia(
+      \$type: MediaType,
+      \$genre_in: [String],
+      \$format_in: [MediaFormat],
+      \$startDate_greater: FuzzyDateInt,
+      \$startDate_lesser: FuzzyDateInt,
+      \$averageScore_greater: Int,
+      \$status: MediaStatus,
+      \$sort: [MediaSort],
+      \$page: Int,
+      \$perPage: Int
+    ) {
+      Page(page: \$page, perPage: \$perPage) {
+        pageInfo {
+          total
+          currentPage
+          lastPage
+          hasNextPage
+        }
+        media(
+          type: \$type,
+          genre_in: \$genre_in,
+          format_in: \$format_in,
+          startDate_greater: \$startDate_greater,
+          startDate_lesser: \$startDate_lesser,
+          averageScore_greater: \$averageScore_greater,
+          status: \$status,
+          sort: \$sort,
+          isAdult: false
+        ) {
           $_mediaFields
         }
       }

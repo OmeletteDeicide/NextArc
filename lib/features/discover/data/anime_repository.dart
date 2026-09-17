@@ -5,6 +5,7 @@ import 'package:nextarc/core/constants/app_constants.dart';
 import 'package:nextarc/core/domain/paginated_result.dart';
 import 'package:nextarc/core/utils/hive_cache.dart';
 import 'package:nextarc/core/utils/season_helper.dart';
+import 'package:nextarc/features/browse/domain/filter_params.dart';
 import 'package:nextarc/features/discover/data/anilist_queries.dart';
 
 /// Repository principal pour les données AniList publiques.
@@ -170,6 +171,48 @@ class AnimeRepository {
           'perPage': perPage,
         },
         // Pas de cache pour la recherche — résultats différents à chaque requête
+        fetchPolicy: FetchPolicy.networkOnly,
+      ),
+    );
+
+    _checkErrors(result);
+    final data = result.data!['Page'] as Map<String, dynamic>;
+    return PaginatedResult.fromJson(data);
+  }
+
+  // ── 6. Navigation filtrée ─────────────────────────────────────────────────
+
+  Future<PaginatedResult> browseFiltered({
+    required FilterParams params,
+    int page = 1,
+    int perPage = 20,
+  }) async {
+    final variables = <String, dynamic>{
+      'type': params.mediaType,
+      'page': page,
+      'perPage': perPage,
+      'sort': [params.sort],
+    };
+
+    if (params.genres.isNotEmpty) variables['genre_in'] = params.genres;
+    if (params.formats.isNotEmpty) variables['format_in'] = params.formats;
+    // AniList n'a pas de seasonYear_greater/lesser : on filtre sur la date de
+    // début (FuzzyDateInt AAAAMMJJ). 20200000 < 20200101 → inclut toute 2020.
+    if (params.yearFrom != null) {
+      variables['startDate_greater'] = params.yearFrom! * 10000;
+    }
+    if (params.yearTo != null) {
+      variables['startDate_lesser'] = (params.yearTo! + 1) * 10000;
+    }
+    if (params.minScore != null) {
+      variables['averageScore_greater'] = params.minScore! * 10 - 1;
+    }
+    if (params.status != null) variables['status'] = params.status;
+
+    final result = await _client.query(
+      QueryOptions(
+        document: gql(AnilistQueries.browseMedia),
+        variables: variables,
         fetchPolicy: FetchPolicy.networkOnly,
       ),
     );

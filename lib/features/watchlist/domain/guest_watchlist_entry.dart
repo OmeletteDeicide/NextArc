@@ -1,6 +1,10 @@
+import 'dart:math' as math;
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 
-/// Entrée de watchlist locale pour le mode invité.
+/// Entrée de watchlist NextArc — modèle partagé entre la liste locale (invité)
+/// et Firestore (compte NextArc).
 class GuestWatchlistEntry {
   const GuestWatchlistEntry({
     required this.animeId,
@@ -11,7 +15,19 @@ class GuestWatchlistEntry {
     this.progress,
     this.episodes,
     this.mediaType = 'ANIME',
+    this.genres,
+    this.duration,
+    this.favourite = false,
+    this.deleted = false,
+    this.updatedAt,
   });
+
+  static const maxTitleLength = 500;
+  static const maxCount = 50000;
+  static const maxUrlLength = 2048;
+  static const maxGenres = 20;
+  static const maxGenreLength = 50;
+  static const maxDuration = 10000;
 
   final int animeId;
   final String title;
@@ -22,7 +38,32 @@ class GuestWatchlistEntry {
   final int? episodes;
   final String mediaType;
 
+  /// Genres AniList du média (pour les stats).
+  final List<String>? genres;
+
+  /// Durée moyenne d'un épisode en minutes (anime, pour le temps de visionnage).
+  final int? duration;
+
+  /// ❤️ explicite posé par l'utilisateur (ou favori importé d'AniList).
+  final bool favourite;
+
+  /// Retiré de la liste par l'utilisateur (suppression douce, Firestore) :
+  /// l'entrée est masquée mais conservée pour que la fusion AniList ne la
+  /// fasse pas revenir. `updatedAt` vaut alors la date de suppression.
+  final bool deleted;
+
+  /// Dernière modification : heure serveur pour Firestore, heure locale pour
+  /// l'invité. Sert à départager deux versions lors d'une fusion.
+  final DateTime? updatedAt;
+
   bool get isManga => mediaType == 'MANGA';
+
+  /// Apparaît dans l'onglet Favoris : uniquement le ❤️ (une note ≥ 8 le coche
+  /// automatiquement dans la fiche, mais l'utilisateur peut le retirer).
+  bool get isFavourite => favourite;
+
+  /// Note à partir de laquelle le ❤️ est coché automatiquement.
+  static const autoFavouriteScore = 8.0;
 
   String? get formattedScore {
     if (score == null || score == 0) return null;
@@ -44,6 +85,11 @@ class GuestWatchlistEntry {
         if (progress != null) 'progress': progress,
         if (episodes != null) 'episodes': episodes,
         'mediaType': mediaType,
+        if (genres != null) 'genres': genres,
+        if (duration != null) 'duration': duration,
+        'favourite': favourite,
+        if (deleted) 'deleted': true,
+        if (updatedAt != null) 'updatedAt': updatedAt!.millisecondsSinceEpoch,
       };
 
   factory GuestWatchlistEntry.fromJson(Map<String, dynamic> json) {
@@ -57,13 +103,88 @@ class GuestWatchlistEntry {
       progress: json['progress'] as int?,
       episodes: json['episodes'] as int?,
       mediaType: json['mediaType'] as String? ?? 'ANIME',
+      genres: _parseGenres(json['genres']),
+      duration: _parseDuration(json['duration']),
+      favourite: json['favourite'] == true,
+      deleted: json['deleted'] == true,
+      updatedAt: _parseDate(json['updatedAt']),
     );
   }
+
+  /// Parse une entrée venant d'une source non fiable (fichier importé, stockage
+  /// local, API). Retourne null si l'entrée est invalide ; les valeurs hors
+  /// limites sont ignorées plutôt que de faire échouer tout l'import.
+  static GuestWatchlistEntry? tryParse(Object? raw) {
+    if (raw is! Map) return null;
+
+    final id = raw['animeId'];
+    final title = raw['title'];
+    final statusRaw = raw['status'];
+    final type = raw['mediaType'] ?? 'ANIME';
+
+    if (id is! int || id <= 0) return null;
+    if (title is! String || title.trim().isEmpty) return null;
+    final status =
+        statusRaw is String ? ListStatus.fromString(statusRaw) : null;
+    if (status == null) return null;
+    if (type != 'ANIME' && type != 'MANGA') return null;
+
+    final trimmed = title.trim();
+    final score = raw['score'];
+    final cover = raw['coverImage'];
+
+    return GuestWatchlistEntry(
+      animeId: id,
+      title: trimmed.substring(0, math.min(trimmed.length, maxTitleLength)),
+      coverImage: cover is String &&
+              cover.startsWith('https://') &&
+              cover.length <= maxUrlLength
+          ? cover
+          : null,
+      status: status,
+      score: score is num && score > 0 && score <= 10 ? score.toDouble() : null,
+      progress: _validCount(raw['progress']),
+      episodes: _validCount(raw['episodes']),
+      mediaType: type as String,
+      genres: _parseGenres(raw['genres']),
+      duration: _parseDuration(raw['duration']),
+      favourite: raw['favourite'] == true,
+      deleted: raw['deleted'] == true,
+      updatedAt: _parseDate(raw['updatedAt']),
+    );
+  }
+
+  static int? _validCount(Object? v) =>
+      v is int && v >= 0 && v <= maxCount ? v : null;
+
+  static List<String>? _parseGenres(Object? v) {
+    if (v is! List) return null;
+    return v
+        .whereType<String>()
+        .where((g) => g.isNotEmpty && g.length <= maxGenreLength)
+        .take(maxGenres)
+        .toList();
+  }
+
+  static int? _parseDuration(Object? v) =>
+      v is int && v > 0 && v <= maxDuration ? v : null;
+
+  static DateTime? _parseDate(Object? v) => switch (v) {
+        Timestamp t => t.toDate(),
+        int ms => DateTime.fromMillisecondsSinceEpoch(ms),
+        String s => DateTime.tryParse(s),
+        _ => null,
+      };
 
   GuestWatchlistEntry copyWith({
     ListStatus? status,
     double? score,
     int? progress,
+    List<String>? genres,
+    int? duration,
+    bool? favourite,
+    bool? deleted,
+    DateTime? updatedAt,
   }) =>
       GuestWatchlistEntry(
         animeId: animeId,
@@ -74,5 +195,10 @@ class GuestWatchlistEntry {
         progress: progress ?? this.progress,
         episodes: episodes,
         mediaType: mediaType,
+        genres: genres ?? this.genres,
+        duration: duration ?? this.duration,
+        favourite: favourite ?? this.favourite,
+        deleted: deleted ?? this.deleted,
+        updatedAt: updatedAt ?? this.updatedAt,
       );
 }

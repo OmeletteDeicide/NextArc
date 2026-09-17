@@ -17,6 +17,7 @@ class DetailQueries {
           extraLarge
         }
         bannerImage
+        nextAiringEpisode { airingAt episode }
         description(asHtml: false)
         averageScore
         meanScore
