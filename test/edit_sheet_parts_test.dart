@@ -48,4 +48,30 @@ void main() {
       expect(progressFromPosition(100, 0, 12), 0);
     });
   });
+
+  group('progression rapide', () {
+    test('appui long : 1, puis 5, puis 25', () {
+      expect(progressRepeatStep(0), 1);
+      expect(progressRepeatStep(11), 1);
+      expect(progressRepeatStep(12), 5);
+      expect(progressRepeatStep(36), 25);
+      expect(progressRepeatStep(60), 100);
+    });
+
+    test('bornes : 0 à total, ou plafond si total inconnu', () {
+      expect(clampProgress(-3, 24), 0);
+      expect(clampProgress(30, 24), 24);
+      expect(clampProgress(1178, null), 1178);
+      expect(clampProgress(999999, null), kMaxProgress);
+      expect(clampProgress(1237, null, aired: 1178), 1178);
+    });
+
+    test('saisie directe', () {
+      expect(parseProgressInput(' 1150 ', null), 1150);
+      expect(parseProgressInput('40', 24), 24);
+      expect(parseProgressInput('2000', null, aired: 1178), 1178);
+      expect(parseProgressInput('', 24), isNull);
+      expect(parseProgressInput('abc', 24), isNull);
+    });
+  });
 }

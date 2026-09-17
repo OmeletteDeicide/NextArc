@@ -39,7 +39,11 @@ class ListItem {
     );
   }
 
-  factory ListItem.fromLocal(GuestWatchlistEntry entry) => ListItem(
+  factory ListItem.fromLocal(
+    GuestWatchlistEntry entry, {
+    NextAiringEpisode? nextAiring,
+  }) =>
+      ListItem(
         mediaId: entry.animeId,
         title: entry.title,
         coverImage: entry.coverImage,
@@ -49,6 +53,7 @@ class ListItem {
         total: entry.episodes,
         score: entry.score,
         favourite: entry.favourite,
+        nextAiring: entry.isManga ? null : nextAiring,
         local: entry,
       );
 
@@ -72,6 +77,17 @@ class ListItem {
 
   bool get hasKnownTotal => total != null && total! > 0;
 
+  /// Épisodes déjà diffusés quand la série est en cours.
+  int? get airedEpisodes {
+    final next = nextAiring;
+    if (isManga || next == null) return null;
+    return next.episode > 1 ? next.episode - 1 : 0;
+  }
+
+  /// « 12/24 », « 1150/1178 » (sortis) ou « 12/? ».
+  String get progressLabel =>
+      formatProgress(progress, total: total, aired: airedEpisodes);
+
   /// Le bouton +1 n'apparaît que sur « En cours » tant que ce n'est pas fini.
   bool get canPlusOne =>
       status == ListStatus.current && (!hasKnownTotal || progress < total!);
@@ -88,8 +104,21 @@ class ListItem {
         chapters: isManga ? total : null,
         genres: local?.genres,
         duration: local?.duration,
+        nextAiringEpisode: nextAiring,
       );
 }
+
+/// Repère de progression : le total s'il est connu, sinon le nombre
+/// d'épisodes déjà sortis (série en cours), sinon null.
+int? progressCeiling({int? total, int? aired}) {
+  if (total != null && total > 0) return total;
+  if (aired != null && aired > 0) return aired;
+  return null;
+}
+
+/// « 12/24 », « 1150/1178 » ou « 12/? » quand rien n'est connu.
+String formatProgress(int progress, {int? total, int? aired}) =>
+    '$progress/${progressCeiling(total: total, aired: aired) ?? '?'}';
 
 /// Résultat d'un appui sur +1 : atteindre le total passe le média en Terminé.
 ({int progress, ListStatus status}) plusOne({

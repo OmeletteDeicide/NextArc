@@ -21,6 +21,7 @@ Future<void> showWatchlistEditSheet(
   required int animeId,
   required String animeTitle,
   int? totalEpisodes,
+  int? airedEpisodes,
   DateTime? startDate,
   MediaListEntry? existing,
   bool isManga = false,
@@ -33,6 +34,7 @@ Future<void> showWatchlistEditSheet(
       animeId: animeId,
       animeTitle: animeTitle,
       totalEpisodes: totalEpisodes,
+      airedEpisodes: airedEpisodes,
       startDate: startDate,
       existing: existing,
       isManga: isManga,
@@ -45,6 +47,7 @@ class _WatchlistEditSheet extends ConsumerStatefulWidget {
     required this.animeId,
     required this.animeTitle,
     this.totalEpisodes,
+    this.airedEpisodes,
     this.startDate,
     this.existing,
     this.isManga = false,
@@ -53,6 +56,9 @@ class _WatchlistEditSheet extends ConsumerStatefulWidget {
   final int animeId;
   final String animeTitle;
   final int? totalEpisodes;
+
+  /// Épisodes déjà sortis (série en cours sans total connu).
+  final int? airedEpisodes;
   final DateTime? startDate;
   final MediaListEntry? existing;
   final bool isManga;
@@ -132,10 +138,17 @@ class _WatchlistEditSheetState extends ConsumerState<_WatchlistEditSheet> {
           label: widget.isManga
               ? 'sheet_progress_chapters'.tr()
               : 'sheet_progress_episodes'.tr(),
-          value: EditSheetValue('$_progress/${widget.totalEpisodes ?? '?'}'),
+          value: ProgressValue(
+            progress: _progress,
+            total: widget.totalEpisodes,
+            aired: widget.airedEpisodes,
+            isManga: widget.isManga,
+            onChanged: (v) => setState(() => _progress = v),
+          ),
           child: ProgressStepper(
             progress: _progress,
             total: widget.totalEpisodes,
+            aired: widget.airedEpisodes,
             onChanged: (v) => setState(() => _progress = v),
           ),
         ),

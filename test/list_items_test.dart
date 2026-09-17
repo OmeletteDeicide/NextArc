@@ -105,4 +105,19 @@ void main() {
       expect(countReleasesWithin(const [], now: now), 0);
     });
   });
+
+  group('progression affichée', () {
+    test('total connu, sinon épisodes sortis, sinon ?', () {
+      expect(formatProgress(12, total: 24, aired: 10), '12/24');
+      expect(formatProgress(1150, total: null, aired: 1178), '1150/1178');
+      expect(formatProgress(3, total: null, aired: null), '3/?');
+      expect(formatProgress(0, total: 0, aired: 0), '0/?');
+    });
+
+    test('plafond de la barre', () {
+      expect(progressCeiling(total: 24, aired: 30), 24);
+      expect(progressCeiling(total: null, aired: 1178), 1178);
+      expect(progressCeiling(), isNull);
+    });
+  });
 }

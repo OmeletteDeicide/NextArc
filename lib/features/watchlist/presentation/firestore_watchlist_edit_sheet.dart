@@ -19,6 +19,7 @@ Future<void> showFirestoreWatchlistEditSheet(
   required String animeTitle,
   required String? coverImage,
   int? totalEpisodes,
+  int? airedEpisodes,
   GuestWatchlistEntry? existing,
   bool isManga = false,
   List<String>? genres,
@@ -33,6 +34,7 @@ Future<void> showFirestoreWatchlistEditSheet(
       animeTitle: animeTitle,
       coverImage: coverImage,
       totalEpisodes: totalEpisodes,
+      airedEpisodes: airedEpisodes,
       existing: existing,
       isManga: isManga,
       genres: genres,
@@ -47,6 +49,7 @@ class _FirestoreEditSheet extends ConsumerStatefulWidget {
     required this.animeTitle,
     required this.coverImage,
     this.totalEpisodes,
+    this.airedEpisodes,
     this.existing,
     this.isManga = false,
     this.genres,
@@ -57,6 +60,9 @@ class _FirestoreEditSheet extends ConsumerStatefulWidget {
   final String animeTitle;
   final String? coverImage;
   final int? totalEpisodes;
+
+  /// Épisodes déjà sortis (série en cours sans total connu).
+  final int? airedEpisodes;
   final GuestWatchlistEntry? existing;
   final bool isManga;
   final List<String>? genres;
@@ -159,10 +165,17 @@ class _FirestoreEditSheetState extends ConsumerState<_FirestoreEditSheet> {
           label: widget.isManga
               ? 'sheet_progress_chapters'.tr()
               : 'sheet_progress_episodes'.tr(),
-          value: EditSheetValue('$_progress/${widget.totalEpisodes ?? '?'}'),
+          value: ProgressValue(
+            progress: _progress,
+            total: widget.totalEpisodes,
+            aired: widget.airedEpisodes,
+            isManga: widget.isManga,
+            onChanged: (v) => setState(() => _progress = v),
+          ),
           child: ProgressStepper(
             progress: _progress,
             total: widget.totalEpisodes,
+            aired: widget.airedEpisodes,
             onChanged: (v) => setState(() => _progress = v),
           ),
         ),
