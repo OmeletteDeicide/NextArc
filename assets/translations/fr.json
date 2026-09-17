@@ -83,8 +83,17 @@
   "notif_new_episode_body": "▶️ Épisode {count} disponible !",
   "notif_new_chapter_body": "📖 Chapitre {count} disponible !",
 
-  "reco_banner_no_data_anime": "Ajoute des ❤️ ou note des animes pour des recos personnalisées",
-  "reco_banner_no_data_manga": "Ajoute des ❤️ ou note des manga pour des recos personnalisées",
+  "reco_pick_overline": "La reco du jour",
+  "reco_because_liked": "Parce que tu as aimé {title}",
+  "reco_because_rated": "Parce que tu as noté {title}",
+  "reco_in_your_genres": "Dans tes genres",
+  "reco_empty_title_anime": "Pas encore de recos anime",
+  "reco_empty_title_manga": "Pas encore de recos manga",
+  "reco_empty_body_anime": "Mets un ❤️ ou une note d'au moins 8 à un anime et cet onglet se remplit. En attendant, voici ce qui monte.",
+  "reco_empty_body_manga": "Mets un ❤️ ou une note d'au moins 8 à un manga et cet onglet se remplit. En attendant, voici ce qui monte.",
+  "reco_explore_anime": "Explorer les anime",
+  "reco_explore_manga": "Explorer les manga",
+  "reco_offline_body": "Les recommandations ont besoin d'AniList. Réessaie une fois connecté.",
   "sheet_favourite_tooltip": "J'aime",
   "share_card_store": "Dispo sur Google Play",
   "title_rank_curious": "Curieux",
@@ -375,7 +384,6 @@
   "detail_episode_number": "Épisode {number}",
   "detail_reminder": "Rappel",
   "detail_reminder_on": "Rappel activé",
-  "reco_because_you_liked": "Parce que tu as aimé",
 
   "horizontal_list_empty": "Aucun résultat disponible",
 

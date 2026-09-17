@@ -149,7 +149,7 @@ nouvelle couleur de la maquette.
       pastille date 44 px, cloche 2 états, états vides
 - [x] Recherche : tendances à l'ouverture, lignes d'historique 44 px, résultats
       en liste (terme surligné, « dans ta liste »), aucun résultat / hors ligne
-- [ ] Pour toi en rails : reco mise en avant, rails par source (≤ 2 par
+- [x] Pour toi en rails : reco mise en avant, rails par source (≤ 2 par
       source, rotation quotidienne, ordre ❤️ > 10 > ≥ 8), rail « Dans tes
       genres », carte d'aide avec action
 - [ ] À propos : bloc logo, paragraphe, carte AniList accentuée, technologies
@@ -373,3 +373,14 @@ nouvelle couleur de la maquette.
   `watchlistPlacementProvider`, ❤️ ou bouton + / modifier), états « Aucun
   titre trouvé » et « Pas de connexion ». `AnimeCard` supprimé (plus utilisé).
   Analyse OK, 127 tests.
+- 17/09 — Lot 6 (5) : Pour toi en rails. Calcul pur `reco_feed.dart` : sources
+  ❤️ > note 10 > note ≥ 8, rotation quotidienne dans chaque niveau (graine
+  date + utilisateur), 4 rails max, 6 titres par rail, **1 rail par source**
+  (plus strict que le plafond de 2), dédoublonnage global et exclusion de la
+  liste. « La reco du jour » = mieux notée du rail le plus fort (retirée du
+  rail). Rail « Dans tes genres » sur les 2 genres dominants des titres
+  terminés (une requête Explorer, facultative). Requêtes AniList en parallèle.
+  Sans ❤️ ni note ≥ 8 : carte d'aide + « Explorer les anime/manga » et
+  tendances classées (« Tout voir » → Explorer). Squelette et état hors ligne.
+  `RecommendationItem` supprimé. Analyse OK, 134 tests. Pas d'appareil
+  branché : rendu à vérifier sur téléphone.
