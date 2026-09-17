@@ -152,7 +152,7 @@ nouvelle couleur de la maquette.
 - [x] Pour toi en rails : reco mise en avant, rails par source (≤ 2 par
       source, rotation quotidienne, ordre ❤️ > 10 > ≥ 8), rail « Dans tes
       genres », carte d'aide avec action
-- [ ] À propos : bloc logo, paragraphe, carte AniList accentuée, technologies
+- [x] À propos : bloc logo, paragraphe, carte AniList accentuée, technologies
       en chips, liens Confidentialité / Conditions / Licences (Ko-fi : non)
 - [ ] Bannière de profil : feuille de choix, cascade (choisie > AniList >
       dégradé), scrim, en-tête 230 px, « Modifier le profil » refait
@@ -384,3 +384,11 @@ nouvelle couleur de la maquette.
   tendances classées (« Tout voir » → Explorer). Squelette et état hors ligne.
   `RecommendationItem` supprimé. Analyse OK, 134 tests. Pas d'appareil
   branché : rendu à vérifier sur téléphone.
+- 17/09 — Lot 6 (6) : À propos refait. En-tête retour rond, bloc logo + « v1.2.0
+  · Android » (`appVersion`), paragraphe direct, carte AniList encadrée
+  d'accent (lien anilist.co, « pas affilié » en gras), technologies en chips
+  8 px, carte Espiègle, liens Confidentialité (GitHub Pages `docs/`) et
+  Licences (`showLicensePage`). **Conditions masquées** tant qu'aucune page
+  n'existe (`termsUrl`). Ko-fi reste dans le Profil (déjà à la couleur de la
+  maquette). ⚠ `docs/privacy-policy.html` date d'avant les comptes : à mettre
+  à jour (Firestore, Storage, suppression) et activer GitHub Pages.
