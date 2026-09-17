@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "nextarc-fdbde"
-  }
+  },
+  "targets": {
+    "nextarc-fdbde": {
+      "storage": {
+        "main": [
+          "nextarc-fdbde"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

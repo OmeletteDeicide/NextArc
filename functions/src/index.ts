@@ -19,6 +19,9 @@ initializeApp();
  */
 const ENFORCE_APP_CHECK = false;
 
+/** Bucket des photos et bannières (multi-région EU). */
+const STORAGE_BUCKET = "nextarc-fdbde";
+
 /** Vérifie l'en-tête X-Firebase-AppCheck. Renvoie false s'il faut refuser. */
 async function appCheckAllows(req: Request, fn: string): Promise<boolean> {
   const token = req.get("X-Firebase-AppCheck");
@@ -172,7 +175,7 @@ export const deleteAccount = onRequest(async (req, res) => {
       // Storage peut ne pas être activé : la suppression du compte ne doit
       // jamais échouer pour autant
       try {
-        const bucket = getStorage().bucket();
+        const bucket = getStorage().bucket(STORAGE_BUCKET);
         await Promise.all(
           [`avatars/${uid}.jpg`, `banners/${uid}.jpg`].map((path) =>
             bucket.file(path).delete({ ignoreNotFound: true })

@@ -1,13 +1,14 @@
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:nextarc/core/config/storage_bucket.dart';
 import 'package:nextarc/features/auth/data/user_profile_repository.dart';
 import 'package:nextarc/features/auth/domain/profile_banner.dart';
 
 /// Gère la mise à jour du profil Firebase + Firestore (pseudo + avatar).
 class ProfileService {
   final _auth = fb.FirebaseAuth.instance;
-  final _storage = FirebaseStorage.instance;
+  final _storage = appStorage;
   final _profileRepo = UserProfileRepository();
 
   fb.User? get _user => _auth.currentUser;
