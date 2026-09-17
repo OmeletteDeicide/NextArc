@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -36,13 +37,17 @@ String activeFilterLabel(ActiveFilter filter) {
       return filter.value;
     case ActiveFilterKind.format:
       return FilterParams.animeFormats
-          .firstWhere((f) => f.value == filter.value,
-              orElse: () => (value: filter.value, label: filter.value))
+          .firstWhere(
+            (f) => f.value == filter.value,
+            orElse: () => (value: filter.value, label: filter.value),
+          )
           .label;
     case ActiveFilterKind.status:
       return FilterParams.statusOptions
-          .firstWhere((s) => s.value == filter.value,
-              orElse: () => (value: filter.value, label: filter.value))
+          .firstWhere(
+            (s) => s.value == filter.value,
+            orElse: () => (value: filter.value, label: filter.value),
+          )
           .label;
     case ActiveFilterKind.year:
       final parts = filter.value.split('-');
@@ -67,8 +72,9 @@ String filterCountLabel(int count) => count == 1
 String resultCountLabel(BuildContext context, int total) {
   final numbers = NumberFormat.decimalPattern(context.locale.toString());
   if (total >= anilistTotalCap) {
-    return 'browse_results_many'
-        .tr(namedArgs: {'count': numbers.format(anilistTotalCap)});
+    return 'browse_results_many'.tr(
+      namedArgs: {'count': numbers.format(anilistTotalCap)},
+    );
   }
   return switch (total) {
     0 => 'browse_results_zero'.tr(),
@@ -110,8 +116,7 @@ class ActiveFilterChip extends StatelessWidget {
               decoration: BoxDecoration(
                 color: c.accent.withValues(alpha: 0.18),
                 borderRadius: BorderRadius.circular(AppRadius.full),
-                border:
-                    Border.all(color: c.accentText.withValues(alpha: 0.45)),
+                border: Border.all(color: c.accentText.withValues(alpha: 0.45)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -119,7 +124,9 @@ class ActiveFilterChip extends StatelessWidget {
                   Text(
                     label,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: c.statusCompletedText, fontSize: 11.5),
+                      color: c.statusCompletedText,
+                      fontSize: 11.5,
+                    ),
                   ),
                   const SizedBox(width: 5),
                   Icon(Icons.close_rounded, size: 14, color: c.accentText),
@@ -168,14 +175,19 @@ class FilterStatusBar extends StatelessWidget {
                       ),
                     ),
                   )
-                : Text(resultLabel!,
-                    style: text.labelMedium
-                        ?.copyWith(color: c.text1, fontSize: 12.5)),
+                : Text(
+                    resultLabel!,
+                    style: text.labelMedium?.copyWith(
+                      color: c.text1,
+                      fontSize: 12.5,
+                    ),
+                  ),
           ),
           if (filterCount > 0) ...[
-            Text(filterCountLabel(filterCount),
-                style: text.labelMedium
-                    ?.copyWith(color: c.text2, fontSize: 11.5)),
+            Text(
+              filterCountLabel(filterCount),
+              style: text.labelMedium?.copyWith(color: c.text2, fontSize: 11.5),
+            ),
             const SizedBox(width: 9),
             _OutlinePill(label: 'browse_reset'.tr(), onTap: onReset),
           ],
@@ -205,10 +217,9 @@ class _OutlinePill extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: Theme.of(context)
-              .textTheme
-              .labelMedium
-              ?.copyWith(color: c.accentText, fontSize: 11),
+          style: Theme.of(
+            context,
+          ).textTheme.labelMedium?.copyWith(color: c.accentText, fontSize: 11),
         ),
       ),
     );
@@ -253,13 +264,15 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
     final c = AppColors.of(context);
     final text = Theme.of(context).textTheme;
     final isAnime = _params.mediaType == 'ANIME';
-    final genres =
-        isAnime ? FilterParams.animeGenres : FilterParams.mangaGenres;
+    final genres = isAnime
+        ? FilterParams.animeGenres
+        : FilterParams.mangaGenres;
     final active = activeFiltersOf(_params);
     final media = MediaQuery.of(context);
 
-    final countAsync =
-        ref.watch(filteredBrowseProvider((params: _countParams, page: 1)));
+    final countAsync = ref.watch(
+      filteredBrowseProvider((params: _countParams, page: 1)),
+    );
     final upToDate = identical(_countParams, _params);
     final total = upToDate ? countAsync.valueOrNull?.total : null;
     final String cta;
@@ -268,9 +281,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
     } else if (total == 0) {
       cta = 'browse_results_zero'.tr();
     } else {
-      cta = 'filter_see'.tr(namedArgs: {
-        'results': resultCountLabel(context, total),
-      });
+      cta = 'filter_see'.tr(
+        namedArgs: {'results': resultCountLabel(context, total)},
+      );
     }
 
     return Container(
@@ -281,7 +294,12 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
         border: Border(top: BorderSide(color: c.border)),
       ),
       padding: EdgeInsets.fromLTRB(
-          AppSpacing.screen, 12, AppSpacing.screen, 16 + media.viewInsets.bottom),
+        AppSpacing.screen,
+        12,
+        AppSpacing.screen,
+        // Clavier ouvert, sinon barre de navigation Android (edge-to-edge)
+        16 + math.max(media.viewInsets.bottom, media.viewPadding.bottom),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -300,14 +318,22 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
           Row(
             children: [
               Expanded(
-                child: Text('browse_filters'.tr(),
-                    style: text.headlineSmall
-                        ?.copyWith(fontSize: 18, color: c.text1)),
+                child: Text(
+                  'browse_filters'.tr(),
+                  style: text.headlineSmall?.copyWith(
+                    fontSize: 18,
+                    color: c.text1,
+                  ),
+                ),
               ),
               if (active.isNotEmpty) ...[
-                Text(filterCountLabel(active.length),
-                    style: text.labelMedium
-                        ?.copyWith(color: c.text2, fontSize: 11.5)),
+                Text(
+                  filterCountLabel(active.length),
+                  style: text.labelMedium?.copyWith(
+                    color: c.text2,
+                    fontSize: 11.5,
+                  ),
+                ),
                 const SizedBox(width: 9),
                 _OutlinePill(
                   label: 'browse_reset'.tr(),
@@ -325,11 +351,13 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
             ],
             selected: _params.mediaType,
             // Genres et formats diffèrent entre anime et manga
-            onChanged: (type) => _update(_params.copyWith(
-              mediaType: type,
-              genres: const [],
-              formats: const [],
-            )),
+            onChanged: (type) => _update(
+              _params.copyWith(
+                mediaType: type,
+                genres: const [],
+                formats: const [],
+              ),
+            ),
           ),
           if (active.isNotEmpty)
             SizedBox(
@@ -351,64 +379,74 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
               children: [
                 _Section(
                   label: 'filter_sort'.tr(),
-                  child: _PillWrap(children: [
-                    for (final opt in FilterParams.sortOptions)
-                      _SelectPill(
-                        label: opt.label,
-                        selected: _params.sort == opt.value,
-                        onTap: () =>
-                            _update(_params.copyWith(sort: opt.value)),
-                      ),
-                  ]),
+                  child: _PillWrap(
+                    children: [
+                      for (final opt in FilterParams.sortOptions)
+                        _SelectPill(
+                          label: opt.label,
+                          selected: _params.sort == opt.value,
+                          onTap: () =>
+                              _update(_params.copyWith(sort: opt.value)),
+                        ),
+                    ],
+                  ),
                 ),
                 _Section(
                   label: 'filter_genres'.tr(),
                   trailing: _params.genres.isEmpty
                       ? null
                       : '${_params.genres.length}',
-                  child: _PillWrap(children: [
-                    for (final g in genres)
-                      _SelectPill(
-                        label: g,
-                        selected: _params.genres.contains(g),
-                        onTap: () {
-                          final list = List<String>.from(_params.genres);
-                          list.contains(g) ? list.remove(g) : list.add(g);
-                          _update(_params.copyWith(genres: list));
-                        },
-                      ),
-                  ]),
+                  child: _PillWrap(
+                    children: [
+                      for (final g in genres)
+                        _SelectPill(
+                          label: g,
+                          selected: _params.genres.contains(g),
+                          onTap: () {
+                            final list = List<String>.from(_params.genres);
+                            list.contains(g) ? list.remove(g) : list.add(g);
+                            _update(_params.copyWith(genres: list));
+                          },
+                        ),
+                    ],
+                  ),
                 ),
                 if (isAnime)
                   _Section(
                     label: 'filter_format'.tr(),
-                    child: _PillWrap(children: [
-                      for (final f in FilterParams.animeFormats)
-                        _SelectPill(
-                          label: f.label,
-                          selected: _params.formats.contains(f.value),
-                          onTap: () {
-                            final list = List<String>.from(_params.formats);
-                            list.contains(f.value)
-                                ? list.remove(f.value)
-                                : list.add(f.value);
-                            _update(_params.copyWith(formats: list));
-                          },
-                        ),
-                    ]),
+                    child: _PillWrap(
+                      children: [
+                        for (final f in FilterParams.animeFormats)
+                          _SelectPill(
+                            label: f.label,
+                            selected: _params.formats.contains(f.value),
+                            onTap: () {
+                              final list = List<String>.from(_params.formats);
+                              list.contains(f.value)
+                                  ? list.remove(f.value)
+                                  : list.add(f.value);
+                              _update(_params.copyWith(formats: list));
+                            },
+                          ),
+                      ],
+                    ),
                   ),
                 _Section(
                   label: 'filter_status'.tr(),
-                  child: _PillWrap(children: [
-                    for (final s in FilterParams.statusOptions)
-                      _SelectPill(
-                        label: s.label,
-                        selected: _params.status == s.value,
-                        onTap: () => _update(_params.status == s.value
-                            ? _params.copyWith(clearStatus: true)
-                            : _params.copyWith(status: s.value)),
-                      ),
-                  ]),
+                  child: _PillWrap(
+                    children: [
+                      for (final s in FilterParams.statusOptions)
+                        _SelectPill(
+                          label: s.label,
+                          selected: _params.status == s.value,
+                          onTap: () => _update(
+                            _params.status == s.value
+                                ? _params.copyWith(clearStatus: true)
+                                : _params.copyWith(status: s.value),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
                 _Section(
                   label: 'filter_year'.tr(),
@@ -418,9 +456,11 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                         child: _YearField(
                           label: 'filter_year_from'.tr(),
                           value: _params.yearFrom,
-                          onChanged: (v) => _update(v == null
-                              ? _params.copyWith(clearYearFrom: true)
-                              : _params.copyWith(yearFrom: v)),
+                          onChanged: (v) => _update(
+                            v == null
+                                ? _params.copyWith(clearYearFrom: true)
+                                : _params.copyWith(yearFrom: v),
+                          ),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
@@ -428,9 +468,11 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                         child: _YearField(
                           label: 'filter_year_to'.tr(),
                           value: _params.yearTo,
-                          onChanged: (v) => _update(v == null
-                              ? _params.copyWith(clearYearTo: true)
-                              : _params.copyWith(yearTo: v)),
+                          onChanged: (v) => _update(
+                            v == null
+                                ? _params.copyWith(clearYearTo: true)
+                                : _params.copyWith(yearTo: v),
+                          ),
                         ),
                       ),
                     ],
@@ -447,9 +489,11 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                         ),
                     ],
                     selected: _params.minScore ?? 0,
-                    onChanged: (v) => _update(v == 0
-                        ? _params.copyWith(clearMinScore: true)
-                        : _params.copyWith(minScore: v)),
+                    onChanged: (v) => _update(
+                      v == 0
+                          ? _params.copyWith(clearMinScore: true)
+                          : _params.copyWith(minScore: v),
+                    ),
                   ),
                 ),
               ],
@@ -485,8 +529,10 @@ class _Section extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text(label.toUpperCase(),
-                    style: AppTypography.overline(c.text3)),
+                child: Text(
+                  label.toUpperCase(),
+                  style: AppTypography.overline(c.text3),
+                ),
               ),
               if (trailing != null)
                 Text(trailing!, style: AppTypography.overline(c.accentText)),
@@ -537,18 +583,22 @@ class _SelectPill extends StatelessWidget {
           duration: AppMotion.press,
           height: 36,
           padding: const EdgeInsets.symmetric(horizontal: 13),
-          alignment: Alignment.center,
           decoration: BoxDecoration(
             gradient: selected ? c.accentGradient : null,
             color: selected ? null : c.surface2,
             borderRadius: BorderRadius.circular(AppRadius.full),
           ),
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: selected ? Colors.white : c.text2,
-                  fontSize: 12,
-                ),
+          // widthFactor 1 : la pastille garde la largeur de son texte au lieu
+          // de s'étirer sur toute la ligne du Wrap
+          child: Center(
+            widthFactor: 1,
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: selected ? Colors.white : c.text2,
+                fontSize: 12,
+              ),
+            ),
           ),
         ),
       ),
@@ -574,10 +624,7 @@ class _YearField extends StatelessWidget {
     final maxYear = DateTime.now().year + 2;
     return TextFormField(
       initialValue: value?.toString() ?? '',
-      decoration: InputDecoration(
-        labelText: label,
-        isDense: true,
-      ),
+      decoration: InputDecoration(labelText: label, isDense: true),
       keyboardType: TextInputType.number,
       inputFormatters: [
         FilteringTextInputFormatter.digitsOnly,

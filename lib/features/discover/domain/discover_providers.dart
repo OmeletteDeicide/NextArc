@@ -1,8 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nextarc/core/domain/paginated_result.dart';
+import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/discover/data/anime_providers.dart';
 import 'package:nextarc/features/onboarding/domain/onboarding_prefs.dart';
+import 'package:nextarc/features/watchlist/domain/firestore_watchlist_providers.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
+import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 import 'package:nextarc/features/watchlist/domain/watchlist_providers.dart';
 
 /// Provider pour les anime tendance (page 1, 20 items).
@@ -30,34 +33,34 @@ final releasingMangaProvider = FutureProvider<PaginatedResult>((ref) {
 });
 
 /// Préférence contenu : 'MANGA' si l'utilisateur a plus de manga que d'anime
-/// dans sa watchlist (AniList ou invité), sinon 'ANIME' (défaut).
+/// dans sa liste (compte NextArc, AniList seul ou invité), sinon 'ANIME'.
 final contentPreferenceProvider = Provider<String>((ref) {
-  // Listes AniList (connecté)
-  final animeCount = ref
-          .watch(userListProvider)
-          .whenOrNull(
-            data: (groups) => groups.expand((g) => g.entries).length,
-          ) ??
-      0;
-  final mangaCount = ref
-          .watch(userMangaListProvider)
-          .whenOrNull(
-            data: (groups) => groups.expand((g) => g.entries).length,
-          ) ??
-      0;
+  final user = ref.watch(authProvider).valueOrNull?.user;
+  var animeCount = 0;
+  var mangaCount = 0;
 
-  // Liste locale invité
-  final guestEntries = ref.watch(guestWatchlistProvider).whenOrNull(
-            data: (entries) => entries,
-          ) ??
-      [];
-  final guestAnimeCount = guestEntries.where((e) => !e.isManga).length;
-  final guestMangaCount = guestEntries.where((e) => e.isManga).length;
+  if (user?.hasFirebase == true) {
+    // Compte NextArc (avec ou sans AniList lié) : liste Firestore
+    final entries = ref.watch(firestoreWatchlistProvider).valueOrNull ?? [];
+    animeCount = entries.where((e) => !e.isManga).length;
+    mangaCount = entries.where((e) => e.isManga).length;
+  } else if (user?.usesAnilistList == true) {
+    // Session AniList seule
+    int count(AsyncValue<List<MediaListGroup>> groups) =>
+        groups.valueOrNull?.fold<int>(0, (n, g) => n + g.entries.length) ?? 0;
+    animeCount = count(ref.watch(userListProvider));
+    mangaCount = count(ref.watch(userMangaListProvider));
+  } else {
+    // Invité : liste locale
+    final entries = ref.watch(guestWatchlistProvider).valueOrNull ?? [];
+    animeCount = entries.where((e) => !e.isManga).length;
+    mangaCount = entries.where((e) => e.isManga).length;
+  }
 
   // À égalité (liste vide notamment) : réponse donnée à l'onboarding
   return resolveContentPreference(
-    animeCount: animeCount + guestAnimeCount,
-    mangaCount: mangaCount + guestMangaCount,
+    animeCount: animeCount,
+    mangaCount: mangaCount,
     choice: ref.watch(contentChoiceProvider),
   );
 });

@@ -272,39 +272,27 @@ class _ReleaseRow extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final locale = context.locale.toString();
     final at = entry.airingAt.toLocal();
+    final heroTag = 'calendar_${entry.media.id}_${entry.episode}';
 
     return Material(
       color: c.surface1,
       borderRadius: BorderRadius.circular(AppRadius.card),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/detail/${entry.media.id}'),
+        onTap: () => context.push('/detail/${entry.media.id}',
+            extra: {'heroTag': heroTag, 'coverUrl': entry.media.coverImage}),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(11, 11, 6, 11),
           child: Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: c.surface2,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      DateFormat.E(locale)
-                          .format(at)
-                          .replaceAll('.', '')
-                          .toUpperCase(),
-                      style: text.labelSmall?.copyWith(
-                          color: c.text2, fontSize: 9, letterSpacing: 0),
-                    ),
-                    Text('${at.day}',
-                        style: text.titleLarge?.copyWith(
-                            fontSize: 14, height: 1, color: c.text1)),
-                  ],
+              // La date est déjà dans le sous-titre du jour : la jaquette
+              // permet de reconnaître le titre d'un coup d'œil
+              SizedBox(
+                width: 40,
+                child: MediaCover(
+                  imageUrl: entry.media.coverImage,
+                  radius: 8,
+                  heroTag: heroTag,
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),

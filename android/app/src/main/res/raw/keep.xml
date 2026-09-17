@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ressources utilisées seulement par leur nom (flutter_local_notifications) :
+     à conserver lors de la réduction des ressources en release. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_notification" />

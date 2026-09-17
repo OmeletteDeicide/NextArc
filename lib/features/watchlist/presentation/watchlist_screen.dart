@@ -15,6 +15,7 @@ import 'package:nextarc/features/watchlist/data/mutation_repository.dart';
 import 'package:nextarc/features/watchlist/domain/firestore_watchlist_providers.dart';
 import 'package:nextarc/features/watchlist/domain/guest_backup.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
+import 'package:nextarc/features/watchlist/domain/list_airing_provider.dart';
 import 'package:nextarc/features/watchlist/domain/list_items.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 import 'package:nextarc/features/watchlist/domain/watchlist_providers.dart';
@@ -68,7 +69,11 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
       final entries = source == _ListSource.firestore
           ? ref.watch(firestoreWatchlistProvider)
           : ref.watch(guestWatchlistProvider);
-      final all = entries.whenData((list) => list.map(ListItem.fromLocal));
+      // Prochains épisodes (liste NextArc / invité) : nombre d'épisodes sortis
+      // des séries en cours et ligne « Ép. N · jour »
+      final airing = ref.watch(listAiringProvider).valueOrNull ?? const {};
+      final all = entries.whenData((list) => list.map(
+          (e) => ListItem.fromLocal(e, nextAiring: airing[e.animeId])));
       animeAsync = all.whenData((l) => l.where((i) => !i.isManga).toList());
       mangaAsync = all.whenData((l) => l.where((i) => i.isManga).toList());
     }
@@ -555,7 +560,7 @@ class _ListRow extends StatelessWidget {
     final score = (item.score ?? 0) > 0
         ? formatSheetScore(context, item.score!)
         : null;
-    final countLabel = '${item.progress}/${item.hasKnownTotal ? item.total : '?'}';
+    final countLabel = item.progressLabel;
 
     // ── Ligne d'info sous le titre ──────────────────────────────────────────
     final Widget? meta;

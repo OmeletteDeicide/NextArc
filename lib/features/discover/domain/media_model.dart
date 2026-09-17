@@ -84,6 +84,15 @@ class MediaModel {
 
   bool get isManga => mediaType == 'MANGA';
 
+  /// Épisodes déjà diffusés d'un anime en cours (prochain épisode − 1), null
+  /// si AniList ne l'indique pas. AniList ne donne pas cette information pour
+  /// les manga en cours de publication.
+  int? get airedEpisodes {
+    final next = nextAiringEpisode;
+    if (isManga || next == null) return null;
+    return next.episode > 1 ? next.episode - 1 : 0;
+  }
+
   /// Titre affiché : anglais si dispo, sinon romaji.
   String get displayTitle => titleEnglish ?? titleRomaji;
 

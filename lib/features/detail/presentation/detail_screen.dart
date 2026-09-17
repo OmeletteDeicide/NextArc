@@ -15,6 +15,7 @@ import 'package:nextarc/features/discover/domain/media_model.dart';
 import 'package:nextarc/features/reviews/domain/review_providers.dart';
 import 'package:nextarc/features/share/presentation/share_media_sheet.dart';
 import 'package:nextarc/features/watchlist/domain/firestore_watchlist_providers.dart';
+import 'package:nextarc/features/watchlist/domain/list_items.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 import 'package:nextarc/features/watchlist/presentation/watchlist_sheet_helper.dart';
 
@@ -221,6 +222,7 @@ class _DetailContent extends ConsumerWidget {
                         guestEntry?.progress ??
                         0,
                     total: total,
+                    aired: anime.airedEpisodes,
                     onEdit: openSheet,
                   )
                 else
@@ -567,11 +569,15 @@ class _InListCard extends StatelessWidget {
     required this.progress,
     required this.total,
     required this.onEdit,
+    this.aired,
   });
 
   final ListStatus? status;
   final int progress;
   final int? total;
+
+  /// Épisodes déjà sortis (série en cours sans total connu).
+  final int? aired;
   final VoidCallback onEdit;
 
   @override
@@ -579,7 +585,7 @@ class _InListCard extends StatelessWidget {
     final c = AppColors.of(context);
     final text = Theme.of(context).textTheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final knownTotal = total != null && total! > 0;
+    final ceiling = progressCeiling(total: total, aired: aired);
 
     return Material(
       type: MaterialType.transparency,
@@ -619,14 +625,18 @@ class _InListCard extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: knownTotal
+                            child: ceiling != null
                                 ? GradientProgressBar(
-                                    value: progress / total!, height: 5)
+                                    value: (progress / ceiling)
+                                        .clamp(0.0, 1.0)
+                                        .toDouble(),
+                                    height: 5)
                                 : const SizedBox.shrink(),
                           ),
                           const SizedBox(width: AppSpacing.xs),
                           Text(
-                            '$progress/${knownTotal ? total : '?'}',
+                            formatProgress(progress,
+                                total: total, aired: aired),
                             style: text.labelSmall?.copyWith(
                               color: c.text2,
                               fontWeight: FontWeight.w700,

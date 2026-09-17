@@ -7,14 +7,14 @@ MediaModel _m(int id, {int score = 70}) =>
 
 RecoSource _fav(int id, {double? score}) => RecoSource(
   id: id,
-  title: 'Aimé $id',
+  title: 'Aimé n°$id bis',
   kind: RecoSourceKind.favourite,
   score: score,
 );
 
 RecoSource _rated(int id, double score) => RecoSource(
   id: id,
-  title: 'Noté $id',
+  title: 'Noté n°$id bis',
   kind: RecoSourceKind.rated,
   score: score,
 );
@@ -45,6 +45,54 @@ void main() {
         ).map((s) => s.id),
         day1.map((s) => s.id),
       );
+    });
+  });
+
+  group('franchiseKey', () {
+    test('regroupe les saisons, parties et sous-titres', () {
+      expect(franchiseKey('DAN DA DAN Season 2'), franchiseKey('DAN DA DAN'));
+      expect(
+        franchiseKey('Attack on Titan Final Season Part 2'),
+        franchiseKey('Attack on Titan'),
+      );
+      expect(
+        franchiseKey('Mushoku Tensei II: Jobless Reincarnation'),
+        franchiseKey('Mushoku Tensei: Jobless Reincarnation'),
+      );
+      expect(franchiseKey('Vinland Saga 2nd Season'), 'vinland saga');
+      expect(
+        franchiseKey("JoJo's Bizarre Adventure: Stardust Crusaders"),
+        franchiseKey("JoJo's Bizarre Adventure (TV)"),
+      );
+    });
+
+    test('ne confond pas des séries différentes', () {
+      expect(
+        franchiseKey('Re:ZERO -Starting Life in Another World-'),
+        isNot(franchiseKey('Re:Monster')),
+      );
+      expect(
+        franchiseKey('Cyberpunk: Edgerunners'),
+        isNot(franchiseKey('Cowboy Bebop')),
+      );
+    });
+
+    test('une seule source par série dans la sélection', () {
+      final selected = selectRecoSources([
+        RecoSource(
+          id: 1,
+          title: 'DAN DA DAN Season 2',
+          kind: RecoSourceKind.favourite,
+        ),
+        RecoSource(id: 2, title: 'DAN DA DAN', kind: RecoSourceKind.favourite),
+        RecoSource(
+          id: 3,
+          title: 'Cyberpunk: Edgerunners',
+          kind: RecoSourceKind.favourite,
+        ),
+      ], now: DateTime(2026, 1, 1));
+      expect(selected.length, 2);
+      expect(selected.map((s) => franchiseKey(s.title)).toSet().length, 2);
     });
   });
 

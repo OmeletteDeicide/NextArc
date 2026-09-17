@@ -42,34 +42,68 @@ class EpisodeCheckerTask {
 
     for (final entry in entries) {
       try {
-        final info = await _fetchMediaInfo(entry.mediaId, entry.isManga);
-        if (info == null) continue;
-
-        final last = repo.getLastCount(entry.mediaId);
-        if (info.currentCount != null && info.currentCount! > last) {
-          await NotificationService.instance.showNewContentNotification(
-            mediaId: entry.mediaId,
-            title: entry.title,
-            count: info.currentCount!,
-            isManga: entry.isManga,
-          );
-          await repo.updateLastCount(entry.mediaId, info.currentCount!);
-        }
-
-        // Programme une notification précise pour le prochain épisode
-        if (!entry.isManga &&
-            info.nextAiringAt != null &&
-            info.nextEpisode != null) {
-          await NotificationService.instance.scheduleNextEpisodeNotification(
-            mediaId: entry.mediaId,
-            title: entry.title,
-            episode: info.nextEpisode!,
-            airingAt: info.nextAiringAt!,
-          );
-        }
+        await _checkEntry(repo, entry, notify: true);
       } catch (_) {
         // Silencieux : on ne bloque pas les autres médias si l'un échoue
       }
+    }
+  }
+
+  /// Rappel tout juste activé : relève le dernier épisode sorti comme point de
+  /// départ (sans notifier) et programme le prochain immédiatement.
+  static Future<void> checkMedia(int mediaId) async {
+    final repo = NotificationPrefsRepository.instance;
+    try {
+      if (!repo.episodeReleasesEnabled) return;
+      final entry =
+          repo.getAllEnabled().where((e) => e.mediaId == mediaId).firstOrNull;
+      if (entry != null) await _checkEntry(repo, entry, notify: false);
+    } catch (_) {
+      // Hors ligne : la vérification périodique prendra le relais
+    }
+  }
+
+  static Future<void> _checkEntry(
+    NotificationPrefsRepository repo,
+    NotifEntry entry, {
+    required bool notify,
+  }) async {
+    final info = await _fetchMediaInfo(entry.mediaId, entry.isManga);
+    if (info == null) return;
+
+    final current = info.currentCount;
+    if (current != null &&
+        (!notify || current > repo.getLastCount(entry.mediaId))) {
+      // Épisode déjà annoncé par la notification programmée à l'heure de
+      // sortie : pas de seconde notification
+      final scheduled = repo.getScheduledEpisode(entry.mediaId);
+      final alreadyAnnounced =
+          !entry.isManga && scheduled != null && current <= scheduled;
+      if (notify && !alreadyAnnounced) {
+        await NotificationService.instance.showNewContentNotification(
+          mediaId: entry.mediaId,
+          title: entry.title,
+          count: current,
+          isManga: entry.isManga,
+        );
+      }
+      await repo.updateLastCount(entry.mediaId, current);
+    }
+
+    // Programme une notification précise pour le prochain épisode
+    final nextAt = info.nextAiringAt;
+    final nextEpisode = info.nextEpisode;
+    if (!entry.isManga &&
+        nextAt != null &&
+        nextEpisode != null &&
+        nextAt.isAfter(DateTime.now())) {
+      await NotificationService.instance.scheduleNextEpisodeNotification(
+        mediaId: entry.mediaId,
+        title: entry.title,
+        episode: nextEpisode,
+        airingAt: nextAt,
+      );
+      await repo.setScheduledEpisode(entry.mediaId, nextEpisode);
     }
   }
 

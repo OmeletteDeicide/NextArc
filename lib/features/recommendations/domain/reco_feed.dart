@@ -90,15 +90,47 @@ List<RecoSource> selectRecoSources(
     unique.putIfAbsent(s.id, () => s);
   }
 
-  final selected = <RecoSource>[];
+  final ordered = <RecoSource>[];
   for (final strength in const [2, 1, 0]) {
     final tier = unique.values.where((s) => s.strength == strength).toList()
       ..sort((a, b) => (b.score ?? 0).compareTo(a.score ?? 0));
     if (tier.isEmpty) continue;
     final offset = day % tier.length;
-    selected.addAll([...tier.skip(offset), ...tier.take(offset)]);
+    ordered.addAll([...tier.skip(offset), ...tier.take(offset)]);
   }
-  return selected.take(max).toList();
+
+  // Une seule source par série : deux saisons de DAN DA DAN donneraient deux
+  // rails quasi identiques
+  final franchises = <String>{};
+  return ordered
+      .where((s) => franchises.add(franchiseKey(s.title)))
+      .take(max)
+      .toList();
+}
+
+/// Clé approximative d'une série à partir de son titre : sans saison, partie,
+/// cour ni sous-titre (« JoJo's Bizarre Adventure: Stardust Crusaders » →
+/// « jojo's bizarre adventure »). Un « : » collé (« Re:ZERO ») n'est pas un
+/// séparateur de sous-titre.
+String franchiseKey(String title) {
+  var key = title.toLowerCase().trim();
+  final colon = key.indexOf(': ');
+  if (colon > 0) key = key.substring(0, colon);
+  key = key
+      .replaceAll(RegExp(r'\([^)]*\)'), ' ')
+      .replaceAll(RegExp(r'\b\d+(st|nd|rd|th)?\s*(season|saison)\b'), ' ')
+      .replaceAll(
+        RegExp(r'\b(the )?(final )?(season|saison|part|partie|cour)\s*\d*\b'),
+        ' ',
+      )
+      .replaceAll(
+        RegExp(r'[^a-z0-9\u00c0-\u024f\u3040-\u30ff\u4e00-\u9fff]+'),
+        ' ',
+      )
+      .trim()
+      .replaceAll(RegExp(r'\s(ii|iii|iv|v|vi|\d+)$'), '')
+      .trim();
+  return key.isEmpty ? title.toLowerCase().trim() : key;
 }
 
 /// Hash déterministe (String.hashCode peut varier d'une exécution à l'autre).

@@ -263,7 +263,7 @@ class _PickCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'reco_pick_overline'.tr(),
+                        'reco_pick_overline'.tr().toUpperCase(),
                         style: AppTypography.overline(c.accentText),
                       ),
                       const SizedBox(height: 4),

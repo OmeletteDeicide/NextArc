@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nextarc/core/theme/app_tokens.dart';
 import 'package:nextarc/core/theme/app_typography.dart';
 import 'package:nextarc/core/widgets/ds/ds.dart';
+import 'package:nextarc/features/watchlist/domain/list_items.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 
 // Briques visuelles communes aux trois fiches d'édition (AniList, NextArc,
@@ -23,6 +26,34 @@ double scoreFromPosition(double dx, double width) {
   if (width <= 0) return 0;
   final raw = (dx / width).clamp(0.0, 1.0) * kScoreSegments;
   return ((raw * 2).ceil() / 2).clamp(0.5, 10.0).toDouble();
+}
+
+/// Progression maximale acceptée quand le total est inconnu (règles Firestore).
+const int kMaxProgress = 50000;
+
+/// Pas d'un appui long sur − / + selon le nombre de répétitions déjà faites :
+/// 1 par 1 au début, puis 5, 25 et enfin 100 par 100 pour les très longues
+/// séries (One Piece, manga à plus de 1 000 chapitres).
+int progressRepeatStep(int tick) {
+  if (tick < 12) return 1;
+  if (tick < 36) return 5;
+  if (tick < 60) return 25;
+  return 100;
+}
+
+/// Progression bornée entre 0 et le total, sinon le nombre d'épisodes déjà
+/// sortis, sinon [kMaxProgress].
+int clampProgress(int value, int? total, {int? aired}) {
+  final max = progressCeiling(total: total, aired: aired) ?? kMaxProgress;
+  return value.clamp(0, max);
+}
+
+/// Progression saisie au clavier, bornée ; null si la saisie n'est pas un
+/// nombre.
+int? parseProgressInput(String input, int? total, {int? aired}) {
+  final value = int.tryParse(input.trim());
+  if (value == null) return null;
+  return clampProgress(value, total, aired: aired);
 }
 
 /// Progression correspondant à une position sur la barre de progression.
@@ -282,32 +313,278 @@ class StatusSelector extends StatelessWidget {
 
 // ── Progression ───────────────────────────────────────────────────────────────
 
+/// Valeur « 12/24 » de la section Progression : un appui ouvre la saisie
+/// directe du numéro (indispensable pour les séries de plus de 1 000
+/// épisodes ou chapitres).
+class ProgressValue extends StatelessWidget {
+  const ProgressValue({
+    super.key,
+    required this.progress,
+    required this.total,
+    required this.isManga,
+    required this.onChanged,
+    this.aired,
+  });
+
+  final int progress;
+  final int? total;
+
+  /// Épisodes déjà sortis quand le total est inconnu.
+  final int? aired;
+  final bool isManga;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Semantics(
+      button: true,
+      label: 'sheet_progress_edit'.tr(),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.cover),
+        onTap: () async {
+          final value = await showProgressInputDialog(
+            context,
+            progress: progress,
+            total: total,
+            aired: aired,
+            isManga: isManga,
+          );
+          if (value != null && value != progress) onChanged(value);
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              EditSheetValue(
+                  formatProgress(progress, total: total, aired: aired)),
+              const SizedBox(width: 6),
+              Icon(Icons.edit_rounded, size: 14, color: c.accentText),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Saisie directe de la progression. Renvoie la valeur bornée, ou null si
+/// l'utilisateur annule.
+Future<int?> showProgressInputDialog(
+  BuildContext context, {
+  required int progress,
+  required int? total,
+  required bool isManga,
+  int? aired,
+}) {
+  return showDialog<int>(
+    context: context,
+    builder: (_) => _ProgressInputDialog(
+      progress: progress,
+      total: total,
+      aired: aired,
+      isManga: isManga,
+    ),
+  );
+}
+
+class _ProgressInputDialog extends StatefulWidget {
+  const _ProgressInputDialog({
+    required this.progress,
+    required this.total,
+    required this.isManga,
+    this.aired,
+  });
+
+  final int progress;
+  final int? total;
+  final int? aired;
+  final bool isManga;
+
+  @override
+  State<_ProgressInputDialog> createState() => _ProgressInputDialogState();
+}
+
+class _ProgressInputDialogState extends State<_ProgressInputDialog> {
+  late final _controller = TextEditingController(text: '${widget.progress}')
+    ..selection = TextSelection(
+        baseOffset: 0, extentOffset: '${widget.progress}'.length);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final value = parseProgressInput(_controller.text, widget.total,
+        aired: widget.aired);
+    if (value != null) Navigator.of(context).pop(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final text = Theme.of(context).textTheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final total = widget.total;
+
+    return Dialog(
+      backgroundColor: isDark ? const Color(0xFF101A33) : Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: isDark
+            ? BorderSide(color: Colors.white.withValues(alpha: 0.1))
+            : BorderSide.none,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              (widget.isManga
+                      ? 'sheet_progress_input_chapters'
+                      : 'sheet_progress_input_episodes')
+                  .tr(),
+              style: text.headlineSmall?.copyWith(fontSize: 17, color: c.text1),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(5),
+              ],
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _submit(),
+              style: text.headlineSmall?.copyWith(color: c.text1),
+              decoration: InputDecoration(
+                suffixText: total != null && total > 0
+                    ? '/ $total'
+                    : (widget.aired ?? 0) > 0
+                        ? 'sheet_progress_released'
+                            .tr(namedArgs: {'count': '${widget.aired}'})
+                        : null,
+              ),
+            ),
+            const SizedBox(height: 17),
+            Row(
+              children: [
+                Expanded(
+                  child: AppButton(
+                    label: 'dialog_cancel'.tr(),
+                    variant: AppButtonVariant.secondary,
+                    expand: true,
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: AppButton(
+                    label: 'sheet_progress_input_confirm'.tr(),
+                    expand: true,
+                    onPressed: _submit,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Boutons − / + de 44 px autour d'une barre en dégradé qu'on peut glisser
-/// (quand le total est connu).
-class ProgressStepper extends StatelessWidget {
+/// (quand le total est connu). Un appui long sur − / + fait défiler de plus
+/// en plus vite.
+class ProgressStepper extends StatefulWidget {
   const ProgressStepper({
     super.key,
     required this.progress,
     required this.total,
     required this.onChanged,
+    this.aired,
   });
 
   final int progress;
   final int? total;
+
+  /// Épisodes déjà sortis : repère de la barre quand le total est inconnu.
+  final int? aired;
   final ValueChanged<int> onChanged;
 
   @override
+  State<ProgressStepper> createState() => _ProgressStepperState();
+}
+
+class _ProgressStepperState extends State<ProgressStepper> {
+  Timer? _repeat;
+  int _tick = 0;
+
+  /// Échelle de la barre : total, sinon épisodes sortis.
+  int? get _ceiling =>
+      progressCeiling(total: widget.total, aired: widget.aired);
+
+  /// Dernière valeur envoyée pendant un appui long : le parent ne s'est pas
+  /// forcément reconstruit entre deux répétitions.
+  int? _repeatValue;
+
+  /// Applique [delta] et renvoie false si la butée est atteinte.
+  bool _step(int delta) {
+    final current = _repeatValue ?? widget.progress;
+    final next =
+        clampProgress(current + delta, widget.total, aired: widget.aired);
+    if (next == current) return false;
+    if (_repeat != null) _repeatValue = next;
+    widget.onChanged(next);
+    return true;
+  }
+
+  void _startRepeat(int direction) {
+    _stopRepeat();
+    _tick = 0;
+    HapticFeedback.mediumImpact();
+    _repeatValue = widget.progress;
+    _repeat = Timer.periodic(const Duration(milliseconds: 90), (_) {
+      // Butée atteinte : inutile de continuer
+      if (!_step(direction * progressRepeatStep(_tick++))) _stopRepeat();
+    });
+  }
+
+  void _stopRepeat() {
+    _repeat?.cancel();
+    _repeat = null;
+    _repeatValue = null;
+  }
+
+  @override
+  void dispose() {
+    _stopRepeat();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final knownTotal = total != null && total! > 0;
+    final ceiling = _ceiling;
+    final progress = widget.progress;
     final canDecrement = progress > 0;
-    final canIncrement = !knownTotal || progress < total!;
+    final canIncrement = ceiling == null || progress < ceiling;
 
     return Row(
       children: [
         _RoundStepButton(
           icon: Icons.remove_rounded,
           tooltip: '−1',
-          onTap: canDecrement ? () => onChanged(progress - 1) : null,
+          onTap: canDecrement ? () => _step(-1) : null,
+          onLongPressStart: canDecrement ? () => _startRepeat(-1) : null,
+          onLongPressEnd: _stopRepeat,
         ),
         const SizedBox(width: 13),
         Expanded(
@@ -315,16 +592,18 @@ class ProgressStepper extends StatelessWidget {
             builder: (context, constraints) {
               void seek(double dx) {
                 final next =
-                    progressFromPosition(dx, constraints.maxWidth, total!);
-                if (next != progress) onChanged(next);
+                    progressFromPosition(dx, constraints.maxWidth, ceiling!);
+                if (next != progress) widget.onChanged(next);
               }
 
               final bar = GradientProgressBar(
-                value: knownTotal ? progress / total! : 0,
+                value: ceiling == null
+                    ? 0
+                    : (progress / ceiling).clamp(0.0, 1.0).toDouble(),
                 height: 8,
                 animate: false,
               );
-              if (!knownTotal) return bar;
+              if (ceiling == null) return bar;
 
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
@@ -342,7 +621,9 @@ class ProgressStepper extends StatelessWidget {
         _RoundStepButton(
           icon: Icons.add_rounded,
           tooltip: '+1',
-          onTap: canIncrement ? () => onChanged(progress + 1) : null,
+          onTap: canIncrement ? () => _step(1) : null,
+          onLongPressStart: canIncrement ? () => _startRepeat(1) : null,
+          onLongPressEnd: _stopRepeat,
         ),
       ],
     );
@@ -354,11 +635,15 @@ class _RoundStepButton extends StatelessWidget {
     required this.icon,
     required this.tooltip,
     required this.onTap,
+    this.onLongPressStart,
+    this.onLongPressEnd,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPressStart;
+  final VoidCallback? onLongPressEnd;
 
   @override
   Widget build(BuildContext context) {
@@ -366,24 +651,32 @@ class _RoundStepButton extends StatelessWidget {
     final enabled = onTap != null;
     return Tooltip(
       message: tooltip,
-      child: Material(
-        color: c.surface2,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: enabled
-              ? () {
-                  HapticFeedback.selectionClick();
-                  onTap!();
-                }
-              : null,
-          child: SizedBox(
-            width: AppSpacing.minTouch,
-            height: AppSpacing.minTouch,
-            child: Icon(
-              icon,
-              size: 20,
-              color: enabled ? c.text1 : c.text3.withValues(alpha: 0.5),
+      // Le tooltip ne doit pas intercepter l'appui long
+      triggerMode: TooltipTriggerMode.manual,
+      child: GestureDetector(
+        onLongPressStart:
+            onLongPressStart == null ? null : (_) => onLongPressStart!(),
+        onLongPressEnd: (_) => onLongPressEnd?.call(),
+        onLongPressCancel: () => onLongPressEnd?.call(),
+        child: Material(
+          color: c.surface2,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: enabled
+                ? () {
+                    HapticFeedback.selectionClick();
+                    onTap!();
+                  }
+                : null,
+            child: SizedBox(
+              width: AppSpacing.minTouch,
+              height: AppSpacing.minTouch,
+              child: Icon(
+                icon,
+                size: 20,
+                color: enabled ? c.text1 : c.text3.withValues(alpha: 0.5),
+              ),
             ),
           ),
         ),
