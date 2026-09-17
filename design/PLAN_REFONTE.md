@@ -164,15 +164,21 @@ nouvelle couleur de la maquette.
 - [ ] **Activer Firebase Storage** (console → Storage → Commencer) puis
       `firebase deploy --only storage` : le bucket n'existe pas encore, d'où
       l'erreur « object-not-found » à l'envoi d'une photo (16/09)
-- [ ] **Changer sa bannière de profil** (la photo et le pseudo sont déjà
-      modifiables) — pas de bannière choisie = bannière AniList si liée
-- [ ] **Republier `firestore.rules`** : champs `customName` / `customPhoto`
-      ajoutés le 16/09 (sinon l'édition du profil est refusée)
+- [x] **Changer sa bannière de profil** — fait le 17/09 (Lot 6)
+- [ ] **Republier les règles** : `firebase deploy --only firestore:rules,storage`
+      (champs `customName` / `customPhoto` du 16/09, champs `banner*` et
+      dossier Storage `banners/` du 17/09 — sinon l'édition est refusée)
+- [ ] **Déployer la Cloud Function** : `firebase deploy --only functions:deleteAccount`
+      puis tester la suppression avec un compte jetable
+- [ ] **Mettre à jour `docs/privacy-policy.html`** (date d'avant les comptes :
+      Firestore, Storage, suppression de compte) et activer GitHub Pages
+      (`/docs`) — lien « Confidentialité » d'À propos. Page « Conditions » à
+      créer si voulue (`termsUrl` dans `about_screen.dart`)
+- [ ] **App Check** (Play Integrity) : proposé le 16/09, en attente de ton accord
 - [ ] **Connexion Apple** (quand le compte Apple Developer à 99 €/an sera créé)
 - [x] **Facturation Firebase** : forfait Blaze réactivé le 15/09 (Cloud Function
       `anilistToken` = liaison AniList). Conseillé : alerte de budget à 1 €.
-- [ ] Suppression de compte (obligatoire Play Store) — Cloud Function possible
-      maintenant que Blaze est actif
+- [x] Suppression de compte (obligatoire Play Store) — faite le 16/09 (Lot 6)
 - [x] Publier `firestore.rules` (règle `activity` ajoutée) — fait, Stats OK le 16/09
 - [x] Version incohérente : 1.2.0 partout via `lib/core/constants/app_version.dart`
 - [ ] ASO + captures Play Store (après la refonte)
