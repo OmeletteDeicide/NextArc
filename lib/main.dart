@@ -12,6 +12,7 @@ import 'package:nextarc/core/services/notification_prefs_repository.dart';
 import 'package:nextarc/core/services/episode_checker_task.dart';
 import 'package:nextarc/core/utils/hive_cache.dart';
 import 'package:nextarc/features/onboarding/domain/onboarding_prefs.dart';
+import 'package:nextarc/core/services/app_check_service.dart';
 import 'package:nextarc/features/search/domain/search_history_service.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -31,6 +32,7 @@ Future<void> main() async {
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
   await Firebase.initializeApp();
+  await AppCheckService.activate();
   await EasyLocalization.ensureInitialized();
 
   await Hive.initFlutter();

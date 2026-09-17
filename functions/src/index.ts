@@ -1,13 +1,39 @@
 import { setGlobalOptions } from "firebase-functions";
-import { onRequest } from "firebase-functions/https";
+import { onRequest, type Request } from "firebase-functions/https";
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import { initializeApp } from "firebase-admin/app";
+import { getAppCheck } from "firebase-admin/app-check";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 
 setGlobalOptions({ maxInstances: 10, region: "europe-west1" });
+
+initializeApp();
+
+/**
+ * App Check en mode surveillance : un jeton absent ou invalide est seulement
+ * journalisé. Passer à true une fois que les métriques de la console montrent
+ * que les requêtes de l'app sont vérifiées.
+ */
+const ENFORCE_APP_CHECK = false;
+
+/** Vérifie l'en-tête X-Firebase-AppCheck. Renvoie false s'il faut refuser. */
+async function appCheckAllows(req: Request, fn: string): Promise<boolean> {
+  const token = req.get("X-Firebase-AppCheck");
+  if (!token) {
+    logger.warn("App Check token missing", { fn });
+    return !ENFORCE_APP_CHECK;
+  }
+  try {
+    await getAppCheck().verifyToken(token);
+    return true;
+  } catch {
+    logger.warn("App Check token invalid", { fn });
+    return !ENFORCE_APP_CHECK;
+  }
+}
 
 const anilistClientId = defineSecret("ANILIST_CLIENT_ID");
 const anilistClientSecret = defineSecret("ANILIST_CLIENT_SECRET");
@@ -26,7 +52,7 @@ export const anilistToken = onRequest(
     // CORS — autorise uniquement les requêtes de l'app mobile (scheme nextarc://)
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Allow-Headers", "Content-Type, X-Firebase-AppCheck");
 
     if (req.method === "OPTIONS") {
       res.status(204).send("");
@@ -35,6 +61,11 @@ export const anilistToken = onRequest(
 
     if (req.method !== "POST") {
       res.status(405).json({ error: "Method not allowed" });
+      return;
+    }
+
+    if (!(await appCheckAllows(req, "anilistToken"))) {
+      res.status(401).json({ error: "Unverified app" });
       return;
     }
 
@@ -84,8 +115,6 @@ export const anilistToken = onRequest(
 // Suppression de compte (obligatoire Play Store)
 // ─────────────────────────────────────────────────────────────────────────────
 
-initializeApp();
-
 /**
  * Supprime les données d'un compte NextArc, en deux étapes réelles pour que
  * l'app puisse afficher la progression :
@@ -104,6 +133,11 @@ initializeApp();
 export const deleteAccount = onRequest(async (req, res) => {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  if (!(await appCheckAllows(req, "deleteAccount"))) {
+    res.status(401).json({ error: "Unverified app" });
     return;
   }
 

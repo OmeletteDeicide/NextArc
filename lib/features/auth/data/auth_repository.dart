@@ -5,6 +5,7 @@ import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:nextarc/core/config/anilist_client.dart';
 import 'package:nextarc/core/constants/app_constants.dart';
+import 'package:nextarc/core/services/app_check_service.dart';
 import 'package:nextarc/features/auth/domain/user_model.dart';
 
 /// Clé de stockage du token dans flutter_secure_storage.
@@ -85,7 +86,10 @@ class AuthRepository {
   Future<String> _exchangeCodeForToken(String code) async {
     final response = await http.post(
       Uri.parse('https://anilisttoken-qgwvvtarwa-ew.a.run.app'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        ...await AppCheckService.headers(),
+      },
       body: jsonEncode({
         'code': code,
         'redirect_uri': AppConstants.anilistRedirectUri,

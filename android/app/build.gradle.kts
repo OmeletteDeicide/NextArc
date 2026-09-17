@@ -65,6 +65,5 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-    implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
-    implementation("com.google.firebase:firebase-analytics")
+    // Pas de Firebase Analytics : aucune mesure d'audience (RGPD, 17/09/2026)
 }

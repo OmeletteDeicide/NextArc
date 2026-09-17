@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:http/http.dart' as http;
+import 'package:nextarc/core/services/app_check_service.dart';
 
 /// Étapes de suppression exécutées par la Cloud Function `deleteAccount`.
 enum DeletionServerStep {
@@ -38,6 +39,7 @@ class AccountDeletionService {
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
+            ...await AppCheckService.headers(),
           },
           body: jsonEncode({'step': step.name}),
         )
