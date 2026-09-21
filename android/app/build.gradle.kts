@@ -63,6 +63,14 @@ flutter {
     source = "../.."
 }
 
+// firebase_app_check 0.3.x embarque encore le fournisseur SafetyNet (API
+// dépréciée, signalée par la Play Console) : NextArc n'utilise que Play
+// Integrity, SafetyNet n'est jamais chargé.
+configurations.all {
+    exclude(group = "com.google.firebase", module = "firebase-appcheck-safetynet")
+    exclude(group = "com.google.android.gms", module = "play-services-safetynet")
+}
+
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     // Pas de Firebase Analytics : aucune mesure d'audience (RGPD, 17/09/2026)

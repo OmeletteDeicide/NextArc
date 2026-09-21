@@ -20,6 +20,7 @@ import 'package:nextarc/features/watchlist/domain/list_items.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 import 'package:nextarc/features/watchlist/domain/watchlist_providers.dart';
 import 'package:nextarc/features/watchlist/presentation/edit_sheet_parts.dart';
+import 'package:nextarc/features/watchlist/presentation/removed_actions.dart';
 import 'package:nextarc/features/watchlist/presentation/watchlist_sheet_helper.dart';
 
 /// D'où vient la liste affichée.
@@ -41,6 +42,10 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
 
   /// Médias dont le +1 / Démarrer est en cours d'enregistrement.
   final Set<int> _busy = {};
+
+  /// Médias glissés hors de la liste, masqués tout de suite en attendant que
+  /// le retrait soit enregistré (un Dismissible doit quitter l'arbre aussitôt).
+  final Set<int> _dismissed = {};
 
   @override
   Widget build(BuildContext context) {
@@ -103,6 +108,14 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                     child: Text('nav_my_list'.tr(),
                         style: text.headlineMedium?.copyWith(color: c.text1)),
                   ),
+                  if (source != _ListSource.anilist) ...[
+                    RoundIconButton(
+                      icon: Icons.history_rounded,
+                      tooltip: 'removed_title'.tr(),
+                      onTap: () => context.push(AppRoutes.recentlyRemoved),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                  ],
                   RoundIconButton(
                     icon: Icons.calendar_month_outlined,
                     tooltip: 'calendar_title'.tr(),
@@ -148,10 +161,17 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
 
   Widget _buildList(
     BuildContext context,
-    List<ListItem> items,
+    List<ListItem> allItems,
     _ListSource source,
     UserModel? user,
   ) {
+    // Retrait enregistré : le média a quitté la liste, plus besoin de le
+    // masquer (une restauration pourra le faire réapparaître)
+    final ids = {for (final item in allItems) item.mediaId};
+    _dismissed.removeWhere((id) => !ids.contains(id));
+    final items =
+        allItems.where((item) => !_dismissed.contains(item.mediaId)).toList();
+
     if (items.isEmpty) {
       // Un état vide promet quelque chose et propose une action
       return _EmptyState(
@@ -242,8 +262,9 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     );
   }
 
-  /// Glisser vers la gauche : retirer (NextArc / invité) ou modifier (AniList,
-  /// où la suppression demande une confirmation dans la fiche).
+  /// Glisser vers la gauche : retirer (NextArc / invité, avec « Annuler » et
+  /// l'historique des titres retirés) ou modifier (AniList, où la suppression
+  /// demande une confirmation dans la fiche).
   Widget _dismissible({
     required ListItem item,
     required _ListSource source,
@@ -262,17 +283,31 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           openWatchlistSheet(context, ref, anime: item.toMedia(), user: user);
           return false;
         }
-        return confirmRemoveFromList(
-          context,
-          'sheet_delete_dialog_content_guest'
-              .tr(namedArgs: {'title': item.title}),
-        );
+        // Pas de fenêtre de confirmation : le retrait s'annule depuis le
+        // bandeau ou l'historique « Récemment retirés »
+        return true;
       },
-      onDismissed: (_) {
-        if (source == _ListSource.firestore) {
-          ref.read(firestoreWatchlistProvider.notifier).remove(item.mediaId);
-        } else {
-          ref.read(guestWatchlistProvider.notifier).remove(item.mediaId);
+      onDismissed: (_) async {
+        setState(() => _dismissed.add(item.mediaId));
+        try {
+          final removed = source == _ListSource.firestore
+              ? await ref
+                  .read(firestoreWatchlistProvider.notifier)
+                  .remove(item.mediaId)
+              : await ref
+                  .read(guestWatchlistProvider.notifier)
+                  .remove(item.mediaId);
+          if (removed != null && mounted) {
+            showRemovedSnackBar(context, removed);
+          }
+        } catch (e) {
+          // Échec (hors ligne…) : le titre réapparaît dans la liste
+          if (!mounted) return;
+          setState(() => _dismissed.remove(item.mediaId));
+          showEditSheetSnackBar(
+            context,
+            'sheet_snackbar_error'.tr(namedArgs: {'error': e.toString()}),
+          );
         }
       },
       background: Container(

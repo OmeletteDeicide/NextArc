@@ -4,6 +4,8 @@ import 'package:nextarc/features/activity/domain/activity_providers.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
 import 'package:nextarc/features/watchlist/data/firestore_watchlist_repository.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
+import 'package:nextarc/features/watchlist/domain/removed_history.dart';
+import 'package:nextarc/features/watchlist/domain/removed_history_providers.dart';
 
 final firestoreWatchlistRepositoryProvider =
     Provider((_) => FirestoreWatchlistRepository());
@@ -45,9 +47,24 @@ class FirestoreWatchlistNotifier
     } catch (_) {}
   }
 
-  Future<void> remove(int mediaId) async {
+  /// Retire un titre et le garde dans l'historique de l'appareil (le serveur
+  /// n'en garde que la trace de suppression). Renvoie l'entrée retirée.
+  Future<RemovedEntry?> remove(int mediaId) async {
     final uid = _uid;
-    if (uid == null) return;
+    if (uid == null) return null;
+    final entry =
+        state.value?.where((e) => e.animeId == mediaId).firstOrNull;
+    final removed = entry == null
+        ? null
+        : RemovedEntry(
+            entry: entry,
+            removedAt: DateTime.now(),
+            notificationsEnabled:
+                NotificationPrefsRepository.instance.isEnabled(mediaId),
+          );
+    if (removed != null) {
+      await ref.read(removedHistoryRepositoryProvider).record(uid, removed);
+    }
     await ref
         .read(firestoreWatchlistRepositoryProvider)
         .removeEntry(uid, mediaId);
@@ -57,6 +74,19 @@ class FirestoreWatchlistNotifier
     await _recordActivity(() => ref
         .read(activityRepositoryProvider)
         .removeFromCurrentMonth(uid: uid, mediaId: mediaId));
+    ref.invalidate(removedHistoryProvider);
+    return removed;
+  }
+
+  /// Remet un titre retiré tel qu'il était (remplace l'entrée actuelle s'il
+  /// a été réajouté entre-temps).
+  Future<void> restore(RemovedEntry removed) async {
+    final uid = _uid;
+    if (uid == null) return;
+    await upsert(restoredEntry(removed, now: DateTime.now()));
+    await restoreRemovedNotifications(removed);
+    await ref.read(removedHistoryRepositoryProvider).delete(uid, removed.mediaId);
+    ref.invalidate(removedHistoryProvider);
   }
 }
 
