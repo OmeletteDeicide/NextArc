@@ -1,0 +1,21 @@
+<fr-FR>
+NextArc 2.0.1
+• Nouvelle typographie, plus nette et plus dans l'esprit NextArc
+• Retiré un titre par erreur ? Touche « Annuler » juste après
+• Nouveau : « Récemment retirés » (icône horloge dans Ma liste) pour restaurer un titre pendant 30 jours, avec son statut, sa progression, sa note et son ❤️
+• Corrections et optimisations
+</fr-FR>
+<en-US>
+NextArc 2.0.1
+• New typography, sharper and more NextArc
+• Removed a title by mistake? Tap "Undo" right after
+• New: "Recently removed" (clock icon in My List) to restore a title for 30 days, with its status, progress, score and ❤️
+• Fixes and optimisations
+</en-US>
+<es-ES>
+NextArc 2.0.1
+• Nueva tipografía, más nítida y más NextArc
+• ¿Quitaste un título por error? Toca «Deshacer» justo después
+• Nuevo: «Quitados recientemente» (icono de reloj en Mi lista) para restaurar un título durante 30 días, con su estado, progreso, nota y ❤️
+• Correcciones y optimizaciones
+</es-ES>

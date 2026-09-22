@@ -18,7 +18,9 @@ void showRemovedSnackBar(BuildContext context, RemovedEntry removed) {
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
-        duration: const Duration(seconds: 5),
+        duration: const Duration(seconds: 3),
+        // Avec une action, Flutter garde le bandeau affiché par défaut
+        persist: false,
         content: Text(
           'removed_snackbar'.tr(namedArgs: {'title': removed.entry.title}),
           maxLines: 2,
