@@ -3,13 +3,11 @@ import UIKit
 import workmanager_apple
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    GeneratedPluginRegistrant.register(with: self)
-
     // Notifications locales affichées aussi quand l'app est ouverte
     UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
 
@@ -24,5 +22,11 @@ import workmanager_apple
     )
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  // Cycle de vie UIScene (obligatoire avec le SDK iOS 26) : les plugins
+  // s'enregistrent sur le moteur créé par la scène
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
   }
 }
