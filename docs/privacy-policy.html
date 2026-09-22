@@ -43,7 +43,7 @@
   <h2>3. Données traitées avec un compte NextArc</h2>
   <table>
     <tr><th>Données</th><th>Origine</th><th>Pourquoi</th></tr>
-    <tr><td>Adresse e-mail, mot de passe (géré et chiffré par Firebase Authentication, jamais visible par nous), identifiant de compte, dates de création et de dernière connexion</td><td>Toi, ou ton compte Google si tu choisis « Continuer avec Google »</td><td>Créer ton compte et te connecter</td></tr>
+    <tr><td>Adresse e-mail, mot de passe (géré et chiffré par Firebase Authentication, jamais visible par nous), identifiant de compte, dates de création et de dernière connexion</td><td>Toi, ou ton compte Google ou Apple si tu choisis « Continuer avec Google » ou « Continuer avec Apple » (Apple peut te proposer de masquer ton adresse : nous recevons alors une adresse relais)</td><td>Créer ton compte et te connecter</td></tr>
     <tr><td>Pseudo et photo de profil</td><td>Ton compte Google ou AniList, ou ce que tu choisis dans l'app</td><td>Afficher ton profil et tes cartes de partage</td></tr>
     <tr><td>Bannière de profil (jaquette choisie dans ta liste ou image envoyée depuis ton appareil)</td><td>Toi</td><td>Personnaliser ton profil</td></tr>
     <tr><td>Ta liste : titres, statut, progression, note, ❤️, genres, durée, dates de modification (y compris des titres retirés, pour la synchronisation entre appareils)</td><td>Toi</td><td>Sauvegarder et synchroniser ta liste, calculer tes statistiques, ton titre et tes recommandations</td></tr>
@@ -55,7 +55,7 @@
 
   <h2>4. Données techniques</h2>
   <ul>
-    <li><strong>Vérification de l'app (Firebase App Check / Google Play Integrity)</strong> : à chaque échange avec nos serveurs, Google vérifie que la requête vient bien de l'application NextArc authentique, sur un appareil non modifié. Nous recevons seulement un jeton de validité, pas d'information sur ton appareil. Finalité : protéger ton compte et nos services contre les abus (intérêt légitime).</li>
+    <li><strong>Vérification de l'app (Firebase App Check / Google Play Integrity sur Android, Apple App Attest sur iPhone)</strong> : à chaque échange avec nos serveurs, Google ou Apple vérifie que la requête vient bien de l'application NextArc authentique, sur un appareil non modifié. Nous recevons seulement un jeton de validité, pas d'information sur ton appareil. Finalité : protéger ton compte et nos services contre les abus (intérêt légitime).</li>
     <li><strong>Journaux techniques</strong> : l'hébergeur (Google Cloud) enregistre, comme tout serveur, des journaux de requêtes (dont l'adresse IP) pour la sécurité et le diagnostic. Nos fonctions serveur journalisent en plus l'identifiant de compte lors d'une suppression. Ces journaux sont conservés 30 jours.</li>
     <li><strong>Notifications</strong> : les rappels de sortie d'épisodes et le récap du mois sont programmés <strong>localement</strong> sur ton appareil. Aucun service de notification à distance n'est utilisé.</li>
   </ul>
@@ -131,7 +131,7 @@
 
   <h2>3. Data processed with a NextArc account</h2>
   <ul>
-    <li><strong>Account</strong>: email address, password (handled and hashed by Firebase Authentication, never visible to us), account ID, creation and last sign-in dates — from you or your Google account. Purpose: sign-up and sign-in.</li>
+    <li><strong>Account</strong>: email address, password (handled and hashed by Firebase Authentication, never visible to us), account ID, creation and last sign-in dates — from you or your Google or Apple account (Apple may relay a hidden email address). Purpose: sign-up and sign-in.</li>
     <li><strong>Profile</strong>: username, profile photo and banner (a cover from your list or an image uploaded from your device) — from you, Google or AniList. Purpose: displaying your profile and share cards.</li>
     <li><strong>Your list</strong>: titles, status, progress, score, ❤️, genres, duration, modification dates (including removed titles, for syncing). Purpose: backup, sync, statistics, titles and recommendations.</li>
     <li><strong>Monthly activity log</strong> and <strong>personal notes</strong> (up to 500 characters). Purpose: monthly recap and your own notes.</li>
@@ -141,7 +141,7 @@
 
   <h2>4. Technical data</h2>
   <ul>
-    <li><strong>App verification (Firebase App Check / Google Play Integrity)</strong>: Google checks that requests come from the genuine NextArc app on an unmodified device. We only receive a validity token. Purpose: protecting accounts and services against abuse (legitimate interest).</li>
+    <li><strong>App verification (Firebase App Check / Google Play Integrity on Android, Apple App Attest on iPhone)</strong>: Google or Apple checks that requests come from the genuine NextArc app on an unmodified device. We only receive a validity token. Purpose: protecting accounts and services against abuse (legitimate interest).</li>
     <li><strong>Server logs</strong> (including IP address) kept by our host for security and troubleshooting, for 30 days.</li>
     <li><strong>Notifications</strong> are scheduled locally on your device; no remote push service is used.</li>
   </ul>
