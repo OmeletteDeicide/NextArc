@@ -43,6 +43,9 @@ void main() {
     expect(heroDuration(720), '12 H');
     expect(heroDuration(45), '45 MIN');
     expect(heroDuration(0), '0 MIN');
+    expect(heroDuration(999 * 60 + 59), '999 H 59');
+    expect(heroDuration(1234 * 60 + 36), '1 234 H');
+    expect(heroDuration(12000 * 60), '12 000 H');
   });
 
   test('lastMonths traverse le changement d\'année', () {
