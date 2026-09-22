@@ -80,10 +80,7 @@ class AboutScreen extends StatelessWidget {
                           children: [
                             Text(
                               'NextArc',
-                              style: text.headlineSmall?.copyWith(
-                                color: c.text1,
-                                fontWeight: FontWeight.w800,
-                              ),
+                              style: text.headlineSmall?.copyWith(color: c.text1),
                             ),
                             const SizedBox(height: 3),
                             Text(

@@ -174,7 +174,7 @@ class _DiscoverHeader extends StatelessWidget {
           Text(
             'NextArc',
             style: text.titleLarge
-                ?.copyWith(fontWeight: FontWeight.w800, fontSize: 16),
+                ?.copyWith(fontSize: 16),
           ),
           const Spacer(),
           RoundIconButton(

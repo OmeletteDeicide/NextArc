@@ -42,11 +42,19 @@ enum MonthTrend {
 String signedPercent(int percent) =>
     percent > 0 ? '+$percent' : percent < 0 ? '−${-percent}' : '0';
 
-/// Grand chiffre du récap : « 9 H 36 », « 12 H », « 45 MIN ».
+/// Grand chiffre du récap : « 9 H 36 », « 12 H », « 45 MIN ». Dès 1 000 h,
+/// les minutes disparaissent et les milliers sont séparés (« 12 000 H ») pour
+/// que la ligne garde la largeur de « EN PLUS. ».
 String heroDuration(int minutes) {
   final hours = minutes ~/ 60;
   final rest = minutes % 60;
   if (hours == 0) return '$rest MIN';
+  if (hours >= 1000) {
+    final digits = '$hours';
+    final split = digits.length - 3;
+    // Espace insécable : le nombre ne se coupe jamais
+    return '${digits.substring(0, split)} ${digits.substring(split)} H';
+  }
   if (rest == 0) return '$hours H';
   return '$hours H ${rest.toString().padLeft(2, '0')}';
 }

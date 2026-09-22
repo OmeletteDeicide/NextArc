@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,8 +28,23 @@ void callbackDispatcher() {
   });
 }
 
+/// Licences OFL des polices Google (Audiowide, Chakra Petch), affichées dans
+/// « Licences » de l'écran À propos.
+void _registerFontLicenses() {
+  LicenseRegistry.addLicense(() async* {
+    for (final (font, file) in const [
+      ('Audiowide', 'audiowide_OFL.txt'),
+      ('Chakra Petch', 'chakra_petch_OFL.txt'),
+    ]) {
+      final license = await rootBundle.loadString('assets/licenses/$file');
+      yield LicenseEntryWithLineBreaks(['google_fonts', font], license);
+    }
+  });
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _registerFontLicenses();
   await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
   await Firebase.initializeApp();

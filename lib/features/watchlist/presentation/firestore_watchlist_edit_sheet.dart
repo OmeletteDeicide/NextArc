@@ -10,6 +10,7 @@ import 'package:nextarc/features/watchlist/domain/guest_watchlist_entry.dart';
 import 'package:nextarc/features/watchlist/domain/media_list_entry.dart';
 import 'package:nextarc/features/watchlist/presentation/edit_sheet_parts.dart';
 import 'package:nextarc/features/watchlist/presentation/favourite_button.dart';
+import 'package:nextarc/features/watchlist/presentation/removed_actions.dart';
 
 /// BottomSheet pour ajouter ou modifier un média dans la watchlist Firestore.
 Future<void> showFirestoreWatchlistEditSheet(
@@ -255,12 +256,18 @@ class _FirestoreEditSheetState extends ConsumerState<_FirestoreEditSheet> {
 
     setState(() => _isDeleting = true);
     try {
-      await ref.read(firestoreWatchlistProvider.notifier).remove(widget.animeId);
+      final removed =
+          await ref.read(firestoreWatchlistProvider.notifier).remove(widget.animeId);
       HapticFeedback.lightImpact();
 
       if (mounted) {
+        // Lu avant de fermer la fiche : le bandeau lui survit
+        if (removed != null) {
+          showRemovedSnackBar(context, removed);
+        } else {
+          showEditSheetSnackBar(context, 'sheet_snackbar_guest_removed'.tr());
+        }
         Navigator.of(context).pop();
-        showEditSheetSnackBar(context, 'sheet_snackbar_guest_removed'.tr());
       }
     } catch (e) {
       if (mounted) {

@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:google_sign_in/google_sign_in.dart';
 
-/// Service Firebase Auth — email/password + Google Sign-In.
+/// Service Firebase Auth — email/password, Google et Apple (iOS).
 class FirebaseAuthService {
   final _auth = fb.FirebaseAuth.instance;
   final _googleSignIn = GoogleSignIn();
@@ -49,6 +49,37 @@ class FirebaseAuthService {
     return cred.user!;
   }
 
+  /// Sign in with Apple (feuille native iOS). Apple ne transmet le nom qu'à la
+  /// toute première connexion : le pseudo se choisit ensuite dans le profil.
+  Future<fb.User> signInWithApple() async {
+    final cred = await _auth.signInWithProvider(_appleProvider());
+    return cred.user!;
+  }
+
+  /// Exigé par Apple avant de supprimer un compte : révoque l'accès « Se
+  /// connecter avec Apple ». Demande une nouvelle validation (Face ID) pour
+  /// obtenir un code d'autorisation. Sans effet si Apple n'est pas lié.
+  /// Relance l'annulation de l'utilisateur ; les autres erreurs (révocation
+  /// non configurée côté Firebase) ne bloquent pas la suppression.
+  Future<void> revokeAppleIfLinked() async {
+    final user = _auth.currentUser;
+    if (user == null ||
+        !user.providerData.any((p) => p.providerId == 'apple.com')) {
+      return;
+    }
+    try {
+      final cred = await user.reauthenticateWithProvider(_appleProvider());
+      final code = cred.additionalUserInfo?.authorizationCode;
+      if (code != null) await _auth.revokeTokenWithAuthorizationCode(code);
+    } on fb.FirebaseAuthException catch (e) {
+      if (isCanceledAuthError(e.code)) rethrow;
+    }
+  }
+
+  static fb.AppleAuthProvider _appleProvider() => fb.AppleAuthProvider()
+    ..addScope('email')
+    ..addScope('name');
+
   Future<void> signOut() async {
     await Future.wait([
       _auth.signOut(),
@@ -56,3 +87,10 @@ class FirebaseAuthService {
     ]);
   }
 }
+
+/// Codes renvoyés quand l'utilisateur ferme la feuille de connexion.
+bool isCanceledAuthError(String code) =>
+    code == 'canceled' ||
+    code == 'web-context-canceled' ||
+    code == 'user-cancelled' ||
+    code == 'popup-closed-by-user';

@@ -744,7 +744,7 @@ class _CardOverline extends StatelessWidget {
   }
 }
 
-/// Grand texte en Archivo Black (« 9 H 36 / DE VIE / EN PLUS. »).
+/// Grand texte en Audiowide (« 9 H 36 / DE VIE / EN PLUS. »).
 class _CardHero extends StatelessWidget {
   const _CardHero(this.text, {required this.w});
 
@@ -761,7 +761,6 @@ class _CardHero extends StatelessWidget {
         style: Theme.of(context).textTheme.displayLarge?.copyWith(
               fontSize: w * 0.128,
               height: 0.92,
-              letterSpacing: -w * 0.0044,
               color: const Color(0xFFF7F9FF),
             ),
       ),
@@ -804,8 +803,6 @@ class _CardStatsRow extends StatelessWidget {
                       maxLines: 1,
                       style: text.titleLarge?.copyWith(
                         fontSize: w * 0.064,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -w * 0.0022,
                         color: items[i].color ?? const Color(0xFFF7F9FF),
                       ),
                     ),
@@ -1019,7 +1016,6 @@ class _CardFooter extends StatelessWidget {
         'NextArc',
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontSize: w * 0.042,
-              fontWeight: FontWeight.w800,
               color: const Color(0xFFF7F9FF),
             ),
       );
@@ -1106,29 +1102,8 @@ class _CardFooter extends StatelessWidget {
           top: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
         ),
       ),
-      child: Row(
-        children: [
-          Expanded(child: left),
-          SizedBox(width: w * 0.02),
-          Container(
-            padding: EdgeInsets.symmetric(
-                horizontal: w * 0.035, vertical: w * 0.025),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF7F9FF),
-              borderRadius: BorderRadius.circular(AppRadius.full),
-            ),
-            child: Text(
-              'share_card_store'.tr(),
-              style: TextStyle(
-                fontFamily: AppTypography.bodyFamily,
-                color: const Color(0xFF0A0F22),
-                fontWeight: FontWeight.w800,
-                fontSize: w * 0.027,
-              ),
-            ),
-          ),
-        ],
-      ),
+      // Pas de mention de store : la carte circule entre Android et iPhone
+      child: left,
     );
   }
 }

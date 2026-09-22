@@ -17,6 +17,7 @@ import 'package:nextarc/features/share/presentation/share_stats_screen.dart';
 import 'package:nextarc/features/calendar/presentation/calendar_screen.dart';
 import 'package:nextarc/features/stats/presentation/my_title_screen.dart';
 import 'package:nextarc/features/stats/presentation/stats_screen.dart';
+import 'package:nextarc/features/watchlist/presentation/recently_removed_screen.dart';
 import 'package:nextarc/features/watchlist/presentation/watchlist_screen.dart';
 
 /// Transition slide-depuis-la-droite + fade (pour détail, settings, about).
@@ -83,6 +84,7 @@ class AppRoutes {
   static const String myTitle = '/my-title';
   static const String onboarding = '/onboarding';
   static const String deleteAccount = '/delete-account';
+  static const String recentlyRemoved = '/recently-removed';
 }
 
 final GoRouter appRouter = GoRouter(
@@ -198,6 +200,13 @@ final GoRouter appRouter = GoRouter(
           openPreviousMonth: state.extra == 'previousMonth',
         ),
       ),
+    ),
+
+    // Titres récemment retirés de la liste — hors shell
+    GoRoute(
+      path: '/recently-removed',
+      pageBuilder: (context, state) =>
+          _slideFade(state: state, child: const RecentlyRemovedScreen()),
     ),
 
     // Connexion email/password — hors shell

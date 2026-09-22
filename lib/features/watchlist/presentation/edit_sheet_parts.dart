@@ -275,7 +275,7 @@ class EditSheetValue extends StatelessWidget {
       style: Theme.of(context)
           .textTheme
           .titleLarge
-          ?.copyWith(fontSize: 15, fontWeight: FontWeight.w800, color: color ?? c.text1),
+          ?.copyWith(fontSize: 15, color: color ?? c.text1),
     );
   }
 }

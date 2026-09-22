@@ -85,6 +85,8 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
           case _Step.data:
             await _service.run(DeletionServerStep.data);
           case _Step.account:
+            // Apple exige de révoquer « Se connecter avec Apple » d'abord
+            await ref.read(firebaseAuthServiceProvider).revokeAppleIfLinked();
             await _service.run(DeletionServerStep.account);
             // Compte supprimé côté serveur : on quitte la session localement
             await ref.read(authProvider.notifier).logout();
