@@ -13,6 +13,9 @@ enum AppButtonVariant {
 
   /// Plein rouge — confirmation d'une action destructive (Déconnexion…).
   danger,
+
+  /// « Continuer avec Apple » : blanc en sombre, noir en clair (règles Apple).
+  apple,
 }
 
 /// Bouton du design system (hauteur ≥ 44, rayon 14).
@@ -76,6 +79,13 @@ class AppButton extends StatelessWidget {
           isDark ? const Color(0xFF2A0710) : Colors.white,
           BoxDecoration(
             color: c.favourite,
+            borderRadius: BorderRadius.circular(AppRadius.card),
+          ),
+        ),
+      AppButtonVariant.apple => (
+          isDark ? Colors.black : Colors.white,
+          BoxDecoration(
+            color: isDark ? Colors.white : Colors.black,
             borderRadius: BorderRadius.circular(AppRadius.card),
           ),
         ),

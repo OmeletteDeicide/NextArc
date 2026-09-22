@@ -120,6 +120,7 @@
   "reco_offline_body": "Recommendations need AniList. Try again once you're online.",
   "sheet_favourite_tooltip": "Like",
   "share_card_store": "Get it on Google Play",
+  "share_card_store_ios": "Download on the App Store",
   "title_rank_curious": "Curious",
   "title_rank_spectator": "Spectator",
   "title_rank_explorer": "Explorer",
@@ -565,6 +566,7 @@
   "auth_already_have_account": "Already have an account? Sign in",
   "auth_no_account": "No account yet? Create one",
   "auth_continue_google": "Continue with Google",
+  "auth_continue_apple": "Continue with Apple",
   "auth_continue_email": "Continue with email",
   "auth_or": "or",
   "auth_field_name": "Display name",
@@ -581,6 +583,7 @@
   "auth_error_weak_password": "Password must be at least 6 characters",
   "auth_error_invalid_email": "Invalid email address",
   "auth_error_canceled": "Sign in cancelled",
+  "auth_error_account_exists": "An account already exists with this email. Sign in with the method you used the first time (Google or email).",
   "auth_error_generic": "Something went wrong, please try again",
 
   "profile_link_anilist_title": "Link with AniList",

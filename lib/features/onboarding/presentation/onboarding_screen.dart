@@ -8,7 +8,9 @@ import 'package:nextarc/core/theme/app_tokens.dart';
 import 'package:nextarc/core/theme/app_typography.dart';
 import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/core/widgets/google_logo.dart';
+import 'package:nextarc/core/config/app_platform.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/auth/presentation/apple_sign_in_button.dart';
 import 'package:nextarc/features/discover/domain/discover_providers.dart';
 import 'package:nextarc/features/onboarding/domain/onboarding_prefs.dart';
 
@@ -56,9 +58,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     if (mounted) context.go(AppRoutes.discover);
   }
 
-  Future<void> _google() async {
+  Future<void> _google() => _signIn(
+      () => ref.read(authProvider.notifier).loginWithGoogle());
+
+  Future<void> _apple() => _signIn(
+      () => ref.read(authProvider.notifier).loginWithApple());
+
+  Future<void> _signIn(Future<void> Function() login) async {
     setState(() => _signingIn = true);
-    await ref.read(authProvider.notifier).loginWithGoogle();
+    await login();
     if (!mounted) return;
     setState(() => _signingIn = false);
     final auth = ref.read(authProvider).valueOrNull;
@@ -150,6 +158,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         _AccountPage(
                           signingIn: _signingIn,
                           onGoogle: _google,
+                          onApple: _apple,
                           onEmail: _email,
                           onGuest: _finish,
                         ),
@@ -510,12 +519,14 @@ class _AccountPage extends StatelessWidget {
   const _AccountPage({
     required this.signingIn,
     required this.onGoogle,
+    required this.onApple,
     required this.onEmail,
     required this.onGuest,
   });
 
   final bool signingIn;
   final VoidCallback onGoogle;
+  final VoidCallback onApple;
   final VoidCallback onEmail;
   final VoidCallback onGuest;
 
@@ -532,6 +543,13 @@ class _AccountPage extends StatelessWidget {
       title: 'onboarding_account_title'.tr(),
       body: 'onboarding_account_body'.tr(),
       children: [
+        if (isIosApp) ...[
+          AppleSignInButton(
+            loading: signingIn,
+            onPressed: signingIn ? null : onApple,
+          ),
+          const SizedBox(height: 10),
+        ],
         AppButton(
           label: 'auth_continue_google'.tr(),
           leading: const GoogleLogo(),

@@ -8,7 +8,9 @@ import 'package:nextarc/core/router/app_router.dart';
 import 'package:nextarc/core/theme/app_tokens.dart';
 import 'package:nextarc/core/widgets/ds/ds.dart';
 import 'package:nextarc/core/widgets/google_logo.dart';
+import 'package:nextarc/core/config/app_platform.dart';
 import 'package:nextarc/features/auth/domain/auth_providers.dart';
+import 'package:nextarc/features/auth/presentation/apple_sign_in_button.dart';
 import 'package:nextarc/features/auth/domain/user_model.dart';
 import 'package:nextarc/features/auth/presentation/anilist_actions.dart';
 import 'package:nextarc/features/auth/presentation/profile_banner_view.dart';
@@ -20,6 +22,7 @@ import 'package:nextarc/features/watchlist/data/mutation_repository.dart';
 import 'package:nextarc/features/watchlist/data/watchlist_repository.dart';
 import 'package:nextarc/features/watchlist/domain/guest_watchlist_providers.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 
 /// Écran Profil — affiche le compte connecté ou propose de se connecter.
 class ProfileScreen extends ConsumerWidget {
@@ -128,8 +131,11 @@ class ProfileScreen extends ConsumerWidget {
                   onTap: () => context.push(AppRoutes.settings),
                 ),
                 const SizedBox(height: AppSpacing.xs),
-                const _SupportRow(),
-                const SizedBox(height: AppSpacing.xs),
+                // Pas de lien de don externe sur iOS (règle 3.1.1 de l'App Store)
+                if (!isIosApp) ...[
+                  const _SupportRow(),
+                  const SizedBox(height: AppSpacing.xs),
+                ],
                 _MenuRow(
                   icon: Icons.info_outline_rounded,
                   title: 'profile_about_title'.tr(),
@@ -208,6 +214,14 @@ class ProfileScreen extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: 26),
+            if (isIosApp) ...[
+              AppleSignInButton(
+                loading: isLoading,
+                onPressed: () =>
+                    ref.read(authProvider.notifier).loginWithApple(),
+              ),
+              const SizedBox(height: 10),
+            ],
             AppButton(
               label: 'auth_continue_google'.tr(),
               leading: const GoogleLogo(),

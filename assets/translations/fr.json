@@ -120,6 +120,7 @@
   "reco_offline_body": "Les recommandations ont besoin d'AniList. Réessaie une fois connecté.",
   "sheet_favourite_tooltip": "J'aime",
   "share_card_store": "Dispo sur Google Play",
+  "share_card_store_ios": "Dispo sur l'App Store",
   "title_rank_curious": "Curieux",
   "title_rank_spectator": "Spectateur",
   "title_rank_explorer": "Explorateur",
@@ -565,6 +566,7 @@
   "auth_already_have_account": "Tu as déjà un compte ? Se connecter",
   "auth_no_account": "Pas encore de compte ? Créer un compte",
   "auth_continue_google": "Continuer avec Google",
+  "auth_continue_apple": "Continuer avec Apple",
   "auth_continue_email": "Continuer avec l'e-mail",
   "auth_or": "ou",
   "auth_field_name": "Nom d'affichage",
@@ -581,6 +583,7 @@
   "auth_error_weak_password": "Le mot de passe doit contenir au moins 6 caractères",
   "auth_error_invalid_email": "Adresse e-mail invalide",
   "auth_error_canceled": "Connexion annulée",
+  "auth_error_account_exists": "Un compte existe déjà avec cet e-mail. Connecte-toi avec le moyen utilisé la première fois (Google ou e-mail).",
   "auth_error_generic": "Une erreur est survenue, réessaie",
 
   "profile_link_anilist_title": "Lier avec AniList",

@@ -126,6 +126,22 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     _syncInBackground(state.value?.user);
   }
 
+  // ── Firebase — Apple (iOS) ────────────────────────────────────────────────
+
+  Future<void> loginWithApple() async {
+    state = const AsyncValue.loading();
+    final svc = ref.read(firebaseAuthServiceProvider);
+    state = await AsyncValue.guard(() async {
+      final fbUser = await svc.signInWithApple();
+      return AuthState(
+        status: AuthStatus.authenticated,
+        user: await _upsertFirestore(UserModel.fromFirebase(fbUser)),
+      );
+    });
+    _handleError();
+    _syncInBackground(state.value?.user);
+  }
+
   // ── AniList — OAuth (standalone ou liaison à un compte Firebase) ──────────
 
   Future<void> login() async {
@@ -303,14 +319,17 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
-  String _mapFirebaseError(String code) => switch (code) {
+  String _mapFirebaseError(String code) => isCanceledAuthError(code)
+      ? 'auth_error_canceled'
+      : switch (code) {
         'user-not-found' => 'auth_error_user_not_found',
         'wrong-password' => 'auth_error_wrong_password',
         'invalid-credential' => 'auth_error_invalid_credential',
         'email-already-in-use' => 'auth_error_email_in_use',
         'weak-password' => 'auth_error_weak_password',
         'invalid-email' => 'auth_error_invalid_email',
-        'canceled' => 'auth_error_canceled',
+        'account-exists-with-different-credential' =>
+          'auth_error_account_exists',
         _ => 'auth_error_generic',
       };
 

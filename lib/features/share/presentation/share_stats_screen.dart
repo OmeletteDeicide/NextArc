@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nextarc/core/config/app_platform.dart';
 import 'package:nextarc/core/constants/app_links.dart';
 import 'package:nextarc/core/theme/app_tokens.dart';
 import 'package:nextarc/core/theme/app_typography.dart';
@@ -1114,7 +1115,7 @@ class _CardFooter extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.full),
             ),
             child: Text(
-              'share_card_store'.tr(),
+              (isIosApp ? 'share_card_store_ios' : 'share_card_store').tr(),
               style: TextStyle(
                 fontFamily: AppTypography.bodyFamily,
                 color: const Color(0xFF0A0F22),
