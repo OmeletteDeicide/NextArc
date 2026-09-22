@@ -104,7 +104,10 @@ flutter:
 # ── Configuration icône d'app ──────────────────────────────────────────────────
 flutter_launcher_icons:
   android: true
-  ios: false
+  ios: true
+  # App Store : icône 1024 sans transparence
+  remove_alpha_ios: true
+  background_color_ios: "#0F1C3F"
   image_path: "assets/icon/icon.png"
   min_sdk_android: 21
   adaptive_icon_background: "#0F1C3F"
@@ -115,7 +118,7 @@ flutter_native_splash:
   color: "#0F1C3F"
   image: "assets/icon/icon.png"
   android: true
-  ios: false
+  ios: true
   android_12:
     color: "#0F1C3F"
     image: "assets/icon/icon.png"
