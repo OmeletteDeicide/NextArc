@@ -15,7 +15,7 @@
 - **Aucun motif de fond** (ni hachures ni zigzag) : essayé puis retiré le 16/09
   à la demande de Simon (« sans ça sort mieux »). Dégradés et halos conservés.
 - **Cartes de partage : toujours en sombre**, quel que soit le thème.
-- Pied de carte : « NextArc — Dispo sur Google Play ». ❌ jamais `nextarc.app`.
+- Pied de carte : NextArc (logo + nom), sans mention de store (la carte circule entre Android et iPhone). ❌ jamais `nextarc.app`.
   Pas de mention Apple tant que l'app n'y est pas.
 - **Couronne 👑 uniquement pour les Arcer** (la maquette la montre sur « Petit
   Curieux » juste pour illustration). Design de couronne à redessiner plus tard.

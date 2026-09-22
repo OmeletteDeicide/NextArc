@@ -8,7 +8,7 @@ Le code iOS est prêt :
 - permissions photo et caméra ;
 - iPhone uniquement ;
 - Ko-fi masqué sur iOS ;
-- « Dispo sur l'App Store » sur les cartes de partage.
+- cartes de partage sans mention de store (elles circulent entre Android et iPhone).
 
 Il reste la configuration des comptes (toi) et la compilation sur le Mac (ton ami).
 
@@ -110,7 +110,7 @@ flutter run --release
 - [ ] lier AniList depuis le profil ;
 - [ ] activer un rappel : la permission de notification est demandée, et la notification arrive ;
 - [ ] changer la photo de profil (galerie et caméra) ;
-- [ ] partager une carte de stats : « Dispo sur l'App Store », pas de Google Play ;
+- [ ] partager une carte de stats : aucune mention de Google Play ;
 - [ ] le Profil ne montre pas « Soutenir NextArc » ;
 - [ ] suppression d'un compte de test créé avec Apple : Face ID est redemandé (révocation), puis le compte disparaît.
 
@@ -182,5 +182,5 @@ Les visuels Claude Design générés par IA peuvent être utilisés (Apple n'imp
 ## Ce qui diffère sur iOS
 - **Connexion Apple** en premier sur l'écran de connexion. Apple l'exige dès qu'une connexion Google est proposée (règle 4.8).
 - **Ko-fi masqué** : un lien de don vers un développeur individuel hors achats intégrés est refusé (règle 3.1.1). Il reste sur Android.
-- **Cartes de partage** : « Dispo sur l'App Store ». Mentionner une autre plateforme est refusé (règle 2.3.10).
+- **Cartes de partage** : plus aucune mention de store, sur les deux plateformes. Mentionner Google Play dans une app iOS est refusé (règle 2.3.10).
 - **Rappels en arrière-plan** : iOS choisit lui-même quand lancer la vérification (souvent quelques fois par jour, selon l'usage). Les rappels déjà programmés arrivent à l'heure.

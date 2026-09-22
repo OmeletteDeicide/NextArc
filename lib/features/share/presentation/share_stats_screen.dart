@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nextarc/core/config/app_platform.dart';
 import 'package:nextarc/core/constants/app_links.dart';
 import 'package:nextarc/core/theme/app_tokens.dart';
 import 'package:nextarc/core/theme/app_typography.dart';
@@ -1103,29 +1102,8 @@ class _CardFooter extends StatelessWidget {
           top: BorderSide(color: Colors.white.withValues(alpha: 0.14)),
         ),
       ),
-      child: Row(
-        children: [
-          Expanded(child: left),
-          SizedBox(width: w * 0.02),
-          Container(
-            padding: EdgeInsets.symmetric(
-                horizontal: w * 0.035, vertical: w * 0.025),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF7F9FF),
-              borderRadius: BorderRadius.circular(AppRadius.full),
-            ),
-            child: Text(
-              (isIosApp ? 'share_card_store_ios' : 'share_card_store').tr(),
-              style: TextStyle(
-                fontFamily: AppTypography.bodyFamily,
-                color: const Color(0xFF0A0F22),
-                fontWeight: FontWeight.w800,
-                fontSize: w * 0.027,
-              ),
-            ),
-          ),
-        ],
-      ),
+      // Pas de mention de store : la carte circule entre Android et iPhone
+      child: left,
     );
   }
 }
