@@ -744,7 +744,7 @@ class _CardOverline extends StatelessWidget {
   }
 }
 
-/// Grand texte en Archivo Black (« 9 H 36 / DE VIE / EN PLUS. »).
+/// Grand texte en Audiowide (« 9 H 36 / DE VIE / EN PLUS. »).
 class _CardHero extends StatelessWidget {
   const _CardHero(this.text, {required this.w});
 
@@ -761,7 +761,6 @@ class _CardHero extends StatelessWidget {
         style: Theme.of(context).textTheme.displayLarge?.copyWith(
               fontSize: w * 0.128,
               height: 0.92,
-              letterSpacing: -w * 0.0044,
               color: const Color(0xFFF7F9FF),
             ),
       ),
@@ -804,7 +803,6 @@ class _CardStatsRow extends StatelessWidget {
                       maxLines: 1,
                       style: text.titleLarge?.copyWith(
                         fontSize: w * 0.064,
-                        letterSpacing: -w * 0.0022,
                         color: items[i].color ?? const Color(0xFFF7F9FF),
                       ),
                     ),
