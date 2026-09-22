@@ -91,7 +91,7 @@ flutter pub get
 cd ios && pod install && cd ..
 open ios/Runner.xcworkspace
 ```
-Si `ios/Podfile` vient d'être créé, décommenter la ligne `platform :ios, '13.0'`.
+Toujours lancer `flutter pub get` avant d'ouvrir Xcode : il crée `ios/Flutter/Generated.xcconfig`, propre à chaque Mac. Sans lui, Xcode affiche « could not find included file 'Generated.xcconfig' ».
 
 Dans Xcode → cible **Runner** → **Signing & Capabilities** :
 - **Team** : ton compte développeur.
