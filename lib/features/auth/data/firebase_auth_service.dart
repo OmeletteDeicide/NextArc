@@ -49,6 +49,17 @@ class FirebaseAuthService {
     return cred.user!;
   }
 
+  /// Envoie le lien « Mot de passe oublié » dans la langue de l'app. Ne dit
+  /// jamais si l'adresse a un compte (protection contre l'énumération).
+  Future<void> sendPasswordReset(String email, {String? languageCode}) async {
+    if (languageCode != null) await _auth.setLanguageCode(languageCode);
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+    } on fb.FirebaseAuthException catch (e) {
+      if (e.code != 'user-not-found') rethrow;
+    }
+  }
+
   /// Sign in with Apple (feuille native iOS). Apple ne transmet le nom qu'à la
   /// toute première connexion : le pseudo se choisit ensuite dans le profil.
   Future<fb.User> signInWithApple() async {

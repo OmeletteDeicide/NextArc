@@ -582,6 +582,10 @@
   "auth_error_invalid_email": "Adresse e-mail invalide",
   "auth_error_canceled": "Connexion annulée",
   "auth_error_account_exists": "Un compte existe déjà avec cet e-mail. Connecte-toi avec le moyen utilisé la première fois (Google ou e-mail).",
+  "auth_forgot_password": "Mot de passe oublié ?",
+  "auth_reset_email_first": "Saisis d'abord ton adresse e-mail, puis touche « Mot de passe oublié ? ».",
+  "auth_reset_sent": "Si un compte existe pour {email}, un lien pour choisir un nouveau mot de passe vient d'être envoyé. Pense à vérifier tes spams.",
+  "auth_reset_error": "Impossible d'envoyer le lien pour le moment. Réessaie dans quelques minutes.",
   "auth_error_generic": "Une erreur est survenue, réessaie",
 
   "profile_link_anilist_title": "Lier avec AniList",
