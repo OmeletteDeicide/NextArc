@@ -804,7 +804,6 @@ class _CardStatsRow extends StatelessWidget {
                       maxLines: 1,
                       style: text.titleLarge?.copyWith(
                         fontSize: w * 0.064,
-                        fontWeight: FontWeight.w800,
                         letterSpacing: -w * 0.0022,
                         color: items[i].color ?? const Color(0xFFF7F9FF),
                       ),
@@ -1019,7 +1018,6 @@ class _CardFooter extends StatelessWidget {
         'NextArc',
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
               fontSize: w * 0.042,
-              fontWeight: FontWeight.w800,
               color: const Color(0xFFF7F9FF),
             ),
       );
