@@ -35,8 +35,8 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<!-- Google Sign-In : REVERSED_CLIENT_ID de GoogleService-Info.plist -->
-				<string>REMPLACER_PAR_REVERSED_CLIENT_ID</string>
+				<!-- Google Sign-In : REVERSED_CLIENT_ID de GoogleService-Info.plist (pas un secret) -->
+				<string>com.googleusercontent.apps.611120595811-44oh4aiq54kc1cjbu6argrbloqrgckki</string>
 			</array>
 		</dict>
 	</array>

@@ -83,7 +83,7 @@ Ajouter les deux fichiers secrets, à transmettre en privé :
 - `lib/core/constants/app_constants.dart` : copie du tien ;
 - `ios/Runner/GoogleService-Info.plist` : à glisser dans Xcode, dans le dossier Runner, en cochant « Copy items if needed » et la cible **Runner**.
 
-Dans `ios/Runner/Info.plist`, remplacer `REMPLACER_PAR_REVERSED_CLIENT_ID` par la valeur `REVERSED_CLIENT_ID` de `GoogleService-Info.plist` (elle commence par `com.googleusercontent.apps.`). Sans ça, la connexion Google ferme l'app.
+Le schéma d'URL Google (`REVERSED_CLIENT_ID`) est déjà renseigné dans `ios/Runner/Info.plist`. Si l'app iOS est recréée dans Firebase, remplace-le par la nouvelle valeur de `GoogleService-Info.plist`.
 
 ### 3.3 Première compilation
 ```bash
