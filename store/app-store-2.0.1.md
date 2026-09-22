@@ -33,9 +33,9 @@ Sorties, liste et recos perso
 calendrier,episode,saison,japanimation,manhwa,otaku,watchlist,tracker,shonen,seinen,rappel,série
 ```
 
-**Texte promotionnel** (148/170, modifiable à tout moment sans nouvelle version)
+**Texte promotionnel** (159/170, modifiable à tout moment sans nouvelle version)
 ```
-Nouveau sur iPhone : suis tes anime et manga, reçois un rappel à chaque sortie d'épisode et découvre des recos basées sur tes ❤️. Gratuit, sans pub.
+Nouveau sur iPhone : suis tes anime et manga, reçois un rappel à chaque sortie d'épisode et découvre des recos basées sur tes coups de cœur. Gratuit, sans pub.
 ```
 
 **Description**
@@ -44,7 +44,7 @@ NextArc est ton carnet d'anime et de manga : ta liste, tes notes, les sorties d'
 
 SUIS TA LISTE
 • Anime et manga dans la même app, avec statuts : en cours, terminé, prévu, en pause, abandonné
-• Progression épisode par épisode, note sur 10 et favoris ❤️
+• Progression épisode par épisode, note sur 10 et favoris
 • Bouton +1 pour avancer d'un épisode en un geste, saisie directe pour les longues séries
 • Un titre retiré par erreur ? Annule-le, ou restaure-le pendant 30 jours
 • Mode invité : tout fonctionne sans compte, ta liste reste sur ton iPhone
@@ -56,7 +56,7 @@ NE RATE AUCUNE SORTIE
 
 DES RECOMMANDATIONS QUI TE RESSEMBLENT
 • La reco du jour, choisie parmi tes titres préférés
-• Des rails « Parce que tu as aimé… » construits sur tes ❤️ et tes notes
+• Des rails « Parce que tu as aimé… » construits sur tes favoris et tes notes
 • Un rail selon tes genres dominants
 • Jamais un titre déjà dans ta liste
 
@@ -67,7 +67,7 @@ EXPLORE
 
 TES STATISTIQUES
 • Ton mois en un coup d'œil : heures, épisodes, genres favoris
-• Des titres à débloquer, de Spectateur jusqu'à Arcer 👑
+• Des titres à débloquer, de Spectateur jusqu'à Arcer
 • Cartes de partage à envoyer à tes amis
 
 TON COMPTE, TES DONNÉES
@@ -101,9 +101,9 @@ Episode alerts, lists & picks
 calendar,watchlist,season,airing,otaku,manhwa,shonen,seinen,schedule,reminder,japan,series,log
 ```
 
-**Promotional text** (130/170)
+**Promotional text** (138/170)
 ```
-Now on iPhone: track your anime and manga, get a reminder for every new episode and discover picks based on your ❤️. Free, no ads.
+Now on iPhone: track your anime and manga, get a reminder for every new episode and discover picks based on your favourites. Free, no ads.
 ```
 
 **Description**
@@ -112,7 +112,7 @@ NextArc is your anime and manga notebook: your list, your scores, episode releas
 
 TRACK YOUR LIST
 • Anime and manga in one app, with statuses: watching, completed, planning, paused, dropped
-• Episode-by-episode progress, score out of 10 and favourites ❤️
+• Episode-by-episode progress, score out of 10 and favourites
 • A +1 button to move forward in one tap, direct input for very long series
 • Removed a title by mistake? Undo it, or restore it for 30 days
 • Guest mode: everything works without an account, your list stays on your iPhone
@@ -124,7 +124,7 @@ NEVER MISS A RELEASE
 
 RECOMMENDATIONS THAT GET YOU
 • Today's pick, chosen from your favourite titles
-• "Because you loved…" rails built from your ❤️ and your scores
+• "Because you loved…" rails built from your favourites and your scores
 • A rail based on your dominant genres
 • Never a title that is already in your list
 
@@ -135,7 +135,7 @@ EXPLORE
 
 YOUR STATS
 • Your month at a glance: hours, episodes, favourite genres
-• Titles to unlock, from Viewer all the way to Arcer 👑
+• Titles to unlock, from Viewer all the way to Arcer
 • Share cards to send to your friends
 
 YOUR ACCOUNT, YOUR DATA
@@ -169,9 +169,9 @@ Estrenos, listas y recos
 calendario,episodios,temporada,otaku,manhwa,shonen,seinen,recordatorio,japon,series,tracker
 ```
 
-**Texto promocional** (144/170)
+**Texto promocional** (151/170)
 ```
-Ya en iPhone: sigue tus anime y manga, recibe un aviso con cada nuevo episodio y descubre recomendaciones según tus ❤️. Gratis y sin publicidad.
+Ya en iPhone: sigue tus anime y manga, recibe un aviso con cada nuevo episodio y descubre recomendaciones según tus favoritos. Gratis y sin publicidad.
 ```
 
 **Descripción**
@@ -180,7 +180,7 @@ NextArc es tu cuaderno de anime y manga: tu lista, tus notas, los estrenos de ep
 
 SIGUE TU LISTA
 • Anime y manga en la misma app, con estados: viendo, completado, planeado, en pausa, abandonado
-• Progreso episodio a episodio, nota sobre 10 y favoritos ❤️
+• Progreso episodio a episodio, nota sobre 10 y favoritos
 • Botón +1 para avanzar de un toque, y entrada directa para series muy largas
 • ¿Quitaste un título por error? Deshazlo, o restáuralo durante 30 días
 • Modo invitado: todo funciona sin cuenta y tu lista se queda en tu iPhone
@@ -192,7 +192,7 @@ NO TE PIERDAS NINGÚN ESTRENO
 
 RECOMENDACIONES A TU MEDIDA
 • La reco del día, elegida entre tus títulos preferidos
-• Carriles «Porque te encantó…» a partir de tus ❤️ y tus notas
+• Carriles «Porque te encantó…» a partir de tus favoritos y tus notas
 • Un carril según tus géneros dominantes
 • Nunca un título que ya está en tu lista
 
@@ -203,7 +203,7 @@ EXPLORA
 
 TUS ESTADÍSTICAS
 • Tu mes de un vistazo: horas, episodios, géneros favoritos
-• Títulos por desbloquear, de Espectador hasta Arcer 👑
+• Títulos por desbloquear, de Espectador hasta Arcer
 • Tarjetas para compartir con tus amigos
 
 TU CUENTA, TUS DATOS
@@ -248,4 +248,5 @@ Plus l'**e-mail et le mot de passe du compte de démo**, dans les champs prévus
 - Pas de nom d'une autre app ou marque dans les mots-clés (AniList, MyAnimeList, Crunchyroll…) : règle 2.3.7.
 - Pas de « Android » ni de « Google Play » dans les textes ou les captures : règle 2.3.10.
 - Pas de promesse de streaming : NextArc ne diffuse aucun épisode.
+- Pas d'émojis : App Store Connect les refuse dans les textes.
 - Pas de prix ni de « gratuit pour une durée limitée ». « Gratuit, sans pub » est acceptable parce que c'est vrai.
