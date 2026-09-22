@@ -81,7 +81,7 @@ git checkout main
 ```
 Ajouter les deux fichiers secrets, à transmettre en privé :
 - `lib/core/constants/app_constants.dart` : copie du tien ;
-- `ios/Runner/GoogleService-Info.plist` : à glisser dans Xcode, dans le dossier Runner, en cochant « Copy items if needed » et la cible **Runner**.
+- `ios/Runner/GoogleService-Info.plist` : à copier exactement à cet emplacement (dossier `ios/Runner/`). Le projet Xcode le déclare déjà : sans ce fichier, la compilation échoue avec « GoogleService-Info.plist not found ».
 
 Le schéma d'URL Google (`REVERSED_CLIENT_ID`) est déjà renseigné dans `ios/Runner/Info.plist`. Si l'app iOS est recréée dans Firebase, remplace-le par la nouvelle valeur de `GoogleService-Info.plist`.
 
