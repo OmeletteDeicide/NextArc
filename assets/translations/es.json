@@ -582,6 +582,10 @@
   "auth_error_invalid_email": "Dirección de correo inválida",
   "auth_error_canceled": "Inicio de sesión cancelado",
   "auth_error_account_exists": "Ya existe una cuenta con este correo. Inicia sesión con el método que usaste la primera vez (Google o correo).",
+  "auth_forgot_password": "¿Olvidaste tu contraseña?",
+  "auth_reset_email_first": "Escribe primero tu correo y luego toca «¿Olvidaste tu contraseña?».",
+  "auth_reset_sent": "Si existe una cuenta para {email}, acabamos de enviar un enlace para elegir una nueva contraseña. Revisa también el spam.",
+  "auth_reset_error": "No se pudo enviar el enlace ahora. Inténtalo de nuevo en unos minutos.",
   "auth_error_generic": "Algo salió mal, inténtalo de nuevo",
 
   "profile_link_anilist_title": "Vincular con AniList",

@@ -582,6 +582,10 @@
   "auth_error_invalid_email": "Invalid email address",
   "auth_error_canceled": "Sign in cancelled",
   "auth_error_account_exists": "An account already exists with this email. Sign in with the method you used the first time (Google or email).",
+  "auth_forgot_password": "Forgot password?",
+  "auth_reset_email_first": "Enter your email address first, then tap \"Forgot password?\".",
+  "auth_reset_sent": "If an account exists for {email}, a link to choose a new password has just been sent. Check your spam folder too.",
+  "auth_reset_error": "Couldn't send the link right now. Try again in a few minutes.",
   "auth_error_generic": "Something went wrong, please try again",
 
   "profile_link_anilist_title": "Link with AniList",

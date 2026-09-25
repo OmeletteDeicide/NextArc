@@ -66,6 +66,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  /// « Mot de passe oublié ? » : envoie un lien de réinitialisation à
+  /// l'adresse saisie.
+  Future<void> _resetPassword() async {
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      setState(() => _errorMessage = 'auth_reset_email_first'.tr());
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
+    try {
+      await ref.read(firebaseAuthServiceProvider).sendPasswordReset(
+            email,
+            languageCode: context.locale.languageCode,
+          );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('auth_reset_sent'.tr(namedArgs: {'email': email})),
+      ));
+    } catch (_) {
+      if (mounted) {
+        setState(() => _errorMessage = 'auth_reset_error'.tr());
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
@@ -208,7 +238,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: AppSpacing.lg),
+                      if (!_isSignUp)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            style: TextButton.styleFrom(
+                                foregroundColor: c.accentText),
+                            onPressed: _loading ? null : _resetPassword,
+                            child: Text('auth_forgot_password'.tr()),
+                          ),
+                        ),
+                      SizedBox(
+                          height: _isSignUp ? AppSpacing.lg : AppSpacing.xs),
 
                       // ── Erreur ───────────────────────────────────────
                       if (_errorMessage != null) ...[
